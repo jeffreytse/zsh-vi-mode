@@ -32,6 +32,11 @@
 # using legacy undo behavior in vi insert mode
 #
 
+# Plugin information
+declare -gr ZVM_NAME='zsh-vi-mode'
+declare -gr ZVM_DESCRIPTION='💻 A better and friendly vi(vim) mode plugin for ZSH.'
+declare -gr ZVM_REPOSITORY='https://github.com/jeffreytse/zsh-vi-mode'
+declare -gr ZVM_VERSION='0.1.0'
 
 # Reduce ESC delay
 # Set to 0.1 second delay between switching modes (default is 0.4 seconds)
@@ -59,6 +64,13 @@ fi
 
 ZVM_VI_INSERT_MODE_LEGACY_UNDO=false
 
+
+# Display version information
+function zvm_version() {
+  echo -e "$ZVM_NAME $ZVM_VERSION"
+  echo -e "\e[4m$ZVM_REPOSITORY\e[0m"
+  echo -e "$ZVM_DESCRIPTION"
+}
 
 # Define widget function
 function zvm_define_widget() {
