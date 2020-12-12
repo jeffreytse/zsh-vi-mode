@@ -37,6 +37,9 @@
 # Set to 0.1 second delay between switching modes (default is 0.4 seconds)
 export KEYTIMEOUT=1
 
+# Plugin initial status
+ZVM_INIT_DONE=false
+
 # Default cursor styles
 ZVM_CURSOR_BLOCK='\e[2 q'
 ZVM_CURSOR_BEAM='\e[6 q'
@@ -63,14 +66,9 @@ function zvm_define_widget() {
   local func=$2 || $1
   local result=$(zle -l | grep "^${widget}")
   local rawfunc=$(grep -oP '(?<=\().*(?=\))' <<< "$result")
-  local wrapper=
-  if [[ $result ]] && [[ $rawfunc == '' ]]; then
-    rawfunc=$widget
-  fi
   if [[ $rawfunc ]]; then
     local wrapper="zvm_${widget}-wrapper"
     eval "$wrapper() { $rawfunc; $func; }"
-    zle -N $wrapper
     func=$wrapper
   fi
   zle -N $widget $func
@@ -97,11 +95,14 @@ function zvm_set_insert_mode_cursor() {
 
 # Change cursor style
 function zvm_change_cursor_style() {
-  if [[ ${KEYMAP} == vicmd ]] || [[ $1 == 'main' ]]; then
-      zvm_set_normal_mode_cursor
-  else
-      zvm_set_insert_mode_cursor
-  fi
+  case $1 in
+    # normal mode cursor in normal and visual mode
+    vicmd) zvm_set_normal_mode_cursor;;
+    # insert mode cursor in insert mode
+    main|viins) zvm_set_insert_mode_cursor;;
+    # Else normal cursor
+    *) zvm_set_normal_mode_cursor;;
+  esac
 }
 
 # Remove all characters between the cursor position and the
@@ -137,13 +138,13 @@ function zvm_viins_undo() {
 
 # Updates editor information when the keymap changes
 function zvm_zle-keymap-select() {
-  zvm_change_cursor_style $1
+  zvm_change_cursor_style $KEYMAP
 }
 
 # Updates editor information when line pre redraw
 function zvm_zle-line-pre-redraw() {
   # Change cursor style
-  zvm_change_cursor_style
+  zvm_change_cursor_style $KEYMAP
 }
 
 # Start every prompt in insert mode
@@ -152,49 +153,58 @@ function zvm_zle-line-init() {
   zvm_set_insert_mode_cursor
 }
 
-###############################
-# Create User-defined widgets
-zvm_define_widget zvm_backward_kill_line
-zvm_define_widget zvm_forward_kill_line
-zvm_define_widget zvm_kill_line
-zvm_define_widget zvm_viins_undo
+# Initialize vi mode
+function zvm_init() {
+  # Create User-defined widgets
+  zvm_define_widget zvm_backward_kill_line
+  zvm_define_widget zvm_forward_kill_line
+  zvm_define_widget zvm_kill_line
+  zvm_define_widget zvm_viins_undo
 
-###############################
-# Override standard widgets
-zvm_define_widget zle-keymap-select zvm_zle-keymap-select
-zvm_define_widget zle-line-pre-redraw zvm_zle-line-pre-redraw
+  # Override standard widgets
+  zvm_define_widget zle-keymap-select zvm_zle-keymap-select
+  zvm_define_widget zle-line-pre-redraw zvm_zle-line-pre-redraw
 
-# Ensure insert mode cursor when exiting vim
-zvm_define_widget zle-line-init zvm_zle-line-init
+  # Ensure insert mode cursor when exiting vim
+  zvm_define_widget zle-line-init zvm_zle-line-init
 
-# Ensure insert mode cursor when starting new terminal
-precmd_functions+=(zvm_set_insert_mode_cursor)
+  # All Key bindings
+  # Emacs-like bindings
+  # Normal editing
+  bindkey -M viins '^A' beginning-of-line
+  bindkey -M viins '^E' end-of-line
+  bindkey -M viins '^B' backward-char
+  bindkey -M viins '^F' forward-char
+  bindkey -M viins '^K' zvm_forward_kill_line
+  bindkey -M viins '^U' zvm_viins_undo
+  bindkey -M viins '^W' backward-kill-word
+  bindkey -M viins '^Y' yank
+  bindkey -M viins '^_' undo
 
-###############################
-# All Key bindings
+  # History search
+  bindkey -M viins '^R' history-incremental-search-backward
+  bindkey -M viins '^S' history-incremental-search-forward
+  bindkey -M viins '^P' up-line-or-history
+  bindkey -M viins '^N' down-line-or-history
 
-# Emacs-like bindings
-# Normal editing
-bindkey -M viins '^A' beginning-of-line
-bindkey -M viins '^E' end-of-line
-bindkey -M viins '^B' backward-char
-bindkey -M viins '^F' forward-char
-bindkey -M viins '^K' zvm_forward_kill_line
-bindkey -M viins '^U' zvm_viins_undo
-bindkey -M viins '^W' backward-kill-word
-bindkey -M viins '^Y' yank
-bindkey -M viins '^_' undo
+  # Fix BACKSPACE was stuck in zsh
+  # Since normally '^?' (backspace) is bound to vi-backward-delete-char
+  bindkey -v '^?' backward-delete-char
 
-# History search
-bindkey -M viins '^R' history-incremental-search-backward
-bindkey -M viins '^S' history-incremental-search-forward
-bindkey -M viins '^P' up-line-or-history
-bindkey -M viins '^N' down-line-or-history
+  # Enable vi keymap
+  bindkey -v
+}
 
-# Fix BACKSPACE was stuck in zsh
-# Since normally '^?' (backspace) is bound to vi-backward-delete-char
-bindkey -v '^?' backward-delete-char
+# Precmd function
+function zvm_precmd_function() {
+  # Init zsh vi mode  when starting new command line at first time
+  if ! $ZVM_INIT_DONE; then
+    ZVM_INIT_DONE=true; zvm_init
+  fi
+  # Set insert mode cursor when starting new command line
+  zvm_set_insert_mode_cursor
+}
 
-# Enable vi keymap
-bindkey -v
+# Init plugin starting new command line
+precmd_functions+=( zvm_precmd_function )
 
