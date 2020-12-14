@@ -31,6 +31,13 @@
 # ZVM_VI_INSERT_MODE_LEGACY_UNDO:
 # using legacy undo behavior in vi insert mode
 #
+# ZVM_VI_REGION_HIGHLIGHT:
+# the behavior of region (surround objects) in vi mode
+#
+# For example:
+#   ZVM_VI_REGION_HIGHLIGHT=red      # Color name
+#   ZVM_VI_REGION_HIGHLIGHT=#ff0000  # Hex value
+#
 
 # Plugin information
 declare -gr ZVM_NAME='zsh-vi-mode'
@@ -63,6 +70,7 @@ else
 fi
 
 ZVM_VI_INSERT_MODE_LEGACY_UNDO=false
+ZVM_VI_REGION_HIGHLIGHT='#cc0000'
 
 
 # Display version information
@@ -135,6 +143,126 @@ function zvm_kill_line() {
   BUFFER=
 }
 
+# Get the character position in a string
+function zvm_charpos() {
+  local pos=-1
+  local len=${#1}
+  local i=${3:-0}
+  local forward=${4:-true}
+  local init=${i:-$($forward && echo "$i" || echo "i=$len-1")}
+  local condition=$($forward && echo "i<$len" || echo "i>=0")
+  local step=$($forward && echo 'i++' || echo 'i--')
+  for (($init;$condition;$step)); do
+    if [[ ${1:$i:1} == "$2" ]]; then
+      pos=$i
+      break
+    fi
+  done
+  echo $pos
+}
+
+# Match the surround pair from the part
+function zvm_match_surround() {
+  local bchar=$1
+  local echar=$1
+  case $bchar in
+    '(') echar=')';;
+    '[') echar=']';;
+    '{') echar='}';;
+    '<') echar='>';;
+    ')') bchar='(';echar=')';;
+    ']') bchar='[';echar=']';;
+    '}') bchar='{';echar='}';;
+    '>') bchar='<';echar='>';;
+  esac
+  echo $bchar $echar
+}
+
+# Search surround from the string
+function zvm_search_surround() {
+  local ret=($(zvm_match_surround "$1"))
+  local bchar=${ret[1]}
+  local echar=${ret[2]}
+  local bpos=$(zvm_charpos $BUFFER $bchar $CURSOR false)
+  local epos=$(zvm_charpos $BUFFER $echar $CURSOR true)
+  if [[ $bpos == -1 ]] || [[ $epos == -1 ]]; then
+    return 1
+  fi
+  echo $bpos $epos
+}
+
+# Select surround and highlight it in visual mode
+function zvm_select_surround() {
+  local ret=($(zvm_search_surround ${KEYS:1:1}))
+  if [[ ${#ret[@]} == 0 ]]; then
+    # Exit visual-mode
+    zle visual-mode
+    return 1
+  fi
+  local bpos=${ret[1]}
+  local epos=${ret[2]}
+  if [[ ${KEYS:0:1} == 'i' ]]; then
+    ((bpos++))
+  else
+    ((epos++))
+  fi
+  region_highlight+=("$bpos $epos bg=$ZVM_VI_REGION_HIGHLIGHT")
+  zle -R
+  local key=
+  read -k 1 key
+  # Prepare handle
+  case $key in
+    d|c|y) CUTBUFFER=${BUFFER:$bpos:$(($epos-$bpos))};;
+  esac
+  case $key in
+    d|c) BUFFER="${BUFFER:0:$bpos}${BUFFER:$epos}"; CURSOR=$bpos;;
+    s)
+      local a=
+      read -k 1 a
+      if [[ $a == a ]]; then
+        zvm_change_surround a '' $bpos $epos
+      fi
+      ;;
+  esac
+  # Post handle
+  zle visual-mode
+  case $key in
+    c) zle vi-insert;;
+  esac
+}
+
+# Change surround in vicmd or visual mode
+function zvm_change_surround() {
+  local action=${1:-${KEYS:1:1}}
+  local surround=${2:-${KEYS:2:1}}
+  local bpos=${3}
+  local epos=${4}
+  if [[ $action != 'a' ]]; then
+    local ret=($(zvm_search_surround $surround))
+    if [[ ${#ret[@]} == 0 ]]; then
+      return 1
+    fi
+    bpos=${ret[1]}
+    epos=${ret[2]}
+    region_highlight+=("$bpos $(($bpos+1)) bg=$ZVM_VI_REGION_HIGHLIGHT")
+    region_highlight+=("$epos $(($epos+1)) bg=$ZVM_VI_REGION_HIGHLIGHT")
+    zle -R
+  fi
+  local key=
+  case $action in
+    r|a) read -k 1 key;;
+  esac
+  ret=($(zvm_match_surround $key))
+  local bchar=${ret[1]:-$key}
+  local echar=${ret[2]:-$key}
+  local value=$([[ $action == a ]] && echo 0 || echo 1 )
+  local head=${BUFFER:0:$bpos}
+  local body=${BUFFER:$((bpos+value)):$((epos-(bpos+value)))}
+  local foot=${BUFFER:$((epos+value))}
+  BUFFER="${head}${bchar}${body}${echar}${foot}"
+  zle visual-mode; zle visual-mode
+}
+
 # Undo action in vi insert mode
 #
 # CTRL-U  Remove all characters between the cursor position and
@@ -165,13 +293,15 @@ function zvm_zle-line-init() {
   zvm_set_insert_mode_cursor
 }
 
-# Initialize vi mode
+# Initialize vi-mode for widgets, keybindings, etc.
 function zvm_init() {
   # Create User-defined widgets
   zvm_define_widget zvm_backward_kill_line
   zvm_define_widget zvm_forward_kill_line
   zvm_define_widget zvm_kill_line
   zvm_define_widget zvm_viins_undo
+  zvm_define_widget zvm_select_surround
+  zvm_define_widget zvm_change_surround
 
   # Override standard widgets
   zvm_define_widget zle-keymap-select zvm_zle-keymap-select
@@ -198,6 +328,38 @@ function zvm_init() {
   bindkey -M viins '^S' history-incremental-search-forward
   bindkey -M viins '^P' up-line-or-history
   bindkey -M viins '^N' down-line-or-history
+
+  # Surround text-object
+  # Enable surround text-objects (quotes, brackets)
+
+  # Remove default key bindings of 's' in vicmd mode
+  bindkey -M vicmd -r 's'
+
+  # Brackets
+  for s in ${(s..)^:-'()[]{}<>bB'}; do
+    for c in {a,i}${s}; do
+      bindkey -M visual "$c" zvm_select_surround
+    done
+    for c in s{d,r}${s}; do
+      bindkey -M vicmd "$c" zvm_change_surround
+    done
+    for c in sa${s}; do
+      bindkey -M visual "$c" zvm_change_surround
+    done
+  done
+
+  # Quotes
+  for s in {\',\",\`}; do
+    for c in {a,i}${s}; do
+      bindkey -M visual "$c" zvm_select_surround
+    done
+    for c in s{d,r}${s}; do
+      bindkey -M vicmd "$c" zvm_change_surround
+    done
+    for c in sa${s}; do
+      bindkey -M visual "$c" zvm_change_surround
+    done
+  done
 
   # Fix BACKSPACE was stuck in zsh
   # Since normally '^?' (backspace) is bound to vi-backward-delete-char
