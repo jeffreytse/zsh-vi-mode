@@ -215,7 +215,16 @@ function zvm_select_surround() {
     d|c|y) CUTBUFFER=${BUFFER:$bpos:$(($epos-$bpos))};;
   esac
   case $key in
-    d|c) BUFFER="${BUFFER:0:$bpos}${BUFFER:$epos}"; CURSOR=$bpos;;
+    d|c)
+      BUFFER="${BUFFER:0:$bpos}${BUFFER:$epos}"
+      CURSOR=$bpos
+      ;;
+    p)
+      local cutbuffer=${BUFFER:$bpos:$(($epos-$bpos))}
+      BUFFER="${BUFFER:0:$bpos}${CUTBUFFER}${BUFFER:$epos}";
+      CUTBUFFER=$cutbuffer
+      CURSOR=$bpos
+      ;;
     s)
       local a=
       read -k 1 a
