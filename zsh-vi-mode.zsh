@@ -263,6 +263,13 @@ function zvm_change_surround() {
   zle visual-mode; zle visual-mode
 }
 
+# Exit the mode in vi insert mode
+# Fix the curosr backward when exiting insert mode
+function zvm_exit_insert_mode() {
+  zle vi-cmd-mode
+  CURSOR=$CURSOR+1
+}
+
 # Undo action in vi insert mode
 #
 # CTRL-U  Remove all characters between the cursor position and
@@ -300,6 +307,7 @@ function zvm_init() {
   zvm_define_widget zvm_forward_kill_line
   zvm_define_widget zvm_kill_line
   zvm_define_widget zvm_viins_undo
+  zvm_define_widget zvm_exit_insert_mode
   zvm_define_widget zvm_select_surround
   zvm_define_widget zvm_change_surround
 
@@ -322,6 +330,7 @@ function zvm_init() {
   bindkey -M viins '^W' backward-kill-word
   bindkey -M viins '^Y' yank
   bindkey -M viins '^_' undo
+  bindkey -M viins '^[' zvm_exit_insert_mode
 
   # History search
   bindkey -M viins '^R' history-incremental-search-backward
