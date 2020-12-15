@@ -206,6 +206,7 @@ function zvm_select_surround() {
   else
     ((epos++))
   fi
+  MARK=$bpos; CURSOR=$epos-1
   region_highlight+=("$bpos $epos bg=$ZVM_VI_REGION_HIGHLIGHT")
   zle -R
   local key=
@@ -233,6 +234,8 @@ function zvm_select_surround() {
         zle visual-mode
       fi
       ;;
+    u) zle vi-down-case; zle visual-mode;;
+    U) zle vi-up-case; zle visual-mode;;
   esac
   # Post handle
   zle visual-mode
