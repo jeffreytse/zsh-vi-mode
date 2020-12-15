@@ -269,6 +269,11 @@ function zvm_change_surround() {
     r) read -k 1 key;;
     a) key=$surround;;
   esac
+  zle visual-mode
+  region_highlight=()
+  # Check if canceling changing surround
+  [[ $key == '' ]] && return
+  # Start changing surround
   local ret=($(zvm_match_surround $key))
   local bchar=${ret[1]:-$key}
   local echar=${ret[2]:-$key}
@@ -277,8 +282,6 @@ function zvm_change_surround() {
   local body=${BUFFER:$((bpos+value)):$((epos-(bpos+value)))}
   local foot=${BUFFER:$((epos+value))}
   BUFFER="${head}${bchar}${body}${echar}${foot}"
-  zle visual-mode;
-  region_highlight=()
 }
 
 # Exit the mode in vi insert mode
@@ -365,7 +368,7 @@ function zvm_init() {
     surrounds+=($s)
   done
   # Append quotes
-  for s in {\',\",\`,\ }; do
+  for s in {\',\",\`,\ ,'^['}; do
     surrounds+=($s)
   done
 
