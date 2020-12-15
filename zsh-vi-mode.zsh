@@ -358,25 +358,22 @@ function zvm_init() {
 
   # Surround text-object
   # Enable surround text-objects (quotes, brackets)
+
+  local surrounds=()
+  # Append brackets
+  for s in ${(s..)^:-'()[]{}<>bb'}; do
+    surrounds+=($s)
+  done
+  # Append quotes
+  for s in {\',\",\`,\ }; do
+    surrounds+=($s)
+  done
+
+  # Surround key bindings
   # Remove default key bindings of 's' in vicmd mode
   bindkey -M vicmd -r 's'
 
-  # Keybindings for brackets
-  for s in ${(s..)^:-'()[]{}<>bB'}; do
-    for c in {a,i}${s}; do
-      bindkey -M visual "$c" zvm_select_surround
-    done
-    for c in s{d,r}${s}; do
-      bindkey -M vicmd "$c" zvm_change_surround
-    done
-    for c in sa${s}; do
-      bindkey -M visual "$c" zvm_change_surround
-      bindkey -M vicmd "$c" zvm_change_surround
-    done
-  done
-
-  # Keybindings for quotes
-  for s in {\',\",\`,\ }; do
+  for s in $surrounds; do
     for c in {a,i}${s}; do
       bindkey -M visual "$c" zvm_select_surround
     done
