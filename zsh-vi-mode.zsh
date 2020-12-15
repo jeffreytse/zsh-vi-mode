@@ -1,4 +1,4 @@
-# vi-mode.zsh -- vi mode for Zsh
+# zsh-vi-mode.zsh -- better vi mode for Zsh
 # Copyright © 2020 Jeffrey Tse
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -43,7 +43,7 @@
 declare -gr ZVM_NAME='zsh-vi-mode'
 declare -gr ZVM_DESCRIPTION='💻 A better and friendly vi(vim) mode plugin for ZSH.'
 declare -gr ZVM_REPOSITORY='https://github.com/jeffreytse/zsh-vi-mode'
-declare -gr ZVM_VERSION='0.1.0'
+declare -gr ZVM_VERSION='0.2.0'
 
 # Reduce ESC delay
 # Set to 0.1 second delay between switching modes (default is 0.4 seconds)
@@ -349,11 +349,10 @@ function zvm_init() {
 
   # Surround text-object
   # Enable surround text-objects (quotes, brackets)
-
   # Remove default key bindings of 's' in vicmd mode
   bindkey -M vicmd -r 's'
 
-  # Brackets
+  # Keybindings for brackets
   for s in ${(s..)^:-'()[]{}<>bB'}; do
     for c in {a,i}${s}; do
       bindkey -M visual "$c" zvm_select_surround
@@ -366,7 +365,7 @@ function zvm_init() {
     done
   done
 
-  # Quotes
+  # Keybindings for quotes
   for s in {\',\",\`}; do
     for c in {a,i}${s}; do
       bindkey -M visual "$c" zvm_select_surround
