@@ -235,6 +235,7 @@ function zvm_select_surround() {
   esac
   # Post handle
   zle visual-mode
+  region_highlight=()
   case $key in
     c) zle vi-insert;;
   esac
@@ -270,6 +271,7 @@ function zvm_change_surround() {
   local foot=${BUFFER:$((epos+value))}
   BUFFER="${head}${bchar}${body}${echar}${foot}"
   zle visual-mode; zle visual-mode
+  region_highlight=()
 }
 
 # Exit the mode in vi insert mode
