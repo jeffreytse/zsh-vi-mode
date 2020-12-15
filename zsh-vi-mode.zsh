@@ -226,10 +226,11 @@ function zvm_select_surround() {
       CURSOR=$bpos
       ;;
     s)
-      local a=
-      read -k 1 a
-      if [[ $a == a ]]; then
-        zvm_change_surround a '' $bpos $epos
+      local action= surround=
+      read -k 1 action; read -k 1 surround
+      if [[ $action == 'a' ]]; then
+        zvm_change_surround $action $surround $bpos $epos
+        zle visual-mode
       fi
       ;;
   esac
@@ -245,13 +246,18 @@ function zvm_select_surround() {
 function zvm_change_surround() {
   local action=${1:-${KEYS:1:1}}
   local surround=${2:-${KEYS:2:1}}
-  local bpos=${3}
-  local epos=${4}
-  if [[ $action != 'a' ]]; then
-    local ret=($(zvm_search_surround $surround))
-    if [[ ${#ret[@]} == 0 ]]; then
-      return 1
+  local bpos=${3} epos=${4}
+  if [[ $action == 'a' ]]; then
+    if [[ $bpos == '' ]] && [[ $epos == '' ]]; then
+      if (( MARK > CURSOR )) ; then
+        bpos=$CURSOR+1 epos=$MARK+1
+      else
+        bpos=$MARK epos=$CURSOR+1
+      fi
     fi
+  else
+    local ret=($(zvm_search_surround $surround))
+    (( ${#ret[@]} )) || return 1
     bpos=${ret[1]}
     epos=${ret[2]}
     region_highlight+=("$bpos $(($bpos+1)) bg=$ZVM_VI_REGION_HIGHLIGHT")
@@ -260,9 +266,10 @@ function zvm_change_surround() {
   fi
   local key=
   case $action in
-    r|a) read -k 1 key;;
+    r) read -k 1 key;;
+    a) key=$surround;;
   esac
-  ret=($(zvm_match_surround $key))
+  local ret=($(zvm_match_surround $key))
   local bchar=${ret[1]:-$key}
   local echar=${ret[2]:-$key}
   local value=$([[ $action == a ]] && echo 0 || echo 1 )
@@ -270,7 +277,7 @@ function zvm_change_surround() {
   local body=${BUFFER:$((bpos+value)):$((epos-(bpos+value)))}
   local foot=${BUFFER:$((epos+value))}
   BUFFER="${head}${bchar}${body}${echar}${foot}"
-  zle visual-mode; zle visual-mode
+  zle visual-mode;
   region_highlight=()
 }
 
@@ -364,6 +371,7 @@ function zvm_init() {
     done
     for c in sa${s}; do
       bindkey -M visual "$c" zvm_change_surround
+      bindkey -M vicmd "$c" zvm_change_surround
     done
   done
 
@@ -377,6 +385,7 @@ function zvm_init() {
     done
     for c in sa${s}; do
       bindkey -M visual "$c" zvm_change_surround
+      bindkey -M vicmd "$c" zvm_change_surround
     done
   done
 
