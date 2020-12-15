@@ -181,8 +181,8 @@ function zvm_match_surround() {
 # Search surround from the string
 function zvm_search_surround() {
   local ret=($(zvm_match_surround "$1"))
-  local bchar=${ret[1]}
-  local echar=${ret[2]}
+  local bchar=${ret[1]:- }
+  local echar=${ret[2]:- }
   local bpos=$(zvm_charpos $BUFFER $bchar $CURSOR false)
   local epos=$(zvm_charpos $BUFFER $echar $CURSOR true)
   if [[ $bpos == -1 ]] || [[ $epos == -1 ]]; then
@@ -376,7 +376,7 @@ function zvm_init() {
   done
 
   # Keybindings for quotes
-  for s in {\',\",\`}; do
+  for s in {\',\",\`,\ }; do
     for c in {a,i}${s}; do
       bindkey -M visual "$c" zvm_select_surround
     done
