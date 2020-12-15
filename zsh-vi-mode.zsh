@@ -57,8 +57,8 @@ ZVM_CURSOR_BLOCK='\e[2 q'
 ZVM_CURSOR_BEAM='\e[6 q'
 ZVM_CURSOR_BLINKING_BLOCK='\e[1 q'
 ZVM_CURSOR_BLINKING_BEAM='\e[5 q'
-ZVM_CURSOR_XTERM_BLOCK='\e]50;CursorShape=0\x7'
-ZVM_CURSOR_XTERM_BEAM='\e]50;CursorShape=1\x7'
+ZVM_CURSOR_XTERM_BLOCK='\x1b[\x32 q'
+ZVM_CURSOR_XTERM_BEAM='\x1b[\x36 q'
 
 # Default settings
 if [[ ${TERM:0:5} == 'xterm' ]]; then
