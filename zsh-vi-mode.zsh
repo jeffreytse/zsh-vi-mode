@@ -52,6 +52,9 @@ export KEYTIMEOUT=1
 # Plugin initial status
 ZVM_INIT_DONE=false
 
+# Insert mode could be `i` (insert) or `a` (append)
+ZVM_INSERT_MODE='insert'
+
 # Default cursor styles
 ZVM_CURSOR_BLOCK='\e[2 q'
 ZVM_CURSOR_BEAM='\e[6 q'
@@ -287,11 +290,23 @@ function zvm_change_surround() {
   BUFFER="${head}${bchar}${body}${echar}${foot}"
 }
 
-# Exit the mode in vi insert mode
-# Fix the curosr backward when exiting insert mode
+# Enter the vi insert mode
+function zvm_enter_insert_mode() {
+  zle -K viins
+  if [[ $KEYS == 'i' ]]; then
+    ZVM_INSERT_MODE='i'
+  else
+    CURSOR=$CURSOR+1
+    ZVM_INSERT_MODE='a'
+  fi
+}
+
+# Exit the vi insert mode
 function zvm_exit_insert_mode() {
   zle vi-cmd-mode
-  CURSOR=$CURSOR+1
+  if [[ $ZVM_INSERT_MODE == 'i' ]]; then
+    CURSOR=$CURSOR+1
+  fi
 }
 
 # Undo action in vi insert mode
@@ -331,9 +346,10 @@ function zvm_init() {
   zvm_define_widget zvm_forward_kill_line
   zvm_define_widget zvm_kill_line
   zvm_define_widget zvm_viins_undo
-  zvm_define_widget zvm_exit_insert_mode
   zvm_define_widget zvm_select_surround
   zvm_define_widget zvm_change_surround
+  zvm_define_widget zvm_enter_insert_mode
+  zvm_define_widget zvm_exit_insert_mode
 
   # Override standard widgets
   zvm_define_widget zle-keymap-select zvm_zle-keymap-select
@@ -354,13 +370,17 @@ function zvm_init() {
   bindkey -M viins '^W' backward-kill-word
   bindkey -M viins '^Y' yank
   bindkey -M viins '^_' undo
-  bindkey -M viins '^[' zvm_exit_insert_mode
 
   # History search
   bindkey -M viins '^R' history-incremental-search-backward
   bindkey -M viins '^S' history-incremental-search-forward
   bindkey -M viins '^P' up-line-or-history
   bindkey -M viins '^N' down-line-or-history
+
+  # Fix the cursor position when exiting insert mode
+  bindkey -M vicmd 'i'  zvm_enter_insert_mode
+  bindkey -M vicmd 'a'  zvm_enter_insert_mode
+  bindkey -M viins '^[' zvm_exit_insert_mode
 
   # Surround text-object
   # Enable surround text-objects (quotes, brackets)
