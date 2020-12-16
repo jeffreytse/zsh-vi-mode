@@ -146,22 +146,57 @@ function zvm_kill_line() {
   BUFFER=
 }
 
-# Get the character position in a string
-function zvm_charpos() {
+# Get the substr position in a string
+function zvm_substr_pos() {
   local pos=-1
   local len=${#1}
+  local slen=${#2}
   local i=${3:-0}
   local forward=${4:-true}
   local init=${i:-$($forward && echo "$i" || echo "i=$len-1")}
   local condition=$($forward && echo "i<$len" || echo "i>=0")
   local step=$($forward && echo 'i++' || echo 'i--')
   for (($init;$condition;$step)); do
-    if [[ ${1:$i:1} == "$2" ]]; then
+    if [[ ${1:$i:$slen} == "$2" ]]; then
       pos=$i
       break
     fi
   done
   echo $pos
+}
+
+# Move around code structure (e.g. (..), {..})
+function zvm_move_around_surround() {
+  local slen=
+  local bpos=-1
+  local epos=-1
+  for ((i=$CURSOR;i>=0;i--)); do
+    # Check if it's one of the surrounds
+    for s in {\',\",\`,\(,\[,\{,\<}; do
+      slen=${#s}
+      if [[ ${BUFFER:$i:$slen} == "$s" ]]; then
+        bpos=$i
+        break
+      fi
+    done
+    if (($bpos == -1)); then
+      continue
+    fi
+    # Search the nearest surround
+    local ret=($(zvm_search_surround "$s"))
+    if [[ ${#ret[@]} == 0 ]]; then
+      continue
+    fi
+    bpos=${ret[1]}
+    epos=${ret[2]}
+    # Move between the openning and close surrounds
+    if (( $CURSOR > $((bpos-1)) )) && (( $CURSOR < $((bpos+slen)) )); then
+      CURSOR=$epos
+    else
+      CURSOR=$bpos
+    fi
+    break
+  done
 }
 
 # Match the surround pair from the part
@@ -186,12 +221,21 @@ function zvm_search_surround() {
   local ret=($(zvm_match_surround "$1"))
   local bchar=${ret[1]:- }
   local echar=${ret[2]:- }
-  local bpos=$(zvm_charpos $BUFFER $bchar $CURSOR false)
-  local epos=$(zvm_charpos $BUFFER $echar $CURSOR true)
+  local bpos=$(zvm_substr_pos $BUFFER $bchar $CURSOR false)
+  local epos=$(zvm_substr_pos $BUFFER $echar $CURSOR true)
+  if [[ $bpos == $epos ]]; then
+      epos=$(zvm_substr_pos $BUFFER $echar $((CURSOR+1)) true)
+      if [[ $epos == -1 ]]; then
+        epos=$(zvm_substr_pos $BUFFER $echar $((CURSOR-1)) false)
+        if [[ $epos != -1 ]]; then
+          local tmp=$epos; epos=$bpos; bpos=$tmp
+        fi
+      fi
+  fi
   if [[ $bpos == -1 ]] || [[ $epos == -1 ]]; then
     return 1
   fi
-  echo $bpos $epos
+  echo $bpos $epos $bchar $echar
 }
 
 # Select surround and highlight it in visual mode
@@ -348,6 +392,7 @@ function zvm_init() {
   zvm_define_widget zvm_viins_undo
   zvm_define_widget zvm_select_surround
   zvm_define_widget zvm_change_surround
+  zvm_define_widget zvm_move_around_surround
   zvm_define_widget zvm_enter_insert_mode
   zvm_define_widget zvm_exit_insert_mode
 
@@ -411,6 +456,9 @@ function zvm_init() {
       bindkey -M vicmd "$c" zvm_change_surround
     done
   done
+
+  # Moving around surround
+  bindkey -M vicmd '%' zvm_move_around_surround
 
   # Fix BACKSPACE was stuck in zsh
   # Since normally '^?' (backspace) is bound to vi-backward-delete-char
