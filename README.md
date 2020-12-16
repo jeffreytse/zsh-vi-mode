@@ -11,6 +11,17 @@
 
 <img alt="Zsh Vi-mode Demo" src="https://user-images.githubusercontent.com/9413601/101981242-61530300-3ca6-11eb-8c7a-c0f4c69562bb.gif" />
 
+
+## Features
+
+- Cursor motion (Navigation).
+- Insert & Replace (Insert mode).
+- Text Objects.
+- Searching text.
+- Undo, Redo, Cut, Copy, Paste, and Delete.
+- Surrounds (Add, Replace, Delete, and Move Around).
+- ...
+
 ## Installation
 
 ### Using [Antigen](https://github.com/zsh-users/antigen)
