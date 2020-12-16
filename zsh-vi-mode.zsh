@@ -53,7 +53,7 @@ export KEYTIMEOUT=1
 ZVM_INIT_DONE=false
 
 # Insert mode could be `i` (insert) or `a` (append)
-ZVM_INSERT_MODE='insert'
+ZVM_INSERT_MODE='i'
 
 # Default cursor styles
 ZVM_CURSOR_BLOCK='\e[2 q'
@@ -432,7 +432,7 @@ function zvm_init() {
 
   local surrounds=()
   # Append brackets
-  for s in ${(s..)^:-'()[]{}<>bb'}; do
+  for s in ${(s..)^:-'()[]{}<>'}; do
     surrounds+=($s)
   done
   # Append quotes
