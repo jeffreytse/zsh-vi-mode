@@ -365,13 +365,11 @@ function zvm_select_surround() {
       CUTBUFFER=$cutbuffer
       CURSOR=$bpos
       ;;
-    s)
-      local action= surround=
-      read -k 1 action; read -k 1 surround
-      if [[ $action == 'a' ]]; then
-        zvm_change_surround $action $surround $bpos $epos
-        zle visual-mode
-      fi
+    S)
+      local surround=
+      read -k 1 surround
+      zvm_change_surround $key $surround $bpos $epos
+      zle visual-mode
       ;;
     u) zle vi-down-case; zle visual-mode;;
     U) zle vi-up-case; zle visual-mode;;
@@ -387,10 +385,11 @@ function zvm_select_surround() {
 # Change surround in vicmd or visual mode
 function zvm_change_surround() {
   local keys=$(zvm_keys)
-  local action=${1:-${keys:1:1}}
-  local surround=${2:-${keys:2:1}}
+  local action=${1:-${keys:0:1}}
   local bpos=${3} epos=${4}
-  if [[ $action == 'a' ]]; then
+  local is_appending=$([[ $action == 'S' ]] && echo 1)
+  if [[ $is_appending ]]; then
+    local surround=${2:-${keys:1:1}}
     if [[ $bpos == '' ]] && [[ $epos == '' ]]; then
       if (( MARK > CURSOR )) ; then
         bpos=$CURSOR+1 epos=$MARK+1
@@ -399,6 +398,7 @@ function zvm_change_surround() {
       fi
     fi
   else
+    local surround=${2:-${keys:2:1}}
     local ret=($(zvm_search_surround $surround))
     (( ${#ret[@]} )) || return 1
     bpos=${ret[1]}
@@ -409,10 +409,9 @@ function zvm_change_surround() {
   fi
   local key=
   case $action in
-    r) read -k 1 key;;
-    a) key=$surround;;
+    c) read -k 1 key;;
+    S) key=$surround; zle visual-mode;;
   esac
-  zle visual-mode
   region_highlight=()
   # Check if canceling changing surround
   [[ $key == '' ]] && return
@@ -420,7 +419,7 @@ function zvm_change_surround() {
   local ret=($(zvm_match_surround $key))
   local bchar=${ret[1]:-$key}
   local echar=${ret[2]:-$key}
-  local value=$([[ $action == a ]] && echo 0 || echo 1 )
+  local value=$([[ $is_appending ]] && echo 0 || echo 1 )
   local head=${BUFFER:0:$bpos}
   local body=${BUFFER:$((bpos+value)):$((epos-(bpos+value)))}
   local foot=${BUFFER:$((epos+value))}
@@ -538,10 +537,10 @@ function zvm_init() {
     for c in {a,i}${s}; do
       zvm_bindkey visual "$c" zvm_select_surround
     done
-    for c in s{d,r}${s}; do
+    for c in {d,c}s${s}; do
       zvm_bindkey vicmd "$c" zvm_change_surround
     done
-    for c in sa${s}; do
+    for c in S${s}; do
       zvm_bindkey visual "$c" zvm_change_surround
       zvm_bindkey vicmd "$c" zvm_change_surround
     done
