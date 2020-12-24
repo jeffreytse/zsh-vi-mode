@@ -49,11 +49,17 @@ declare -gr ZVM_VERSION='0.3.0'
 # Set to 0.1 second delay between switching modes (default is 0.4 seconds)
 export KEYTIMEOUT=1
 
+# Set key input timeout (default is 0.3 seconds)
+export ZVM_KEYTIMEOUT=0.3
+
 # Plugin initial status
-ZVM_INIT_DONE=false
+export ZVM_INIT_DONE=false
 
 # Insert mode could be `i` (insert) or `a` (append)
-ZVM_INSERT_MODE='i'
+export ZVM_INSERT_MODE='i'
+
+# The keys typed to invoke this widget, as a literal string
+export ZVM_KEYS=''
 
 # Default cursor styles
 ZVM_CURSOR_BLOCK='\e[2 q'
@@ -95,6 +101,87 @@ function zvm_define_widget() {
     func=$wrapper
   fi
   zle -N $widget $func
+}
+
+# Get the keys typed to invoke this widget, as a literal string
+function zvm_keys() {
+  echo ${ZVM_KEYS:-$KEYS}
+}
+
+# Find the widget on a specified bindkey
+function zvm_find_bindkey_widget() {
+  local result=$(bindkey -M "${1}" | grep "\"${2}\"")
+  echo $(echo "$result" | tr "\n" " ")
+}
+
+# Read keys for retrieving widget
+function zvm_readkeys() {
+  local keymap=$1
+  local keys=${2:-$(zvm_keys)}
+  local key=
+  local widget=
+  local result=
+  local pattern=
+  while :; do
+    # Escape keys (e.g ESC ^[ )
+    pattern="$keys.*"
+    pattern="${pattern/'^'/'\^'}"
+    pattern="${pattern/'['/'\['}"
+    # Find out widgets that match this key pattern
+    result=($(zvm_find_bindkey_widget $keymap "$pattern"))
+    # Exit key input if no any more widgets matched
+    if [[ ${#result} == 0 ]]; then
+      break
+    fi
+    # Wait for reading next key
+    key=
+    if [[ ${result[1]} == "\"$keys\"" ]]; then
+      read -t $ZVM_KEYTIMEOUT -k 1 key
+    else
+      read -k 1 key
+    fi
+    # Tranform the non-printed characters
+    key=$(echo "$key" | cat -v)
+    keys="${keys}${key}"
+    # Get current widget as final one when keytimeout
+    if [[ "$key" == '' ]]; then
+      widget=${result[2]}
+      break
+    fi
+  done
+  echo $keys $widget
+}
+
+# Add key bindings
+function zvm_bindkey() {
+  local keymap=$1
+  local keys=$2
+  local widget=$3
+  local result=($(zvm_find_bindkey_widget $keymap ${keys:0:1}))
+  local rawfunc=${result[2]}
+  local wrapper="zvm_${rawfunc}-wrapper"
+  # Check if we need to wrap the original widget
+  if [[ $rawfunc ]] && [[ "$rawfunc" != zvm_*-wrapper ]]; then
+    eval "$wrapper() { \
+      local result=(\$(zvm_readkeys $keymap ${key:0:1})); \
+      ZVM_KEYS=\${result[1]}; \
+      if [[ \${#ZVM_KEYS} == 1 ]]; then \
+        widget=$rawfunc;\
+      else \
+        widget=\${result[2]};
+      fi; \
+      if [[ \${#widget} != 0 ]]; then \
+        zle \$widget; \
+      fi; \
+      ZVM_KEYS=; \
+    }"
+    zle -N $wrapper
+    bindkey -M $keymap "${keys:0:1}" $wrapper
+  fi
+  # We should bind keys with a existing widget
+  if [[ $widget ]]; then
+    bindkey -M $keymap "${keys}" $widget
+  fi
 }
 
 # Change cursor with support for inside/outside tmux
@@ -240,7 +327,8 @@ function zvm_search_surround() {
 
 # Select surround and highlight it in visual mode
 function zvm_select_surround() {
-  local ret=($(zvm_search_surround ${KEYS:1:1}))
+  local keys=$(zvm_keys)
+  local ret=($(zvm_search_surround ${keys:1:1}))
   if [[ ${#ret[@]} == 0 ]]; then
     # Exit visual-mode
     zle visual-mode
@@ -248,7 +336,7 @@ function zvm_select_surround() {
   fi
   local bpos=${ret[1]}
   local epos=${ret[2]}
-  if [[ ${KEYS:0:1} == 'i' ]]; then
+  if [[ ${keys:0:1} == 'i' ]]; then
     ((bpos++))
   else
     ((epos++))
@@ -294,8 +382,9 @@ function zvm_select_surround() {
 
 # Change surround in vicmd or visual mode
 function zvm_change_surround() {
-  local action=${1:-${KEYS:1:1}}
-  local surround=${2:-${KEYS:2:1}}
+  local keys=$(zvm_keys)
+  local action=${1:-${keys:1:1}}
+  local surround=${2:-${keys:2:1}}
   local bpos=${3} epos=${4}
   if [[ $action == 'a' ]]; then
     if [[ $bpos == '' ]] && [[ $epos == '' ]]; then
@@ -337,7 +426,7 @@ function zvm_change_surround() {
 # Enter the vi insert mode
 function zvm_enter_insert_mode() {
   zle -K viins
-  if [[ $KEYS == 'i' ]]; then
+  if [[ $(zvm_keys) == 'i' ]]; then
     ZVM_INSERT_MODE='i'
   else
     CURSOR=$CURSOR+1
@@ -406,26 +495,26 @@ function zvm_init() {
   # All Key bindings
   # Emacs-like bindings
   # Normal editing
-  bindkey -M viins '^A' beginning-of-line
-  bindkey -M viins '^E' end-of-line
-  bindkey -M viins '^B' backward-char
-  bindkey -M viins '^F' forward-char
-  bindkey -M viins '^K' zvm_forward_kill_line
-  bindkey -M viins '^U' zvm_viins_undo
-  bindkey -M viins '^W' backward-kill-word
-  bindkey -M viins '^Y' yank
-  bindkey -M viins '^_' undo
+  zvm_bindkey viins '^A' beginning-of-line
+  zvm_bindkey viins '^E' end-of-line
+  zvm_bindkey viins '^B' backward-char
+  zvm_bindkey viins '^F' forward-char
+  zvm_bindkey viins '^K' zvm_forward_kill_line
+  zvm_bindkey viins '^U' zvm_viins_undo
+  zvm_bindkey viins '^W' backward-kill-word
+  zvm_bindkey viins '^Y' yank
+  zvm_bindkey viins '^_' undo
 
   # History search
-  bindkey -M viins '^R' history-incremental-search-backward
-  bindkey -M viins '^S' history-incremental-search-forward
-  bindkey -M viins '^P' up-line-or-history
-  bindkey -M viins '^N' down-line-or-history
+  zvm_bindkey viins '^R' history-incremental-search-backward
+  zvm_bindkey viins '^S' history-incremental-search-forward
+  zvm_bindkey viins '^P' up-line-or-history
+  zvm_bindkey viins '^N' down-line-or-history
 
   # Fix the cursor position when exiting insert mode
-  bindkey -M vicmd 'i'  zvm_enter_insert_mode
-  bindkey -M vicmd 'a'  zvm_enter_insert_mode
-  bindkey -M viins '^[' zvm_exit_insert_mode
+  zvm_bindkey vicmd 'i'  zvm_enter_insert_mode
+  zvm_bindkey vicmd 'a'  zvm_enter_insert_mode
+  zvm_bindkey viins '^[' zvm_exit_insert_mode
 
   # Surround text-object
   # Enable surround text-objects (quotes, brackets)
@@ -441,28 +530,25 @@ function zvm_init() {
   done
 
   # Surround key bindings
-  # Remove default key bindings of 's' in vicmd mode
-  bindkey -M vicmd -r 's'
-
   for s in $surrounds; do
     for c in {a,i}${s}; do
-      bindkey -M visual "$c" zvm_select_surround
+      zvm_bindkey visual "$c" zvm_select_surround
     done
     for c in s{d,r}${s}; do
-      bindkey -M vicmd "$c" zvm_change_surround
+      zvm_bindkey vicmd "$c" zvm_change_surround
     done
     for c in sa${s}; do
-      bindkey -M visual "$c" zvm_change_surround
-      bindkey -M vicmd "$c" zvm_change_surround
+      zvm_bindkey visual "$c" zvm_change_surround
+      zvm_bindkey vicmd "$c" zvm_change_surround
     done
   done
 
   # Moving around surround
-  bindkey -M vicmd '%' zvm_move_around_surround
+  zvm_bindkey vicmd "%" zvm_move_around_surround
 
   # Fix BACKSPACE was stuck in zsh
   # Since normally '^?' (backspace) is bound to vi-backward-delete-char
-  bindkey -v '^?' backward-delete-char
+  zvm_bindkey viins "^?" backward-delete-char
 
   # Enable vi keymap
   bindkey -v
