@@ -38,12 +38,15 @@
 #   ZVM_VI_REGION_HIGHLIGHT=red      # Color name
 #   ZVM_VI_REGION_HIGHLIGHT=#ff0000  # Hex value
 #
+# ZVM_KEYTIMEOUT:
+# the key input timeout for waiting for next key (default is 0.3 seconds)
+#
 
 # Plugin information
-declare -gr ZVM_NAME='zsh-vi-mode'
-declare -gr ZVM_DESCRIPTION='💻 A better and friendly vi(vim) mode plugin for ZSH.'
-declare -gr ZVM_REPOSITORY='https://github.com/jeffreytse/zsh-vi-mode'
-declare -gr ZVM_VERSION='0.3.0'
+typeset -gr ZVM_NAME='zsh-vi-mode'
+typeset -gr ZVM_DESCRIPTION='💻 A better and friendly vi(vim) mode plugin for ZSH.'
+typeset -gr ZVM_REPOSITORY='https://github.com/jeffreytse/zsh-vi-mode'
+typeset -gr ZVM_VERSION='0.3.0'
 
 # Reduce ESC delay
 # Set to 0.1 second delay between switching modes (default is 0.4 seconds)
@@ -558,12 +561,13 @@ function zvm_init() {
 function zvm_precmd_function() {
   # Init zsh vi mode  when starting new command line at first time
   if ! $ZVM_INIT_DONE; then
-    ZVM_INIT_DONE=true; zvm_init
+    ZVM_INIT_DONE=true
+    zvm_init
   fi
   # Set insert mode cursor when starting new command line
   zvm_set_insert_mode_cursor
 }
 
 # Init plugin starting new command line
-precmd_functions+=( zvm_precmd_function )
+precmd_functions+=(zvm_precmd_function)
 
