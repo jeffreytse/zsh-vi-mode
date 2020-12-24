@@ -130,6 +130,7 @@ function zvm_readkeys() {
     pattern="$keys.*"
     pattern="${pattern/'^'/'\^'}"
     pattern="${pattern/'['/'\['}"
+    pattern="${pattern/'\"'/'\\\"'}"
     # Find out widgets that match this key pattern
     result=($(zvm_find_bindkey_widget $keymap "$pattern"))
     # Exit key input if no any more widgets matched
