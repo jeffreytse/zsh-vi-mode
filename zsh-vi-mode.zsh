@@ -52,8 +52,8 @@ typeset -gr ZVM_VERSION='0.3.0'
 # Set to 0.1 second delay between switching modes (default is 0.4 seconds)
 export KEYTIMEOUT=1
 
-# Set key input timeout (default is 0.3 seconds)
-export ZVM_KEYTIMEOUT=0.3
+# Set key input timeout (default is 0.15 seconds)
+export ZVM_KEYTIMEOUT=0.15
 
 # Plugin initial status
 export ZVM_INIT_DONE=false
@@ -113,7 +113,9 @@ function zvm_keys() {
 
 # Find the widget on a specified bindkey
 function zvm_find_bindkey_widget() {
-  local result=$(bindkey -M "${1}" | grep "\"${2}\"")
+  local keymap=$1
+  local keys=$2
+  local result=$(bindkey -M ${keymap} | grep "^\"${keys}\"")
   echo $(echo "$result" | tr "\n" " ")
 }
 
@@ -126,11 +128,14 @@ function zvm_readkeys() {
   local result=
   local pattern=
   while :; do
-    # Escape keys (e.g ESC ^[ )
-    pattern="$keys.*"
-    pattern="${pattern/'^'/'\^'}"
-    pattern="${pattern/'['/'\['}"
-    pattern="${pattern/'\"'/'\\\"'}"
+    # Escape characters in pattern
+    # \ -> \\    It's a special character in regex
+    # [ -> \[    It's a special character in regex
+    # ^ -> \^    It's a head anchor in regex
+    pattern=$keys.*
+    pattern=${pattern//\\/\\\\}
+    pattern=${pattern//\[/\\\[}
+    pattern=${pattern//\^/\\\^}
     # Find out widgets that match this key pattern
     result=($(zvm_find_bindkey_widget $keymap "$pattern"))
     # Exit key input if no any more widgets matched
@@ -139,13 +144,20 @@ function zvm_readkeys() {
     fi
     # Wait for reading next key
     key=
-    if [[ ${result[1]} == "\"$keys\"" ]]; then
+    if [[ ${result[1]} == "\"${keys}\"" ]]; then
       read -t $ZVM_KEYTIMEOUT -k 1 key
     else
       read -k 1 key
     fi
     # Tranform the non-printed characters
     key=$(echo "$key" | cat -v)
+
+    # Escape keys
+    # " -> \" It's a special character in bash syntax
+    # ` -> \` It's a special character in bash syntax
+    key=${key//\"/\\\"}
+    key=${key//\`/\\\`}
+
     keys="${keys}${key}"
     # Get current widget as final one when keytimeout
     if [[ "$key" == '' ]]; then
@@ -153,6 +165,9 @@ function zvm_readkeys() {
       break
     fi
   done
+  # Remove escape slash character
+  keys=${keys//\\\"/\"}
+  keys=${keys//\\\`/\`}
   echo $keys $widget
 }
 
