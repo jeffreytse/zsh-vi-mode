@@ -116,6 +116,10 @@ function zvm_find_bindkey_widget() {
   local keymap=$1
   local keys=$2
   local result=$(bindkey -M ${keymap} | grep "^\"${keys}\"")
+  # Escape spaces in key bindings (space -> \s)
+  for s in "$(grep -oP '^".* .*"' <<< $result)"; do
+    result=${result//$s/${s// /\\s}}
+  done
   echo $(echo "$result" | tr "\n" " ")
 }
 
@@ -144,7 +148,7 @@ function zvm_readkeys() {
     fi
     # Wait for reading next key
     key=
-    if [[ ${result[1]} == "\"${keys}\"" ]]; then
+    if [[ "${result[1]}" == "\"${keys// /\\s}\"" ]]; then
       read -t $ZVM_KEYTIMEOUT -k 1 key
     else
       read -k 1 key
@@ -168,7 +172,7 @@ function zvm_readkeys() {
   # Remove escape slash character
   keys=${keys//\\\"/\"}
   keys=${keys//\\\`/\`}
-  echo $keys $widget
+  echo ${keys// /\\s} $widget
 }
 
 # Add key bindings
@@ -180,10 +184,10 @@ function zvm_bindkey() {
   local rawfunc=${result[2]}
   local wrapper="zvm_${rawfunc}-wrapper"
   # Check if we need to wrap the original widget
-  if [[ $rawfunc ]] && [[ "$rawfunc" != zvm_*-wrapper ]]; then
+  if [[ ! -z $rawfunc ]] && [[ "$rawfunc" != zvm_*-wrapper ]]; then
     eval "$wrapper() { \
       local result=(\$(zvm_readkeys $keymap ${key:0:1})); \
-      ZVM_KEYS=\${result[1]}; \
+      ZVM_KEYS=\${result[1]//\\\\s/ }; \
       if [[ \${#ZVM_KEYS} == 1 ]]; then \
         widget=$rawfunc;\
       else \
@@ -250,6 +254,17 @@ function zvm_forward_kill_line() {
 # Remove all characters of the line.
 function zvm_kill_line() {
   BUFFER=
+}
+
+function zvm_yank() {
+  local bpos= epos=
+  if (( MARK > CURSOR )) ; then
+    bpos=$CURSOR+1 epos=$MARK+1
+  else
+    bpos=$MARK epos=$CURSOR+1
+  fi
+  CUTBUFFER=${BUFFER:$bpos:$(($epos-$bpos))}
+  zle visual-mode
 }
 
 # Get the substr position in a string
@@ -367,16 +382,14 @@ function zvm_select_surround() {
   read -k 1 key
   # Prepare handle
   case $key in
-    d|c|y) CUTBUFFER=${BUFFER:$bpos:$(($epos-$bpos))};;
-  esac
-  case $key in
     d|c)
+      CUTBUFFER=${BUFFER:$bpos:$(($epos-$bpos))}
       BUFFER="${BUFFER:0:$bpos}${BUFFER:$epos}"
       CURSOR=$bpos
       ;;
     p)
       local cutbuffer=${BUFFER:$bpos:$(($epos-$bpos))}
-      BUFFER="${BUFFER:0:$bpos}${CUTBUFFER}${BUFFER:$epos}";
+      BUFFER="${BUFFER:0:$bpos}${CUTBUFFER}${BUFFER:$epos}"
       CUTBUFFER=$cutbuffer
       CURSOR=$bpos
       ;;
@@ -385,6 +398,18 @@ function zvm_select_surround() {
       read -k 1 surround
       zvm_change_surround $key $surround $bpos $epos
       zle visual-mode
+      ;;
+    y)
+      read -t $ZVM_KEYTIMEOUT -k 1 key
+      case "$key" in
+        '') CUTBUFFER=${BUFFER:$bpos:$(($epos-$bpos))};;
+        s)
+          local surround=
+          read -k 1 surround
+          zvm_change_surround y $surround $bpos $epos
+          zle visual-mode
+          ;;
+      esac
       ;;
     u) zle vi-down-case; zle visual-mode;;
     U) zle vi-up-case; zle visual-mode;;
@@ -401,10 +426,14 @@ function zvm_select_surround() {
 function zvm_change_surround() {
   local keys=$(zvm_keys)
   local action=${1:-${keys:0:1}}
-  local bpos=${3} epos=${4}
-  local is_appending=$([[ $action == 'S' ]] && echo 1)
+  local bpos=${3} epos=${4} spos=2
+  local is_appending=
+  case $action in
+    S) is_appending=$(echo 1); spos=1;;
+    y) is_appending=$(echo 1);;
+  esac
+  local surround=${2:-${keys:$spos:1}}
   if [[ $is_appending ]]; then
-    local surround=${2:-${keys:1:1}}
     if [[ $bpos == '' ]] && [[ $epos == '' ]]; then
       if (( MARK > CURSOR )) ; then
         bpos=$CURSOR+1 epos=$MARK+1
@@ -413,7 +442,6 @@ function zvm_change_surround() {
       fi
     fi
   else
-    local surround=${2:-${keys:2:1}}
     local ret=($(zvm_search_surround $surround))
     (( ${#ret[@]} )) || return 1
     bpos=${ret[1]}
@@ -425,7 +453,7 @@ function zvm_change_surround() {
   local key=
   case $action in
     c) read -k 1 key;;
-    S) key=$surround; zle visual-mode;;
+    S|y) key=$surround; zle visual-mode;;
   esac
   region_highlight=()
   # Check if canceling changing surround
@@ -502,6 +530,7 @@ function zvm_init() {
   zvm_define_widget zvm_move_around_surround
   zvm_define_widget zvm_enter_insert_mode
   zvm_define_widget zvm_exit_insert_mode
+  zvm_define_widget zvm_yank
 
   # Override standard widgets
   zvm_define_widget zle-keymap-select zvm_zle-keymap-select
@@ -534,6 +563,9 @@ function zvm_init() {
   zvm_bindkey vicmd 'a'  zvm_enter_insert_mode
   zvm_bindkey viins '^[' zvm_exit_insert_mode
 
+  # Other key bindings
+  zvm_bindkey visual 'y' zvm_yank
+
   # Surround text-object
   # Enable surround text-objects (quotes, brackets)
 
@@ -555,7 +587,7 @@ function zvm_init() {
     for c in {d,c}s${s}; do
       zvm_bindkey vicmd "$c" zvm_change_surround
     done
-    for c in S${s}; do
+    for c in {S,ys}${s}; do
       zvm_bindkey visual "$c" zvm_change_surround
       zvm_bindkey vicmd "$c" zvm_change_surround
     done
