@@ -144,7 +144,7 @@ function zvm_readkeys() {
     # Find out widgets that match this key pattern
     result=($(zvm_find_bindkey_widget $keymap "$pattern"))
     # Exit key input if no any more widgets matched
-    if [[ ${#result} == 0 ]]; then
+    if [[ -z $result ]]; then
       break
     fi
     # Wait for reading next key
@@ -165,7 +165,7 @@ function zvm_readkeys() {
 
     keys="${keys}${key}"
     # Get current widget as final one when keytimeout
-    if [[ "$key" == '' ]]; then
+    if [[ -z "$key" ]]; then
       widget=${result[2]}
       break
     fi
@@ -194,7 +194,7 @@ function zvm_bindkey() {
       else \
         widget=\${result[2]};
       fi; \
-      if [[ \${#widget} != 0 ]]; then \
+      if [[ ! -z \${widget} ]]; then \
         zle \$widget; \
       fi; \
       ZVM_KEYS=; \
@@ -210,7 +210,7 @@ function zvm_bindkey() {
 
 # Change cursor with support for inside/outside tmux
 function zvm_set_cursor() {
-    if [[ $TMUX == '' ]]; then
+    if [[ -z $TMUX ]]; then
       echo -ne $1
     else
       echo -ne "\ePtmux;\e\e$1\e\\"
@@ -306,7 +306,7 @@ function zvm_move_around_surround() {
     fi
     # Search the nearest surround
     local ret=($(zvm_search_surround "$s"))
-    if [[ ${#ret[@]} == 0 ]]; then
+    if [[ -z ${ret[@]} ]]; then
       continue
     fi
     bpos=${ret[1]}
@@ -435,7 +435,7 @@ function zvm_change_surround() {
   esac
   local surround=${2:-${keys:$spos:1}}
   if [[ $is_appending ]]; then
-    if [[ $bpos == '' ]] && [[ $epos == '' ]]; then
+    if [[ -z $bpos && -z $epos ]]; then
       if (( MARK > CURSOR )) ; then
         bpos=$CURSOR+1 epos=$MARK+1
       else
