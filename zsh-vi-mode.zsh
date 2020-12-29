@@ -547,6 +547,28 @@ function zvm_change_surround() {
   BUFFER="${head}${bchar}${body}${echar}${foot}"
 }
 
+# Delete surround object
+function zvm_delete_surround_object() {
+  local keys=$(zvm_keys)
+  local ret=($(zvm_search_surround ${keys:2:1}))
+  if [[ ${#ret[@]} == 0 ]]; then
+    # Exit visual-mode
+    zle visual-mode
+    return
+  fi
+  local bpos=${ret[1]}
+  local epos=${ret[2]}
+  if [[ ${keys:1:1} == 'i' ]]; then
+    ((bpos++))
+  else
+    ((epos++))
+  fi
+  MARK=$bpos; CURSOR=$((epos-1))
+  CUTBUFFER=${BUFFER:$bpos:$(($epos-$bpos))}
+  BUFFER="${BUFFER:0:$bpos}${BUFFER:$epos}"
+  CURSOR=$bpos
+}
+
 # Enter the vi insert mode
 function zvm_enter_insert_mode() {
   zle -K viins
@@ -607,6 +629,7 @@ function zvm_init() {
   zvm_define_widget zvm_select_surround
   zvm_define_widget zvm_change_surround
   zvm_define_widget zvm_move_around_surround
+  zvm_define_widget zvm_delete_surround_object
   zvm_define_widget zvm_enter_insert_mode
   zvm_define_widget zvm_exit_insert_mode
   zvm_define_widget zvm_yank
@@ -670,6 +693,9 @@ function zvm_init() {
     done
     for c in {d,c}s${s}; do
       zvm_bindkey vicmd "$c" zvm_change_surround
+    done
+    for c in d{i,a}${s}; do
+      zvm_bindkey vicmd "$c" zvm_delete_surround_object
     done
     for c in {S,ys}${s}; do
       zvm_bindkey visual "$c" zvm_change_surround
