@@ -52,8 +52,8 @@ typeset -gr ZVM_VERSION='0.3.0'
 # Set to 0.1 second delay between switching modes (default is 0.4 seconds)
 export KEYTIMEOUT=1
 
-# Set key input timeout (default is 0.15 seconds)
-export ZVM_KEYTIMEOUT=0.15
+# Set key input timeout (default is 0.3 seconds)
+export ZVM_KEYTIMEOUT=0.3
 
 # Plugin initial status
 export ZVM_INIT_DONE=false
@@ -105,6 +105,20 @@ function zvm_define_widget() {
     func=$wrapper
   fi
   zle -N $widget $func
+}
+
+# Default handler for unhandled key events
+function zvm_default_handler() {
+  local keys=$(zvm_keys)
+  case "$KEYMAP" in
+    vicmd)
+      case "$keys" in
+        y*) zvm_range_handler "$keys" true;;
+        c*) zvm_range_handler "$keys" true true; zle vi-insert;;
+        d*) zvm_range_handler "$keys" true true;;
+      esac
+      ;;
+  esac
 }
 
 # Get the keys typed to invoke this widget, as a literal string
@@ -194,7 +208,9 @@ function zvm_bindkey() {
       else \
         widget=\${result[2]};
       fi; \
-      if [[ ! -z \${widget} ]]; then \
+      if [[ -z \${widget} ]]; then \
+        zle zvm_default_handler; \
+      else \
         zle \$widget; \
       fi; \
       ZVM_KEYS=; \
@@ -257,15 +273,76 @@ function zvm_kill_line() {
   BUFFER=
 }
 
+# Yank characters of selection
 function zvm_yank() {
   local bpos= epos=
   if (( MARK > CURSOR )) ; then
-    bpos=$CURSOR+1 epos=$MARK+1
+    bpos=$((CURSOR+1)) epos=$((MARK+1))
   else
-    bpos=$MARK epos=$CURSOR+1
+    bpos=$MARK epos=$((CURSOR+1))
   fi
   CUTBUFFER=${BUFFER:$bpos:$(($epos-$bpos))}
   zle visual-mode
+}
+
+# Handle a range of characters
+function zvm_range_handler() {
+  local keys=${1}
+  local is_yank=${2:-false}
+  local is_delete=${3:-false}
+  local cursor=$CURSOR
+  MARK=$CURSOR
+  case "${keys:1}" in
+    '^') zle vi-first-non-blank;;
+    '$') zle vi-end-of-line;;
+    '0') zle vi-digit-or-beginning-of-line;;
+    ' ') zle vi-forward-char;;
+    'h') zle vi-backward-char;;
+    'j') zle down-line-or-history;;
+    'k') zle up-line-or-history;;
+    'l') zle vi-forward-char;;
+    'w') zle vi-forward-word;;
+    'e') zle vi-forward-word-end;;
+    'b') zle vi-backward-word; cursor=$CURSOR;;
+    'f') zle vi-find-next-char;;
+    'F') zle vi-find-prev-char; cursor=$CURSOR;;
+    't') zle vi-find-next-char-skip;;
+    'T') zle vi-find-prev-char-skip; cursor=$CURSOR;;
+    'iw')
+      zle vi-backward-word
+      MARK=$CURSOR
+      cursor=$CURSOR
+      zle vi-forward-word
+      ;;
+    'aw')
+      zle vi-forward-word
+      MARK=$((CURSOR - 1))
+      zle vi-backward-word
+      cursor=$CURSOR
+      ;;
+    *)
+      if [[ ${keys:0:1} == ${keys:1:1} ]]; then
+        case "${keys:0:1}" in
+          y) zle vi-yank-whole-line; is_yank=false;;
+          *) MARK=0; CURSOR=$#BUFFER;;
+        esac
+      fi
+      ;;
+  esac
+  local bpos= epos=
+  if (( MARK > CURSOR )) ; then
+    bpos=$CURSOR epos=$((MARK+1))
+  else
+    bpos=$MARK epos=$((CURSOR+1))
+  fi
+  if [[ $is_yank == true ]]; then
+    CUTBUFFER=${BUFFER:$bpos:$(($epos-$bpos))}
+  fi
+  if [[ $is_delete == true ]]; then
+    BUFFER="${BUFFER:0:$bpos}${BUFFER:$epos}"
+    CURSOR=$bpos
+  fi
+  CURSOR=$cursor
 }
 
 # Get the substr position in a string
@@ -522,6 +599,7 @@ function zvm_zle-line-init() {
 # Initialize vi-mode for widgets, keybindings, etc.
 function zvm_init() {
   # Create User-defined widgets
+  zvm_define_widget zvm_default_handler
   zvm_define_widget zvm_backward_kill_line
   zvm_define_widget zvm_forward_kill_line
   zvm_define_widget zvm_kill_line
@@ -567,6 +645,10 @@ function zvm_init() {
   # Other key bindings
   zvm_bindkey vicmd 'v' visual-mode
   zvm_bindkey visual 'y' zvm_yank
+
+  for c in {y,d,c}{i,a}w; do
+    zvm_bindkey vicmd "$c" zvm_default_handler
+  done
 
   # Surround text-object
   # Enable surround text-objects (quotes, brackets)
