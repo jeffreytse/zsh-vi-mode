@@ -97,9 +97,9 @@ function zvm_define_widget() {
   local widget=$1
   local func=$2 || $1
   local result=$(zle -l | grep "^${widget}")
-  local pattern='(?<=\().*(?=\))'
-  local rawfunc=$(perl -nle"print $& while m{$pattern}g" <<< "$result")
+  local rawfunc=$(grep -oE '\(.*\)$' <<< "$result")
   if [[ $rawfunc ]]; then
+    rawfunc=${rawfunc:1:-1}
     local wrapper="zvm_${widget}-wrapper"
     eval "$wrapper() { $rawfunc; $func; }"
     func=$wrapper
@@ -118,8 +118,7 @@ function zvm_find_bindkey_widget() {
   local keys=$2
   local result=$(bindkey -M ${keymap} | grep "^\"${keys}\"")
   # Escape spaces in key bindings (space -> \s)
-  local pattern='^".* .*"'
-  for s in "$(perl -nle"print $& while m{$pattern}g" <<< $result)"; do
+  for s in "$(grep -oE '^".* .*"' <<< "$result")"; do
     result=${result//$s/${s// /\\s}}
   done
   echo $(echo "$result" | tr "\n" " ")
