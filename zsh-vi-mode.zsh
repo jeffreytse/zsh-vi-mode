@@ -565,6 +565,7 @@ function zvm_init() {
   zvm_bindkey viins '^[' zvm_exit_insert_mode
 
   # Other key bindings
+  zvm_bindkey vicmd 'v' visual-mode
   zvm_bindkey visual 'y' zvm_yank
 
   # Surround text-object
