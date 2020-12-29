@@ -355,7 +355,7 @@ function zvm_search_surround() {
       fi
   fi
   if [[ $bpos == -1 ]] || [[ $epos == -1 ]]; then
-    return 1
+    return
   fi
   echo $bpos $epos $bchar $echar
 }
@@ -367,7 +367,7 @@ function zvm_select_surround() {
   if [[ ${#ret[@]} == 0 ]]; then
     # Exit visual-mode
     zle visual-mode
-    return 1
+    return
   fi
   local bpos=${ret[1]}
   local epos=${ret[2]}
@@ -444,7 +444,7 @@ function zvm_change_surround() {
     fi
   else
     local ret=($(zvm_search_surround $surround))
-    (( ${#ret[@]} )) || return 1
+    (( ${#ret[@]} )) || return
     bpos=${ret[1]}
     epos=${ret[2]}
     region_highlight+=("$bpos $(($bpos+1)) bg=$ZVM_VI_REGION_HIGHLIGHT")
