@@ -201,12 +201,12 @@ function zvm_bindkey() {
   # Check if we need to wrap the original widget
   if [[ ! -z $rawfunc ]] && [[ "$rawfunc" != zvm_*-wrapper ]]; then
     eval "$wrapper() { \
-      local result=(\$(zvm_readkeys $keymap ${key:0:1})); \
+      local result=(\$(zvm_readkeys $keymap '${keys:0:1}')); \
       ZVM_KEYS=\${result[1]//\\\\s/ }; \
       if [[ \${#ZVM_KEYS} == 1 ]]; then \
-        widget=$rawfunc;\
+        widget=$rawfunc; \
       else \
-        widget=\${result[2]};
+        widget=\${result[2]}; \
       fi; \
       if [[ -z \${widget} ]]; then \
         zle zvm_default_handler; \
