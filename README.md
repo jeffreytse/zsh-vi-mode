@@ -1,4 +1,5 @@
 # zsh-vi-mode
+[![Release Version](https://img.shields.io/github/v/release/jeffreytse/zsh-vi-mode?color=brightgreen)](https://github.com/jeffreytse/zsh-vi-mode/releases)
 [![License: MIT](https://img.shields.io/badge/License-MIT-brightgreen.svg)](https://opensource.org/licenses/MIT)
 [![Donate (Liberapay)](http://img.shields.io/liberapay/goal/jeffreytse.svg?logo=liberapay)](https://liberapay.com/jeffreytse)
 [![Donate (Patreon)](https://img.shields.io/badge/support-patreon-F96854.svg?style=flat-square)](https://patreon.com/jeffreytse)
