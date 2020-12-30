@@ -64,6 +64,9 @@ export ZVM_INSERT_MODE='i'
 # The keys typed to invoke this widget, as a literal string
 export ZVM_KEYS=''
 
+# Default alternative character for escape space character
+ZVM_ESCAPE_SPACE='\s'
+
 # Default cursor styles
 ZVM_CURSOR_BLOCK='\e[2 q'
 ZVM_CURSOR_BEAM='\e[6 q'
@@ -123,7 +126,11 @@ function zvm_default_handler() {
 
 # Get the keys typed to invoke this widget, as a literal string
 function zvm_keys() {
-  echo ${ZVM_KEYS:-$KEYS}
+  local keys=${ZVM_KEYS:-$KEYS}
+  if [[ $KEYMAP == visual ]]; then
+    keys="v${keys}"
+  fi
+  echo ${keys// /$ZVM_ESCAPE_SPACE}
 }
 
 # Find the widget on a specified bindkey
@@ -131,9 +138,9 @@ function zvm_find_bindkey_widget() {
   local keymap=$1
   local keys=$2
   local result=$(bindkey -M ${keymap} | grep "^\"${keys}\"")
-  # Escape spaces in key bindings (space -> \s)
+  # Escape spaces in key bindings (space -> $ZVM_ESCAPE_SPACE)
   for s in "$(grep -oE '^".* .*"' <<< "$result")"; do
-    result=${result//$s/${s// /\\s}}
+    result=${result//$s/${s// /$ZVM_ESCAPE_SPACE}}
   done
   echo $(echo "$result" | tr "\n" " ")
 }
@@ -151,7 +158,7 @@ function zvm_readkeys() {
     # \ -> \\    It's a special character in regex
     # [ -> \[    It's a special character in regex
     # ^ -> \^    It's a head anchor in regex
-    pattern=$keys.*
+    pattern=${keys//$ZVM_ESCAPE_SPACE/ }.*
     pattern=${pattern//\\/\\\\}
     pattern=${pattern//\[/\\\[}
     pattern=${pattern//\^/\\\^}
@@ -163,13 +170,14 @@ function zvm_readkeys() {
     fi
     # Wait for reading next key
     key=
-    if [[ "${result[1]}" == "\"${keys// /\\s}\"" ]]; then
+    if [[ "${result[1]}" == "\"${keys}\"" ]]; then
       read -t $ZVM_KEYTIMEOUT -k 1 key
     else
       read -k 1 key
     fi
     # Tranform the non-printed characters
-    key=$(echo "$key" | cat -v)
+    key=$(echo "${key}" | cat -v)
+    key=${key// /$ZVM_ESCAPE_SPACE}
 
     # Escape keys
     # " -> \" It's a special character in bash syntax
@@ -187,7 +195,7 @@ function zvm_readkeys() {
   # Remove escape slash character
   keys=${keys//\\\"/\"}
   keys=${keys//\\\`/\`}
-  echo ${keys// /\\s} $widget
+  echo ${keys} $widget
 }
 
 # Add key bindings
@@ -202,7 +210,7 @@ function zvm_bindkey() {
   if [[ ! -z $rawfunc ]] && [[ "$rawfunc" != zvm_*-wrapper ]]; then
     eval "$wrapper() { \
       local result=(\$(zvm_readkeys $keymap '${keys:0:1}')); \
-      ZVM_KEYS=\${result[1]//\\\\s/ }; \
+      ZVM_KEYS=\${result[1]//${ZVM_ESCAPE_SPACE//\\/\\\\}/ }; \
       if [[ \${#ZVM_KEYS} == 1 ]]; then \
         widget=$rawfunc; \
       else \
@@ -364,6 +372,20 @@ function zvm_substr_pos() {
   echo $pos
 }
 
+# Parse surround from keys
+function zvm_parse_surround_keys() {
+  local keys=${1:-${$(zvm_keys)//$ZVM_ESCAPE_SPACE/ }}
+  local action=
+  local surround=
+  case "${keys}" in
+    S*) action=S; surround=${keys:1:1};;
+    s[adr]*) action=${keys:1:1}; surround=${keys:2:1};;
+    [acdy]s*) action=${keys:0:1}; surround=${keys:2:1};;
+    [dv][ia]*) action=${keys:0:2}; surround=${keys:2:1};;
+  esac
+  echo $action ${surround// /$ZVM_ESCAPE_SPACE}
+}
+
 # Move around code structure (e.g. (..), {..})
 function zvm_move_around_surround() {
   local slen=
@@ -400,8 +422,8 @@ function zvm_move_around_surround() {
 
 # Match the surround pair from the part
 function zvm_match_surround() {
-  local bchar=$1
-  local echar=$1
+  local bchar=${1// /$ZVM_ESCAPE_SPACE}
+  local echar=$bchar
   case $bchar in
     '(') echar=')';;
     '[') echar=']';;
@@ -418,8 +440,8 @@ function zvm_match_surround() {
 # Search surround from the string
 function zvm_search_surround() {
   local ret=($(zvm_match_surround "$1"))
-  local bchar=${ret[1]:- }
-  local echar=${ret[2]:- }
+  local bchar=${${ret[1]//$ZVM_ESCAPE_SPACE/ }:- }
+  local echar=${${ret[2]//$ZVM_ESCAPE_SPACE/ }:- }
   local bpos=$(zvm_substr_pos $BUFFER $bchar $CURSOR false)
   local epos=$(zvm_substr_pos $BUFFER $echar $CURSOR true)
   if [[ $bpos == $epos ]]; then
@@ -439,16 +461,20 @@ function zvm_search_surround() {
 
 # Select surround and highlight it in visual mode
 function zvm_select_surround() {
-  local keys=$(zvm_keys)
-  local ret=($(zvm_search_surround ${keys:1:1}))
+  zle -K visual
+  zle visual-mode
+  local ret=($(zvm_parse_surround_keys))
+  local action=${ret[1]}
+  local surround=${ret[2]//$ZVM_ESCAPE_SPACE/ }
+  ret=($(zvm_search_surround ${surround}))
   if [[ ${#ret[@]} == 0 ]]; then
     # Exit visual-mode
-    zle visual-mode
+    zle -K vicmd
     return
   fi
   local bpos=${ret[1]}
   local epos=${ret[2]}
-  if [[ ${keys:0:1} == 'i' ]]; then
+  if [[ ${action:1:1} == 'i' ]]; then
     ((bpos++))
   else
     ((epos++))
@@ -472,45 +498,40 @@ function zvm_select_surround() {
       CURSOR=$bpos
       ;;
     S)
-      local surround=
       read -k 1 surround
       zvm_change_surround $key $surround $bpos $epos
-      zle visual-mode
       ;;
     y)
       read -t $ZVM_KEYTIMEOUT -k 1 key
       case "$key" in
         '') CUTBUFFER=${BUFFER:$bpos:$(($epos-$bpos))};;
         s)
-          local surround=
           read -k 1 surround
           zvm_change_surround y $surround $bpos $epos
-          zle visual-mode
           ;;
       esac
       ;;
-    u) zle vi-down-case; zle visual-mode;;
-    U) zle vi-up-case; zle visual-mode;;
+    u) zle vi-down-case;;
+    U) zle vi-up-case;;
   esac
   # Post handle
-  zle visual-mode
   region_highlight=()
   case $key in
     c) zle vi-insert;;
+    *) zle -K vicmd;;
   esac
 }
 
 # Change surround in vicmd or visual mode
 function zvm_change_surround() {
-  local keys=$(zvm_keys)
-  local action=${1:-${keys:0:1}}
-  local bpos=${3} epos=${4} spos=2
+  local ret=($(zvm_parse_surround_keys))
+  local action=${1:-${ret[1]}}
+  local surround=${2:-${ret[2]//$ZVM_ESCAPE_SPACE/ }}
+  local bpos=${3} epos=${4}
   local is_appending=
   case $action in
-    S) is_appending=$(echo 1); spos=1;;
-    y) is_appending=$(echo 1);;
+    S|y) is_appending=1;;
   esac
-  local surround=${2:-${keys:$spos:1}}
   if [[ $is_appending ]]; then
     if [[ -z $bpos && -z $epos ]]; then
       if (( MARK > CURSOR )) ; then
@@ -520,7 +541,7 @@ function zvm_change_surround() {
       fi
     fi
   else
-    local ret=($(zvm_search_surround $surround))
+    ret=($(zvm_search_surround "$surround"))
     (( ${#ret[@]} )) || return
     bpos=${ret[1]}
     epos=${ret[2]}
@@ -531,15 +552,15 @@ function zvm_change_surround() {
   local key=
   case $action in
     c) read -k 1 key;;
-    S|y) key=$surround; zle visual-mode;;
+    S|y) key=$surround; [[ -z $@ ]] && zle visual-mode;;
   esac
   region_highlight=()
   # Check if canceling changing surround
   [[ $key == '' ]] && return
   # Start changing surround
-  local ret=($(zvm_match_surround $key))
-  local bchar=${ret[1]:-$key}
-  local echar=${ret[2]:-$key}
+  ret=($(zvm_match_surround "$key"))
+  local bchar=${${ret[1]//$ZVM_ESCAPE_SPACE/ }:-$key}
+  local echar=${${ret[2]//$ZVM_ESCAPE_SPACE/ }:-$key}
   local value=$([[ $is_appending ]] && echo 0 || echo 1 )
   local head=${BUFFER:0:$bpos}
   local body=${BUFFER:$((bpos+value)):$((epos-(bpos+value)))}
@@ -549,8 +570,10 @@ function zvm_change_surround() {
 
 # Delete surround object
 function zvm_delete_surround_object() {
-  local keys=$(zvm_keys)
-  local ret=($(zvm_search_surround ${keys:2:1}))
+  local ret=($(zvm_parse_surround_keys))
+  local action=${ret[1]}
+  local surround=${ret[2]//$ZVM_ESCAPE_SPACE/ }
+  ret=($(zvm_search_surround ${surround}))
   if [[ ${#ret[@]} == 0 ]]; then
     # Exit visual-mode
     zle visual-mode
@@ -558,7 +581,7 @@ function zvm_delete_surround_object() {
   fi
   local bpos=${ret[1]}
   local epos=${ret[2]}
-  if [[ ${keys:1:1} == 'i' ]]; then
+  if [[ ${action:1:1} == 'i' ]]; then
     ((bpos++))
   else
     ((epos++))
@@ -694,12 +717,11 @@ function zvm_init() {
     for c in {d,c}s${s}; do
       zvm_bindkey vicmd "$c" zvm_change_surround
     done
-    for c in d{i,a}${s}; do
-      zvm_bindkey vicmd "$c" zvm_delete_surround_object
-    done
     for c in {S,ys}${s}; do
       zvm_bindkey visual "$c" zvm_change_surround
-      zvm_bindkey vicmd "$c" zvm_change_surround
+    done
+    for c in d{i,a}${s}; do
+      zvm_bindkey vicmd "$c" zvm_delete_surround_object
     done
   done
 
