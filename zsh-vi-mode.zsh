@@ -61,6 +61,11 @@
 # 1. Add surrounds for text object
 #   vi" -> S[ or sa[ => "object" -> "[object]"
 #
+# 2. Delete/Yank/Change text object
+#   di( or vi( -> d
+#   ca( or va( -> c
+#   yi( or vi( -> y
+#
 # ZVM_KEYTIMEOUT:
 # the key input timeout for waiting for next key (default is 0.3 seconds)
 #
@@ -404,7 +409,7 @@ function zvm_parse_surround_keys() {
     S*) action=S; surround=${keys:1:1};;
     s[adr]*) action=${keys:1:1}; surround=${keys:2:1};;
     [acdy]s*) action=${keys:0:1}; surround=${keys:2:1};;
-    [dv][ia]*) action=${keys:0:2}; surround=${keys:2:1};;
+    [cdvy][ia]*) action=${keys:0:2}; surround=${keys:2:1};;
   esac
   echo $action ${surround// /$ZVM_ESCAPE_SPACE}
 }
@@ -600,12 +605,12 @@ function zvm_change_surround() {
   BUFFER="${head}${bchar}${body}${echar}${foot}"
 }
 
-# Delete surround object
-function zvm_delete_surround_object() {
+# Change surround text object
+function zvm_change_surround_text_object() {
   local ret=($(zvm_parse_surround_keys))
   local action=${ret[1]}
   local surround=${ret[2]//$ZVM_ESCAPE_SPACE/ }
-  ret=($(zvm_search_surround ${surround}))
+  ret=($(zvm_search_surround "${surround}"))
   if [[ ${#ret[@]} == 0 ]]; then
     # Exit visual-mode
     zle visual-mode
@@ -618,10 +623,18 @@ function zvm_delete_surround_object() {
   else
     ((epos++))
   fi
-  MARK=$bpos; CURSOR=$((epos-1))
   CUTBUFFER=${BUFFER:$bpos:$(($epos-$bpos))}
-  BUFFER="${BUFFER:0:$bpos}${BUFFER:$epos}"
-  CURSOR=$bpos
+  case ${action:0:1} in
+    c)
+      BUFFER="${BUFFER:0:$bpos}${BUFFER:$epos}"
+      CURSOR=$bpos
+      zle vi-insert
+      ;;
+    d)
+      BUFFER="${BUFFER:0:$bpos}${BUFFER:$epos}"
+      CURSOR=$bpos
+      ;;
+  esac
 }
 
 # Enter the vi insert mode
@@ -684,7 +697,7 @@ function zvm_init() {
   zvm_define_widget zvm_select_surround
   zvm_define_widget zvm_change_surround
   zvm_define_widget zvm_move_around_surround
-  zvm_define_widget zvm_delete_surround_object
+  zvm_define_widget zvm_change_surround_text_object
   zvm_define_widget zvm_enter_insert_mode
   zvm_define_widget zvm_exit_insert_mode
   zvm_define_widget zvm_yank
@@ -747,7 +760,7 @@ function zvm_init() {
       zvm_bindkey visual "$c" zvm_select_surround
     done
     for c in {c,d,y}{a,i}${s}; do
-      zvm_bindkey vicmd "$c" zvm_delete_surround_object
+      zvm_bindkey vicmd "$c" zvm_change_surround_text_object
     done
     if [[ $ZVM_VI_SURROUND_BINDKEY == 's-prefix' ]]; then
       for c in s{d,r}${s}; do
