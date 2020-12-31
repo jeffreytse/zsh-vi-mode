@@ -1,4 +1,4 @@
-# zsh-vi-mode.zsh -- better vi mode for Zsh
+# zsh-vi-mode.zsh -- A better and friendly vi(vim) mode for Zsh
 # Copyright © 2020 Jeffrey Tse
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -18,7 +18,7 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-
+#
 # All Settings
 # Set these variables before sourcing this file.
 #
@@ -38,7 +38,7 @@
 #   ZVM_VI_REGION_HIGHLIGHT=red      # Color name
 #   ZVM_VI_REGION_HIGHLIGHT=#ff0000  # Hex value
 #
-# ZVM_VI_SURROUND_BINDKEY_MODE
+# ZVM_VI_SURROUND_BINDKEY
 # the key binding mode for surround operating (default is 'classic')
 #
 # 1. 'classic' mode (verb->s->surround):
@@ -779,7 +779,7 @@ function zvm_init() {
     fi
   done
 
-  # Moving around surround
+  # Moving around surrounds
   zvm_bindkey vicmd "%" zvm_move_around_surround
 
   # Fix BACKSPACE was stuck in zsh
@@ -801,6 +801,6 @@ function zvm_precmd_function() {
   zvm_set_insert_mode_cursor
 }
 
-# Init plugin starting new command line
+# Initialize the plugin when starting new command line
 precmd_functions+=(zvm_precmd_function)
 
