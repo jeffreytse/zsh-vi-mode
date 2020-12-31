@@ -38,6 +38,29 @@
 #   ZVM_VI_REGION_HIGHLIGHT=red      # Color name
 #   ZVM_VI_REGION_HIGHLIGHT=#ff0000  # Hex value
 #
+# ZVM_VI_SURROUND_BINDKEY_MODE
+# the key binding mode for surround operating (default is 'classic')
+#
+# 1. 'classic' mode (verb->s->surround):
+#   S"    Add " for visual selection
+#   ys"   Add " for visual selection
+#   cs"'  Change " to '
+#   ds"   Delete "
+#
+# 2. 's-prefix' mode (s->verb->surround):
+#   sa"   Add " for visual selection
+#   sd"   Delete "
+#   sr"'  Change " to '
+#
+# How to select surround text object?
+#   vi"   Select the text object inside the quotes
+#   va(   Select the text object including the brackets
+#
+# Then you can do any operation for the selection:
+#
+# 1. Add surrounds for text object
+#   vi" -> S[ or sa[ => "object" -> "[object]"
+#
 # ZVM_KEYTIMEOUT:
 # the key input timeout for waiting for next key (default is 0.3 seconds)
 #
@@ -48,7 +71,7 @@ typeset -gr ZVM_DESCRIPTION='💻 A better and friendly vi(vim) mode plugin for 
 typeset -gr ZVM_REPOSITORY='https://github.com/jeffreytse/zsh-vi-mode'
 typeset -gr ZVM_VERSION='0.3.0'
 
-# Reduce ESC delay
+# Reduce ESC delay (zle)
 # Set to 0.1 second delay between switching modes (default is 0.4 seconds)
 export KEYTIMEOUT=1
 
@@ -86,7 +109,7 @@ fi
 
 ZVM_VI_INSERT_MODE_LEGACY_UNDO=${ZVM_VI_INSERT_MODE_LEGACY_UNDO:-false}
 ZVM_VI_REGION_HIGHLIGHT=${ZVM_VI_REGION_HIGHLIGHT:-'#cc0000'}
-
+ZVM_VI_SURROUND_BINDKEY=${ZVM_VI_SURROUND_BINDKEY:-classic}
 
 # Display version information
 function zvm_version() {
@@ -511,6 +534,15 @@ function zvm_select_surround() {
           ;;
       esac
       ;;
+    s)
+      read -k 1 key
+      case "$key" in
+        a)
+          read -k 1 surround
+          zvm_change_surround y $surround $bpos $epos
+          ;;
+      esac
+      ;;
     u) zle vi-down-case;;
     U) zle vi-up-case;;
   esac
@@ -530,7 +562,7 @@ function zvm_change_surround() {
   local bpos=${3} epos=${4}
   local is_appending=
   case $action in
-    S|y) is_appending=1;;
+    S|y|a) is_appending=1;;
   esac
   if [[ $is_appending ]]; then
     if [[ -z $bpos && -z $epos ]]; then
@@ -551,8 +583,8 @@ function zvm_change_surround() {
   fi
   local key=
   case $action in
-    c) read -k 1 key;;
-    S|y) key=$surround; [[ -z $@ ]] && zle visual-mode;;
+    c|r) read -k 1 key;;
+    S|y|a) key=$surround; [[ -z $@ ]] && zle visual-mode;;
   esac
   region_highlight=()
   # Check if canceling changing surround
@@ -714,15 +746,24 @@ function zvm_init() {
     for c in {a,i}${s}; do
       zvm_bindkey visual "$c" zvm_select_surround
     done
-    for c in {d,c}s${s}; do
-      zvm_bindkey vicmd "$c" zvm_change_surround
-    done
-    for c in {S,ys}${s}; do
-      zvm_bindkey visual "$c" zvm_change_surround
-    done
-    for c in d{i,a}${s}; do
+    for c in {c,d,y}{a,i}${s}; do
       zvm_bindkey vicmd "$c" zvm_delete_surround_object
     done
+    if [[ $ZVM_VI_SURROUND_BINDKEY == 's-prefix' ]]; then
+      for c in s{d,r}${s}; do
+        zvm_bindkey vicmd "$c" zvm_change_surround
+      done
+      for c in sa${s}; do
+        zvm_bindkey visual "$c" zvm_change_surround
+      done
+    else
+      for c in {d,c}s${s}; do
+        zvm_bindkey vicmd "$c" zvm_change_surround
+      done
+      for c in {S,ys}${s}; do
+        zvm_bindkey visual "$c" zvm_change_surround
+      done
+    fi
   done
 
   # Moving around surround
