@@ -1,14 +1,59 @@
-# zsh-vi-mode
-[![Release Version](https://img.shields.io/github/v/release/jeffreytse/zsh-vi-mode?color=brightgreen)](https://github.com/jeffreytse/zsh-vi-mode/releases)
-[![License: MIT](https://img.shields.io/badge/License-MIT-brightgreen.svg)](https://opensource.org/licenses/MIT)
-[![Donate (Liberapay)](http://img.shields.io/liberapay/goal/jeffreytse.svg?logo=liberapay)](https://liberapay.com/jeffreytse)
-[![Donate (Patreon)](https://img.shields.io/badge/support-patreon-F96854.svg?style=flat-square)](https://patreon.com/jeffreytse)
-<a href="https://ko-fi.com/jeffreytse">
-  <img height="20" src="https://www.ko-fi.com/img/githubbutton_sm.svg"
-    alt="Donate (Ko-fi)" />
-</a>
+<div align="center">
+  <a href="https://github.com/jeffreytse/zsh-vi-mode">
+    <img alt="vi-mode →~ zsh" src="https://user-images.githubusercontent.com/9413601/103399068-46bfcb80-4b7a-11eb-8741-86cff3d85a69.png" width="600">
+  </a>
+  <div> 💻 A better and friendly vi(vim) mode plugin for ZSH.  </div>
 
-💻 A better and friendly vi(vim) mode plugin for ZSH.
+  <br> <h1>⚒️  Zsh Vi Mode ⚒️</h1> <br>
+
+</div>
+
+
+
+<h4 align="center">
+  <a href="https://www.zsh.org/" target="_blank"><code>ZSH</code></a> plugin for Agnosticism.
+</h4>
+
+<p align="center">
+
+  <a href="https://github.com/jeffreytse/zsh-vi-mode/releases">
+    <img src="https://img.shields.io/github/v/release/jeffreytse/zsh-vi-mode?color=brightgreen"
+      alt="Release Version" />
+  </a>
+
+  <a href="https://opensource.org/licenses/MIT">
+    <img src="https://img.shields.io/badge/License-MIT-brightgreen.svg"
+      alt="License: MIT" />
+  </a>
+
+  <a href="">
+    <img src=""
+      alt="" />
+  </a>
+
+  <a href="https://liberapay.com/jeffreytse">
+    <img src="http://img.shields.io/liberapay/goal/jeffreytse.svg?logo=liberapay"
+      alt="Donate (Liberapay)" />
+  </a>
+
+  <a href="https://patreon.com/jeffreytse">
+    <img src="https://img.shields.io/badge/support-patreon-F96854.svg?style=flat-square"
+      alt="Donate (Patreon)" />
+  </a>
+
+  <a href="https://ko-fi.com/jeffreytse">
+    <img height="20" src="https://www.ko-fi.com/img/githubbutton_sm.svg"
+      alt="Donate (Ko-fi)" />
+  </a>
+
+</p>
+
+<div align="center">
+  <sub>Built with ❤︎ by
+  <a href="https://jeffreytse.net">jeffreytse</a> and
+  <a href="https://github.com/jeffreytse/zsh-vi-mode/graphs/contributors">contributors </a>
+</div>
+<br>
 
 <img alt="Zsh Vi-mode Demo" src="https://user-images.githubusercontent.com/9413601/101981242-61530300-3ca6-11eb-8c7a-c0f4c69562bb.gif" />
 
@@ -72,7 +117,7 @@ git clone https://github.com/jeffreytse/zsh-vi-mode.git $HOME/.zsh-vi-mode
 Then source it in your `.zshrc` (or `.bashrc`)
 
 ```shell
-source $HOME/.zsh-vi/zsh-vi-mode.plugin.zsh
+source $HOME/.zsh-vi-mode/zsh-vi-mode.plugin.zsh
 ```
 
 ## Usages
