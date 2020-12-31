@@ -60,12 +60,14 @@
 
 ## Features
 
+- [x] Lower delay and better response (Mode switching, widget calling).
+- [x] Mode indication with different cursor styles.
 - [x] Cursor movement (Navigation).
 - [x] Insert & Replace (Insert mode).
 - [x] Text Objects.
 - [x] Searching text.
 - [x] Undo, Redo, Cut, Copy, Paste, and Delete.
-- [x] Surrounds (Add, Replace, Delete, and Move Around).
+- [x] Better surrounds functionality (Add, Replace, Delete, and Move Around).
 - [ ] Switch keywords (Increase/Decrease Number, Boolean, etc. In progress).
 
 ## Installation
@@ -122,7 +124,8 @@ source $HOME/.zsh-vi-mode/zsh-vi-mode.plugin.zsh
 
 ## Usages
 
-Use `ESC` or `CTRL-[` to enter `Normal mode`.
+Use `ESC` or `CTRL-[` to enter `Normal mode` (Each command line starting with
+`Insert mode` by default).
 
 
 History
@@ -137,14 +140,8 @@ History
 Mode indicators
 ---------------
 
-*Normal mode* is indicated with red `<<<` mark at the right prompt, when it
-wasn't defined by theme.
-
-
-Vim edition
------------
-
-- `v`   : Edit current command line in Vim
+*Normal mode* is indicated with block style cursor, and *insert mode* with beam
+style cursor by default.
 
 
 Movement
@@ -177,10 +174,49 @@ Insertion
 - `o`   : Insert new command line below the current one
 - `O`   : Insert new command line above the current one
 
+Surround
+--------
+
+There are 2 kinds of keybinding mode for surround operating, default is
+`classic` mode, you can choose the mode by setting `ZVM_VI_SURROUND_BINDKEY`
+variable.
+
+1. `classic` mode (verb->s->surround)
+
+- `S"`    : Add `"` for visual selection
+- `ys`    : Add `"` for visual selection
+- `cs"'`  : Change `"` to `'`
+- `ds"`   : Delete `"`
+
+ 2. `s-prefix` mode (s->verb->surround)
+- `sa"`   : Add `"` for visual selection
+- `sd"`   : Delete `"`
+- `sr"'`  : Change `"` to `'`
+
+#### How to select surround text object?
+
+- `vi"`   : Select the text object inside the quotes
+- `va(`   : Select the text object including the brackets
+
+Then you can do any operation for the selection:
+
+1. Add surrounds for text object
+
+- `vi"` -> `S[` or `sa[` => `"object"` -> `"[object]"`
+
+ 2. Delete/Yank/Change text object
+
+-   `di(` or `vi(` -> `d`
+-   `ca(` or `va(` -> `c`
+-   `yi(` or `vi(` -> `y`
+
+
 ## Credits
 
 - [Zsh](https://www.zsh.org/) - A powerful shell that operates as both an interactive shell and as a scripting language interpreter.
 - [Oh-My-Zsh](https://github.com/ohmyzsh/ohmyzsh) - A delightful, open source, community-driven framework for managing your ZSH configuration.
+- [vim-surround](https://github.com/tpope/vim-surround) - A vim plugin that quoting/parenthesizing made simple.
+- [vim-sandwich](https://github.com/machakann/vim-sandwich) - A set of operator and textobject plugins to add/delete/replace surroundings of a sandwiched textobject.
 
 ## Contributing
 
