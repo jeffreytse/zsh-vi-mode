@@ -552,7 +552,7 @@ function zvm_select_surround() {
     U) zle vi-up-case;;
   esac
   # Post handle
-  region_highlight=()
+  region_highlight=("${region_highlight[@]:0:-1}")
   case $key in
     c) zle vi-insert;;
     *) zle -K vicmd;;
@@ -591,7 +591,7 @@ function zvm_change_surround() {
     c|r) read -k 1 key;;
     S|y|a) key=$surround; [[ -z $@ ]] && zle visual-mode;;
   esac
-  region_highlight=()
+  region_highlight=("${region_highlight[@]:0:-2}")
   # Check if canceling changing surround
   [[ $key == '' ]] && return
   # Start changing surround
