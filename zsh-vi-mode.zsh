@@ -353,18 +353,8 @@ function zvm_range_handler() {
     'F') zle vi-find-prev-char; cursor=$CURSOR;;
     't') zle vi-find-next-char-skip;;
     'T') zle vi-find-prev-char-skip; cursor=$CURSOR;;
-    'iw')
-      zle vi-backward-word
-      MARK=$CURSOR
-      cursor=$CURSOR
-      zle vi-forward-word
-      ;;
-    'aw')
-      zle vi-forward-word
-      MARK=$((CURSOR - 1))
-      zle vi-backward-word
-      cursor=$CURSOR
-      ;;
+    'iw') zle select-in-word; cursor=$MARK;;
+    'aw') zle select-a-word; cursor=$MARK;;
     *)
       if [[ ${keys:0:1} == ${keys:1:1} ]]; then
         case "${keys:0:1}" in
