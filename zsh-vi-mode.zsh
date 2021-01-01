@@ -589,7 +589,9 @@ function zvm_change_surround() {
     c|r) read -k 1 key;;
     S|y|a) key=$surround; [[ -z $@ ]] && zle visual-mode;;
   esac
-  region_highlight=("${region_highlight[@]:0:-2}")
+  if [[ -z $is_appending ]]; then
+    region_highlight=("${region_highlight[@]:0:-2}")
+  fi
   # Check if canceling changing surround
   [[ $key == '' ]] && return
   # Start changing surround
