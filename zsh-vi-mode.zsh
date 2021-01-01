@@ -145,8 +145,8 @@ function zvm_default_handler() {
     vicmd)
       case "$keys" in
         y*) zvm_range_handler "$keys" true;;
-        c*) zvm_range_handler "$keys" true true; zle vi-insert;;
-        d*) zvm_range_handler "$keys" true true;;
+        c*) zvm_range_handler "$keys" true true; zvm_select_vi_mode 'viins';;
+        d*) zvm_range_handler "$keys" true true; zvm_select_vi_mode 'viins';;
       esac
       ;;
   esac
@@ -248,6 +248,9 @@ function zvm_bindkey() {
         zle zvm_default_handler; \
       else \
         zle \$widget; \
+        case \${ZVM_KEYS} in \
+          c|d|s|y) zle reset-prompt;; \
+        esac \
       fi; \
       ZVM_KEYS=; \
     }"
@@ -309,8 +312,14 @@ function zvm_kill_line() {
   BUFFER=
 }
 
+# Substitute characters of selection
+function zvm_vi_substitue() {
+  zle vi-substitute
+  zvm_select_vi_mode 'viins'
+}
+
 # Yank characters of selection
-function zvm_yank() {
+function zvm_vi_yank() {
   local bpos= epos=
   if (( MARK > CURSOR )) ; then
     bpos=$((CURSOR+1)) epos=$((MARK+1))
@@ -587,7 +596,11 @@ function zvm_change_surround() {
   local key=
   case $action in
     c|r) read -k 1 key;;
-    S|y|a) key=$surround; [[ -z $@ ]] && zle visual-mode;;
+    S|y|a)
+      key=$surround
+      [[ -z $@ ]] && zle visual-mode
+      zvm_select_vi_mode 'vicmd'
+      ;;
   esac
   if [[ -z $is_appending ]]; then
     region_highlight=("${region_highlight[@]:0:-2}")
@@ -634,6 +647,18 @@ function zvm_change_surround_text_object() {
       CURSOR=$bpos
       ;;
   esac
+}
+
+# Enter the visual mode
+function zvm_enter_visual_mode() {
+  zvm_select_vi_mode 'visual'
+  zle -K vicmd
+}
+
+# Exit the visual mode
+function zvm_exit_visual_mode() {
+  zle visual-mode
+  zvm_select_vi_mode 'vicmd'
 }
 
 # Enter the vi insert mode
@@ -707,7 +732,10 @@ function zvm_init() {
   zvm_define_widget zvm_change_surround_text_object
   zvm_define_widget zvm_enter_insert_mode
   zvm_define_widget zvm_exit_insert_mode
-  zvm_define_widget zvm_yank
+  zvm_define_widget zvm_enter_visual_mode
+  zvm_define_widget zvm_exit_visual_mode
+  zvm_define_widget zvm_vi_substitue
+  zvm_define_widget zvm_vi_yank
 
   # Override standard widgets
   zvm_define_widget zle-keymap-select zvm_zle-keymap-select
@@ -741,8 +769,10 @@ function zvm_init() {
   zvm_bindkey viins '^[' zvm_exit_insert_mode
 
   # Other key bindings
-  zvm_bindkey vicmd 'v' visual-mode
-  zvm_bindkey visual 'y' zvm_yank
+  zvm_bindkey vicmd  's'  zvm_vi_substitue
+  zvm_bindkey vicmd  'v'  zvm_enter_visual_mode
+  zvm_bindkey visual '^[' zvm_exit_visual_mode
+  zvm_bindkey visual 'y'  zvm_vi_yank
 
   for c in {y,d,c}{i,a}w; do
     zvm_bindkey vicmd "$c" zvm_default_handler
