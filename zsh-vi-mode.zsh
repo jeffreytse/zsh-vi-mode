@@ -511,7 +511,7 @@ function zvm_select_surround() {
   read -k 1 key
   # Prepare handle
   case $key in
-    d|c)
+    d|c|s)
       CUTBUFFER=${BUFFER:$bpos:$(($epos-$bpos))}
       BUFFER="${BUFFER:0:$bpos}${BUFFER:$epos}"
       CURSOR=$bpos
