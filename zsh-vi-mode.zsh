@@ -489,15 +489,13 @@ function zvm_search_surround() {
 
 # Select surround and highlight it in visual mode
 function zvm_select_surround() {
-  zle -K visual
-  zle visual-mode
+  zvm_select_vi_mode 'visual'
   local ret=($(zvm_parse_surround_keys))
   local action=${ret[1]}
   local surround=${ret[2]//$ZVM_ESCAPE_SPACE/ }
   ret=($(zvm_search_surround ${surround}))
   if [[ ${#ret[@]} == 0 ]]; then
-    # Exit visual-mode
-    zle -K vicmd
+    zvm_select_vi_mode 'vicmd'
     return
   fi
   local bpos=${ret[1]}
@@ -554,8 +552,8 @@ function zvm_select_surround() {
   # Post handle
   region_highlight=("${region_highlight[@]:0:-1}")
   case $key in
-    c) zle vi-insert;;
-    *) zle -K vicmd;;
+    c) zvm_select_vi_mode 'viins';;
+    *) zvm_select_vi_mode 'vicmd';;
   esac
 }
 
@@ -612,8 +610,7 @@ function zvm_change_surround_text_object() {
   local surround=${ret[2]//$ZVM_ESCAPE_SPACE/ }
   ret=($(zvm_search_surround "${surround}"))
   if [[ ${#ret[@]} == 0 ]]; then
-    # Exit visual-mode
-    zle visual-mode
+    zvm_select_vi_mode 'vicmd'
     return
   fi
   local bpos=${ret[1]}
@@ -628,7 +625,7 @@ function zvm_change_surround_text_object() {
     c)
       BUFFER="${BUFFER:0:$bpos}${BUFFER:$epos}"
       CURSOR=$bpos
-      zle vi-insert
+      zvm_select_vi_mode 'viins'
       ;;
     d)
       BUFFER="${BUFFER:0:$bpos}${BUFFER:$epos}"
@@ -639,7 +636,7 @@ function zvm_change_surround_text_object() {
 
 # Enter the vi insert mode
 function zvm_enter_insert_mode() {
-  zle -K viins
+  zvm_select_vi_mode 'viins'
   if [[ $(zvm_keys) == 'i' ]]; then
     ZVM_INSERT_MODE='i'
   else
@@ -650,10 +647,8 @@ function zvm_enter_insert_mode() {
 
 # Exit the vi insert mode
 function zvm_exit_insert_mode() {
-  zle vi-cmd-mode
-  if [[ $ZVM_INSERT_MODE == 'i' ]]; then
-    CURSOR=$CURSOR+1
-  fi
+  zvm_select_vi_mode 'vicmd'
+  CURSOR=$CURSOR-1
 }
 
 # Undo action in vi insert mode
@@ -667,6 +662,16 @@ function zvm_viins_undo() {
   else
     zvm_backward_kill_line
   fi
+}
+
+# Select vi mode
+function zvm_select_vi_mode() {
+  case $1 in
+    vicmd) zle -K vicmd; zle vi-cmd-mode;;
+    viins) zle -K viins; zle vi-insert;;
+    visual) zle -K visual; zle visual-mode;;
+  esac
+  zle reset-prompt
 }
 
 # Updates editor information when the keymap changes
