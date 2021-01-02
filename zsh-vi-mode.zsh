@@ -127,13 +127,24 @@ function zvm_version() {
 function zvm_define_widget() {
   local widget=$1
   local func=$2 || $1
-  local result=$(zle -l | grep "^${widget}")
-  local rawfunc=$(grep -oE '\(.*\)$' <<< "$result")
-  if [[ $rawfunc ]]; then
-    rawfunc=${rawfunc:1:-1}
-    local wrapper="zvm_${widget}-wrapper"
-    eval "$wrapper() { $rawfunc; $func; }"
-    func=$wrapper
+  local result=$(zle -l "${widget}"; echo $?)
+  # Check if the same existing name
+  if [[ $result == 0 ]]; then
+    local rawfunc=
+    result=($(zle -l))
+    for ((i=$#result;i>=0;i--)); do
+      if [[ ${result[i]} == $widget &&
+        ${result[i+1]:0:1} == '(' ]]; then
+        rawfunc=${result[i+1]:1:-1}
+        break
+      fi
+    done
+    # Wrap raw function
+    if [[ $rawfunc ]]; then
+      local wrapper="zvm_${widget}-wrapper"
+      eval "$wrapper() { $rawfunc; $func; }"
+      func=$wrapper
+    fi
   fi
   zle -N $widget $func
 }
@@ -165,12 +176,51 @@ function zvm_keys() {
 function zvm_find_bindkey_widget() {
   local keymap=$1
   local keys=$2
-  local result=$(bindkey -M ${keymap} | grep "^\"${keys}\"")
-  # Escape spaces in key bindings (space -> $ZVM_ESCAPE_SPACE)
-  for s in "$(grep -oE '^".* .*"' <<< "$result")"; do
-    result=${result//$s/${s// /$ZVM_ESCAPE_SPACE}}
-  done
-  echo $(echo "$result" | tr "\n" " ")
+  local prefix_mode=$3
+  local result=
+  if [[ -z $prefix_mode ]]; then
+    result=$(bindkey -M ${keymap} "$keys")
+    if [[ "${result: -14}" == ' undefined-key' ]]; then
+      return
+    fi
+    # Escape spaces in key bindings (space -> $ZVM_ESCAPE_SPACE)
+    for ((i=$#result;i>=0;i--)); do
+      if [[ "${result:$i:1}" == ' ' ]]; then
+        local k=${result:1:$i-2}
+        k=${k// /$ZVM_ESCAPE_SPACE}
+        result="$k ${result:$i+1}"
+        break
+      fi
+    done
+    echo $result
+  else
+    local widgets=()
+    local pos=0
+    result=$(bindkey -M ${keymap})
+    # Split string to array by newline
+    for ((i=0;i<$#result;i++)); do
+      if [[ "${result:$i:1}" == $'\n' ]]; then
+        local data=${result:$pos:$((i-pos))}
+        # Save as new position
+        pos=$i+1
+        # Check if it has the same prefix keys
+        if [[ "${data:1:$#keys}" != "$keys" ]]; then
+          continue
+        fi
+        # Retrieve the widgets
+        for ((j=$#data;j>=0;j--)); do
+          if [[ "${data:$j:1}" == ' ' ]]; then
+            local k=${data:1:$j-2}
+            # Escape spaces in key bindings (space -> $ZVM_ESCAPE_SPACE)
+            k=${k// /$ZVM_ESCAPE_SPACE}
+            widgets+=("$k ${data:$j+1}")
+            break
+          fi
+        done
+      fi
+    done
+    echo $widgets
+  fi
 }
 
 # Read keys for retrieving widget
@@ -182,23 +232,17 @@ function zvm_readkeys() {
   local result=
   local pattern=
   while :; do
-    # Escape characters in pattern
-    # \ -> \\    It's a special character in regex
-    # [ -> \[    It's a special character in regex
-    # ^ -> \^    It's a head anchor in regex
-    pattern=${keys//$ZVM_ESCAPE_SPACE/ }.*
-    pattern=${pattern//\\/\\\\}
-    pattern=${pattern//\[/\\\[}
-    pattern=${pattern//\^/\\\^}
+    # Escape space in pattern
+    pattern=${keys//$ZVM_ESCAPE_SPACE/ }
     # Find out widgets that match this key pattern
-    result=($(zvm_find_bindkey_widget $keymap "$pattern"))
+    result=($(zvm_find_bindkey_widget $keymap "$pattern" true))
     # Exit key input if no any more widgets matched
     if [[ -z $result ]]; then
       break
     fi
     # Wait for reading next key
     key=
-    if [[ "${result[1]}" == "\"${keys}\"" ]]; then
+    if [[ "${result[1]}" == "${keys}" ]]; then
       read -t $ZVM_KEYTIMEOUT -k 1 key
     else
       read -k 1 key
@@ -231,18 +275,25 @@ function zvm_bindkey() {
   local keymap=$1
   local keys=$2
   local widget=$3
-  local result=($(zvm_find_bindkey_widget $keymap ${keys:0:1}))
+  local key=
+  # Get the first key (especially check if ctrl characters)
+  if [[ $#keys -gt 1 && "${keys:0:1}" == '^' ]]; then
+    key=${keys:0:2}
+  else
+    key=${keys:0:1}
+  fi
+  local result=($(zvm_find_bindkey_widget $keymap "$key"))
   local rawfunc=${result[2]}
   local wrapper="zvm_${rawfunc}-wrapper"
   # Check if we need to wrap the original widget
-  if [[ ! -z $rawfunc ]] && [[ "$rawfunc" != zvm_*-wrapper ]]; then
+  if [[ ! -z $rawfunc && "$rawfunc" != zvm_*-wrapper ]]; then
     eval "$wrapper() { \
       local result=(\$(zvm_readkeys $keymap '${keys:0:1}')); \
       ZVM_KEYS=\${result[1]//${ZVM_ESCAPE_SPACE//\\/\\\\}/ }; \
       if [[ \${#ZVM_KEYS} == 1 ]]; then \
-        widget=$rawfunc; \
+        local widget=$rawfunc; \
       else \
-        widget=\${result[2]}; \
+        local widget=\${result[2]}; \
       fi; \
       if [[ -z \${widget} ]]; then \
         zle zvm_default_handler; \
