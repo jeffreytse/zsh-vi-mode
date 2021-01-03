@@ -155,9 +155,7 @@ function zvm_default_handler() {
   case "$KEYMAP" in
     vicmd)
       case "$keys" in
-        y*) zvm_range_handler "$keys" true;;
-        c*) zvm_range_handler "$keys" true true; zvm_select_vi_mode 'viins';;
-        d*) zvm_range_handler "$keys" true true; zvm_select_vi_mode 'viins';;
+        [cdy]*) zvm_range_handler "$keys";;
       esac
       ;;
   esac
@@ -290,7 +288,7 @@ function zvm_bindkey() {
     eval "$wrapper() { \
       local result=(\$(zvm_readkeys $keymap '${keys:0:1}')); \
       ZVM_KEYS=\${result[1]//${ZVM_ESCAPE_SPACE//\\/\\\\}/ }; \
-      if [[ \${#ZVM_KEYS} == 1 ]]; then \
+      if [[ ! -z '$widget' && \${#ZVM_KEYS} == 1 ]]; then \
         local widget=$rawfunc; \
       else \
         local widget=\${result[2]}; \
@@ -378,7 +376,29 @@ function zvm_forward_kill_line() {
 
 # Remove all characters of the line.
 function zvm_kill_line() {
-  BUFFER=
+  local ret=($(zvm_current_line))
+  local bpos=${ret[1]} epos=${ret[2]}
+  if (( $epos < $#BUFFER )); then
+    epos=$epos-1
+  fi
+  CUTBUFFER=${BUFFER:$bpos:$((epos-bpos))}
+  BUFFER="${BUFFER:0:$bpos}${BUFFER:$epos}"
+  MARK=$bpos CURSOR=$epos
+}
+
+# Remove all characters of the whole line.
+function zvm_kill_whole_line() {
+  local ret=($(zvm_current_line))
+  local bpos=${ret[1]} epos=${ret[2]}
+  if (( $bpos > 0 )); then
+    bpos=$bpos-1
+    if (( $epos < $#BUFFER )); then
+      epos=$epos-1
+    fi
+  fi
+  CUTBUFFER=${BUFFER:$bpos:$((epos-bpos))}
+  BUFFER="${BUFFER:0:$bpos}${BUFFER:$epos}"
+  MARK=$bpos CURSOR=$epos
 }
 
 # Substitute characters of selection
@@ -387,23 +407,67 @@ function zvm_vi_substitue() {
   zvm_select_vi_mode 'viins'
 }
 
-# Yank characters of selection
-function zvm_vi_yank() {
+# Get current cursor line position information
+function zvm_current_line() {
+  local bpos=0 epos=$#BUFFER
+  for ((i=$CURSOR;i>=0;i--)); do
+    if [[ "${BUFFER[$i]}" == $'\n' ]]; then
+      bpos=$i
+      break
+    fi
+  done
+  for ((i=$CURSOR;i<$#BUFFER;i++)); do
+    if [[ "${BUFFER[$i]}" == $'\n' ]]; then
+      epos=$i
+      break
+    fi
+  done
+  echo $bpos $epos
+}
+
+# Yank characters of the marked region
+function zvm_yank() {
   local bpos= epos=
   if (( MARK > CURSOR )) ; then
     bpos=$((CURSOR+1)) epos=$((MARK+1))
   else
     bpos=$MARK epos=$((CURSOR+1))
   fi
-  CUTBUFFER=${BUFFER:$bpos:$(($epos-$bpos))}
+  CUTBUFFER=${BUFFER:$bpos:$((epos-bpos))}
+  echo $bpos $epos
+}
+
+# Yank characters of the visual selection
+function zvm_vi_yank() {
+  zvm_yank &>/dev/null
   zle visual-mode
+  zvm_select_vi_mode 'vicmd'
+}
+
+# Delete characters of the visual selection
+function zvm_vi_delete() {
+  local ret=($(zvm_yank))
+  local bpos=${ret[1]} epos=${ret[2]}
+  BUFFER="${BUFFER:0:$bpos}${BUFFER:$epos}"
+  CURSOR=$bpos
+  zle visual-mode
+  zvm_select_vi_mode 'vicmd'
+}
+
+# Yank characters of the visual selection
+function zvm_vi_change() {
+  local ret=($(zvm_yank))
+  local bpos=$ret[1] epos=$ret[2]
+  BUFFER="${BUFFER:0:$bpos}${BUFFER:$epos}"
+  CURSOR=$bpos
+  zle visual-mode
+  zvm_select_vi_mode 'viins'
 }
 
 # Handle a range of characters
 function zvm_range_handler() {
-  local keys=${1}
-  local is_yank=${2:-false}
-  local is_delete=${3:-false}
+  zle visual-mode
+  local keys=${1:-$(zvm_keys)}
   local cursor=$CURSOR
   MARK=$CURSOR
   case "${keys:1}" in
@@ -424,28 +488,20 @@ function zvm_range_handler() {
     'T') zle vi-find-prev-char-skip; cursor=$CURSOR;;
     'iw') zle select-in-word; cursor=$MARK;;
     'aw') zle select-a-word; cursor=$MARK;;
-    *)
-      if [[ ${keys:0:1} == ${keys:1:1} ]]; then
-        case "${keys:0:1}" in
-          y) zle vi-yank-whole-line; is_yank=false;;
-          *) MARK=0; CURSOR=$#BUFFER;;
-        esac
-      fi
-      ;;
   esac
-  local bpos= epos=
-  if (( MARK > CURSOR )) ; then
-    bpos=$CURSOR epos=$((MARK+1))
-  else
-    bpos=$MARK epos=$((CURSOR+1))
-  fi
-  if [[ $is_yank == true ]]; then
-    CUTBUFFER=${BUFFER:$bpos:$(($epos-$bpos))}
-  fi
-  if [[ $is_delete == true ]]; then
-    BUFFER="${BUFFER:0:$bpos}${BUFFER:$epos}"
-    CURSOR=$bpos
-  fi
+  case "${keys}" in
+    yy) zle vi-yank-whole-line; zle visual-mode;;
+    dd) zvm_kill_whole_line; zle visual-mode;;
+    cc)
+      zvm_kill_line;
+      cursor=$MARK;
+      zle visual-mode;
+      zvm_select_vi_mode 'viins'
+      ;;
+    y*) zvm_vi_yank;;
+    d*) zvm_vi_delete;;
+    c*) zvm_vi_change;;
+  esac
   CURSOR=$cursor
 }
 
@@ -794,6 +850,8 @@ function zvm_init() {
   zvm_define_widget zvm_enter_visual_mode
   zvm_define_widget zvm_exit_visual_mode
   zvm_define_widget zvm_vi_substitue
+  zvm_define_widget zvm_vi_change
+  zvm_define_widget zvm_vi_delete
   zvm_define_widget zvm_vi_yank
 
   # Override standard widgets
@@ -831,16 +889,19 @@ function zvm_init() {
   zvm_bindkey vicmd  's'  zvm_vi_substitue
   zvm_bindkey vicmd  'v'  zvm_enter_visual_mode
   zvm_bindkey visual '^[' zvm_exit_visual_mode
+  zvm_bindkey visual 'c'  zvm_vi_change
+  zvm_bindkey visual 'd'  zvm_vi_delete
   zvm_bindkey visual 'y'  zvm_vi_yank
 
-  for c in {y,d,c}{i,a}w; do
-    zvm_bindkey vicmd "$c" zvm_default_handler
+  # Binding and overwrite original y/d/c of vicmd
+  for c in {y,d,c}; do
+    zvm_bindkey vicmd "$c"
   done
 
   # Surround text-object
   # Enable surround text-objects (quotes, brackets)
-
   local surrounds=()
+
   # Append brackets
   for s in ${(s..)^:-'()[]{}<>'}; do
     surrounds+=($s)
