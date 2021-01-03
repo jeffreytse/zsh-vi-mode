@@ -247,8 +247,8 @@ function zvm_readkeys() {
     else
       read -k 1 key
     fi
-    # Tranform the non-printed characters
-    key=$(echo "${key}" | cat -v)
+    # Transform the non-printed characters
+    key=$(zvm_escape_non_printed_characters "${key}")
     key=${key// /$ZVM_ESCAPE_SPACE}
 
     # Escape keys
@@ -312,6 +312,24 @@ function zvm_bindkey() {
   if [[ $widget ]]; then
     bindkey -M $keymap "${keys}" $widget
   fi
+}
+
+# Escape non-printed characters
+function zvm_escape_non_printed_characters() {
+  local str=
+  for ((i=0;i<$#1;i++)); do
+    local c=${1:$i:1}
+    if [[ "$c" < ' ' ]]; then
+      local ord=$(($(printf '%d' "'$c")+64))
+      c=$(printf \\$(printf '%03o' $ord))
+      str="${str}^${c}"
+    elif [[ "$c" == '' ]]; then
+      str="${str}^?"
+    else
+      str="${str}${c}"
+    fi
+  done
+  echo $str
 }
 
 # Change cursor with support for inside/outside tmux
