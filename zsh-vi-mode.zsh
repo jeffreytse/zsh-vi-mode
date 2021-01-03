@@ -726,15 +726,15 @@ function zvm_enter_insert_mode() {
   if [[ $(zvm_keys) == 'i' ]]; then
     ZVM_INSERT_MODE='i'
   else
-    CURSOR=$CURSOR+1
     ZVM_INSERT_MODE='a'
+    zle vi-forward-char
   fi
 }
 
 # Exit the vi insert mode
 function zvm_exit_insert_mode() {
   zvm_select_vi_mode 'vicmd'
-  CURSOR=$CURSOR-1
+  zle vi-backward-char
 }
 
 # Undo action in vi insert mode
