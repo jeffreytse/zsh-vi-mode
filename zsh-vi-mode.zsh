@@ -629,56 +629,10 @@ function zvm_select_surround() {
   else
     ((epos++))
   fi
+  zle visual-mode
   MARK=$bpos; CURSOR=$epos-1
-  region_highlight+=("$bpos $epos bg=$ZVM_VI_REGION_HIGHLIGHT")
-  zle -R
-  local key=
-  read -k 1 key
-  # Prepare handle
-  case $key in
-    d|c|s)
-      CUTBUFFER=${BUFFER:$bpos:$(($epos-$bpos))}
-      BUFFER="${BUFFER:0:$bpos}${BUFFER:$epos}"
-      CURSOR=$bpos
-      ;;
-    p)
-      local cutbuffer=${BUFFER:$bpos:$(($epos-$bpos))}
-      BUFFER="${BUFFER:0:$bpos}${CUTBUFFER}${BUFFER:$epos}"
-      CUTBUFFER=$cutbuffer
-      CURSOR=$bpos
-      ;;
-    S)
-      read -k 1 surround
-      zvm_change_surround $key $surround $bpos $epos
-      ;;
-    y)
-      read -t $ZVM_KEYTIMEOUT -k 1 key
-      case "$key" in
-        '') CUTBUFFER=${BUFFER:$bpos:$(($epos-$bpos))};;
-        s)
-          read -k 1 surround
-          zvm_change_surround y $surround $bpos $epos
-          ;;
-      esac
-      ;;
-    s)
-      read -k 1 key
-      case "$key" in
-        a)
-          read -k 1 surround
-          zvm_change_surround y $surround $bpos $epos
-          ;;
-      esac
-      ;;
-    u) zle vi-down-case;;
-    U) zle vi-up-case;;
-  esac
-  # Post handle
-  region_highlight=("${region_highlight[@]:0:-1}")
-  case $key in
-    c) zvm_select_vi_mode 'viins';;
-    *) zvm_select_vi_mode 'vicmd';;
-  esac
+  zle reset-prompt
+  zle -K vicmd
 }
 
 # Change surround in vicmd or visual mode
