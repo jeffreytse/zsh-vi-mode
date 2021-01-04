@@ -422,7 +422,7 @@ function zvm_current_line() {
       break
     fi
   done
-  for ((i=$CURSOR;i<$#BUFFER;i++)); do
+  for ((i=$CURSOR+1;i<$#BUFFER;i++)); do
     if [[ "${BUFFER[$i]}" == $'\n' ]]; then
       epos=$i
       break
