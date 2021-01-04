@@ -2,7 +2,7 @@
   <a href="https://github.com/jeffreytse/zsh-vi-mode">
     <img alt="vi-mode →~ zsh" src="https://user-images.githubusercontent.com/9413601/103399068-46bfcb80-4b7a-11eb-8741-86cff3d85a69.png" width="600">
   </a>
-  <div> 💻 A better and friendly vi(vim) mode plugin for ZSH.  </div>
+  <p> 💻 A better and friendly vi(vim) mode plugin for ZSH.  </p>
 
   <br> <h1>⚒️  Zsh Vi Mode ⚒️</h1> <br>
 
@@ -58,21 +58,23 @@
 <img alt="Zsh Vi-mode Demo" src="https://user-images.githubusercontent.com/9413601/101981242-61530300-3ca6-11eb-8c7a-c0f4c69562bb.gif" />
 
 
-## Features
+## ✨ Features
 
-- [x] Lower delay and better response (Mode switching, widget calling).
-- [x] Mode indication with different cursor styles.
-- [x] Cursor movement (Navigation).
-- [x] Insert & Replace (Insert mode).
-- [x] Text Objects.
-- [x] Searching text.
-- [x] Undo, Redo, Cut, Copy, Paste, and Delete.
-- [x] Better surrounds functionality (Add, Replace, Delete, and Move Around).
-- [ ] Switch keywords (Increase/Decrease Number, Boolean, etc. In progress).
+- 🎉 Better experience with the near-native vi(vim) mode.
+- ⌛ Lower delay and better response (Mode switching, widget calling).
+- ✏️  Mode indication with different cursor styles.
+- 🧮 Cursor movement (Navigation).
+- 📝 Insert & Replace (Insert mode).
+- 💡 Text Objects.
+- 🔎 Searching history.
+- ❇️  Undo, Redo, Cut, Copy, Paste, and Delete.
+- 🔮 Better surrounds functionality (Add, Replace, Delete, Move Around, and Highlight).
+- 🔣 Switch keywords (Increase/Decrease Number, Boolean, etc. **In progress**).
 
-## Installation
 
-### Using [Antigen](https://github.com/zsh-users/antigen)
+## 🛠️ Installation
+
+#### Using [Antigen](https://github.com/zsh-users/antigen)
 
 Bundle `zsh-vi-mode` in your `.zshrc`
 
@@ -80,13 +82,13 @@ Bundle `zsh-vi-mode` in your `.zshrc`
 antigen bundle jeffreytse/zsh-vi-mode
 ```
 
-### Using [zplug](https://github.com/b4b4r07/zplug)
+#### Using [zplug](https://github.com/b4b4r07/zplug)
 Load `zsh-vi-mode` as a plugin in your `.zshrc`
 
 ```shell
 zplug "jeffreytse/zsh-vi-mode"
 ```
-### Using [zgen](https://github.com/tarjoilija/zgen)
+#### Using [zgen](https://github.com/tarjoilija/zgen)
 
 Include the load command in your `.zshrc`
 
@@ -94,7 +96,7 @@ Include the load command in your `.zshrc`
 zgen load jeffreytse/zsh-vi-mode
 ```
 
-### As an [Oh My Zsh!](https://github.com/robbyrussell/oh-my-zsh) custom plugin
+#### As an [Oh My Zsh!](https://github.com/robbyrussell/oh-my-zsh) custom plugin
 
 Clone `zsh-vi-mode` into your custom plugins repo
 
@@ -110,7 +112,7 @@ plugins+=(zsh-vi-mode)
 
 Keep in mind that plugins need to be added before `oh-my-zsh.sh` is sourced.
 
-### Manually
+#### Manually
 Clone this repository somewhere (`$HOME/.zsh-vi-mode` for example)
 
 ```shell
@@ -122,7 +124,7 @@ Then source it in your `.zshrc` (or `.bashrc`)
 source $HOME/.zsh-vi-mode/zsh-vi-mode.plugin.zsh
 ```
 
-## Usages
+## 📚 Usages
 
 Use `ESC` or `CTRL-[` to enter `Normal mode` (Each command line starting with
 `Insert mode` by default).
@@ -140,7 +142,7 @@ History
 Mode indicators
 ---------------
 
-*Normal mode* is indicated with block style cursor, and *insert mode* with beam
+`Normal mode` is indicated with block style cursor, and `Insert mode` with beam
 style cursor by default.
 
 
@@ -184,7 +186,7 @@ variable.
 1. `classic` mode (verb->s->surround)
 
 - `S"`    : Add `"` for visual selection
-- `ys`    : Add `"` for visual selection
+- `ys"`   : Add `"` for visual selection
 - `cs"'`  : Change `"` to `'`
 - `ds"`   : Delete `"`
 
@@ -203,6 +205,7 @@ Then you can do any operation for the selection:
 1. Add surrounds for text object
 
 - `vi"` -> `S[` or `sa[` => `"object"` -> `"[object]"`
+- `va"` -> `S[` or `sa[` => `"object"` -> `["object"]`
 
  2. Delete/Yank/Change text object
 
@@ -211,19 +214,19 @@ Then you can do any operation for the selection:
 -   `yi(` or `vi(` -> `y`
 
 
-## Credits
+## 💎 Credits
 
 - [Zsh](https://www.zsh.org/) - A powerful shell that operates as both an interactive shell and as a scripting language interpreter.
 - [Oh-My-Zsh](https://github.com/ohmyzsh/ohmyzsh) - A delightful, open source, community-driven framework for managing your ZSH configuration.
-- [vim-surround](https://github.com/tpope/vim-surround) - A vim plugin that quoting/parenthesizing made simple.
+- [vim-surround](https://github.com/tpope/vim-surround) - A vim plugin that all about "surroundings": parentheses, brackets, quotes, XML tags, and more.
 - [vim-sandwich](https://github.com/machakann/vim-sandwich) - A set of operator and textobject plugins to add/delete/replace surroundings of a sandwiched textobject.
 
-## Contributing
+## 🔫 Contributing
 
 Issues and Pull Requests are greatly appreciated. If you've never contributed to an open source project before I'm more than happy to walk you through how to create a pull request.
 
 You can start by [opening an issue](https://github.com/jeffreytse/zsh-vi-mode/issues/new) describing the problem that you're looking to resolve and we'll go from there.
 
-## License
+## 🌈 License
 
 This theme is licensed under the [MIT license](https://opensource.org/licenses/mit-license.php) © JeffreyTse.
