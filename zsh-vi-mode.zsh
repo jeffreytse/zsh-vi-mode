@@ -98,6 +98,11 @@ export ZVM_KEYS=''
 # Default alternative character for escape space character
 ZVM_ESCAPE_SPACE='\s'
 
+# Default vi modes
+ZVM_MODE_NORMAL='n'
+ZVM_MODE_INSERT='i'
+ZVM_MODE_VISUAL='v'
+
 # Default cursor styles
 ZVM_CURSOR_BLOCK='\e[2 q'
 ZVM_CURSOR_BEAM='\e[6 q'
@@ -395,14 +400,14 @@ function zvm_kill_whole_line() {
 
 # Open line below
 function zvm_open_line_below() {
-  ZVM_MODE='i'
+  ZVM_MODE=$ZVM_MODE_INSERT
   zvm_update_cursor_style
   zle vi-open-line-below
 }
 
 # Open line below
 function zvm_open_line_above() {
-  ZVM_MODE='i'
+  ZVM_MODE=$ZVM_MODE_INSERT
   zvm_update_cursor_style
   zle vi-open-line-above
 }
@@ -410,7 +415,7 @@ function zvm_open_line_above() {
 # Substitute characters of selection
 function zvm_vi_substitue() {
   zle vi-substitute
-  zvm_select_vi_mode 'i'
+  zvm_select_vi_mode $ZVM_MODE_INSERT
 }
 
 # Get current cursor line position information
@@ -465,7 +470,7 @@ function zvm_vi_change() {
   BUFFER="${BUFFER:0:$bpos}${BUFFER:$epos}"
   CURSOR=$bpos
   zle visual-mode
-  zvm_select_vi_mode 'i'
+  zvm_select_vi_mode $ZVM_MODE_INSERT
 }
 
 # Handle a range of characters
@@ -500,7 +505,7 @@ function zvm_range_handler() {
       zvm_kill_line;
       cursor=$MARK;
       zle visual-mode;
-      zvm_select_vi_mode 'i'
+      zvm_select_vi_mode $ZVM_MODE_INSERT
       ;;
     y*) zvm_vi_yank;;
     d*) zvm_vi_delete;;
@@ -670,7 +675,7 @@ function zvm_change_surround() {
     S|y|a)
       key=$surround
       [[ -z $@ ]] && zle visual-mode
-      zvm_select_vi_mode 'n'
+      zvm_select_vi_mode $ZVM_MODE_NORMAL
       ;;
   esac
   if [[ -z $is_appending ]]; then
@@ -696,7 +701,7 @@ function zvm_change_surround_text_object() {
   local surround=${ret[2]//$ZVM_ESCAPE_SPACE/ }
   ret=($(zvm_search_surround "${surround}"))
   if [[ ${#ret[@]} == 0 ]]; then
-    zvm_select_vi_mode 'n'
+    zvm_select_vi_mode $ZVM_MODE_NORMAL
     return
   fi
   local bpos=${ret[1]}
@@ -711,7 +716,7 @@ function zvm_change_surround_text_object() {
     c)
       BUFFER="${BUFFER:0:$bpos}${BUFFER:$epos}"
       CURSOR=$bpos
-      zvm_select_vi_mode 'i'
+      zvm_select_vi_mode $ZVM_MODE_INSERT
       ;;
     d)
       BUFFER="${BUFFER:0:$bpos}${BUFFER:$epos}"
@@ -722,18 +727,18 @@ function zvm_change_surround_text_object() {
 
 # Enter the visual mode
 function zvm_enter_visual_mode() {
-  zvm_select_vi_mode 'v'
+  zvm_select_vi_mode $ZVM_MODE_VISUAL
 }
 
 # Exit the visual mode
 function zvm_exit_visual_mode() {
   zle visual-mode
-  zvm_select_vi_mode 'n'
+  zvm_select_vi_mode $ZVM_MODE_NORMAL
 }
 
 # Enter the vi insert mode
 function zvm_enter_insert_mode() {
-  zvm_select_vi_mode 'i'
+  zvm_select_vi_mode $ZVM_MODE_INSERT
   if [[ $(zvm_keys) == 'i' ]]; then
     ZVM_INSERT_MODE='i'
   else
@@ -744,24 +749,24 @@ function zvm_enter_insert_mode() {
 
 # Exit the vi insert mode
 function zvm_exit_insert_mode() {
-  zvm_select_vi_mode 'n'
+  zvm_select_vi_mode $ZVM_MODE_NORMAL
 }
 
 # Select vi mode
 function zvm_select_vi_mode() {
   case $1 in
-    n)
-      ZVM_MODE='n'
+    $ZVM_MODE_NORMAL)
+      ZVM_MODE=$ZVM_MODE_NORMAL
       zvm_update_cursor_style
       zle vi-cmd-mode
       ;;
-    i)
-      ZVM_MODE='i'
+    $ZVM_MODE_INSERT)
+      ZVM_MODE=$ZVM_MODE_INSERT
       zvm_update_cursor_style
       zle vi-insert
       ;;
-    v)
-      ZVM_MODE='v'
+    $ZVM_MODE_VISUAL)
+      ZVM_MODE=$ZVM_MODE_VISUAL
       zvm_update_cursor_style
       zle visual-mode
       ;;
@@ -800,7 +805,7 @@ function zvm_zle-line-pre-redraw() {
 
 # Start every prompt in insert mode
 function zvm_zle-line-init() {
-  zvm_select_vi_mode 'i'
+  zvm_select_vi_mode $ZVM_MODE_INSERT
 }
 
 # Initialize vi-mode for widgets, keybindings, etc.
