@@ -542,9 +542,10 @@ function zvm_parse_surround_keys() {
   local action=
   local surround=
   case "${keys}" in
-    S*) action=S; surround=${keys:1:1};;
+    vS*) action=S; surround=${keys:2:1};;
+    vys*) action=y; surround=${keys:3:1};;
     s[adr]*) action=${keys:1:1}; surround=${keys:2:1};;
-    [acdy]s*) action=${keys:0:1}; surround=${keys:2:1};;
+    [acd]s*) action=${keys:0:1}; surround=${keys:2:1};;
     [cdvy][ia]*) action=${keys:0:2}; surround=${keys:2:1};;
   esac
   echo $action ${surround// /$ZVM_ESCAPE_SPACE}
