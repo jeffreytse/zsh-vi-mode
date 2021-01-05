@@ -176,48 +176,66 @@ function zvm_find_bindkey_widget() {
   local keymap=$1
   local keys=$2
   local prefix_mode=$3
-  local result=
+
   if [[ -z $prefix_mode ]]; then
-    result=$(bindkey -M ${keymap} "$keys")
+    local result=$(bindkey -M ${keymap} "$keys")
     if [[ "${result: -14}" == ' undefined-key' ]]; then
       return
     fi
+
     # Escape spaces in key bindings (space -> $ZVM_ESCAPE_SPACE)
     for ((i=$#result;i>=0;i--)); do
-      if [[ "${result:$i:1}" == ' ' ]]; then
-        local k=${result:1:$i-2}
-        k=${k// /$ZVM_ESCAPE_SPACE}
-        result="$k ${result:$i+1}"
-        break
-      fi
+
+      # Backward find the first whitespace character
+      [[ "${result:$i:1}" == ' ' ]] || continue
+
+      # Retrieve the keys and widget
+      local k=${result:1:$i-2}
+
+      # Escape spaces in key bindings (space -> $ZVM_ESCAPE_SPACE)
+      k=${k// /$ZVM_ESCAPE_SPACE}
+      result="$k ${result:$i+1}"
+      break
     done
+
     echo $result
   else
     local widgets=()
     local pos=0
-    result=$(bindkey -M ${keymap})
+    local spos=3
+    local result=$(bindkey -M ${keymap})$'\n'
+
     # Split string to array by newline
-    for ((i=0;i<$#result;i++)); do
-      if [[ "${result:$i:1}" == $'\n' ]]; then
-        local data=${result:$pos:$((i-pos))}
-        # Save as new position
-        pos=$i+1
-        # Check if it has the same prefix keys
-        if [[ "${data:1:$#keys}" != "$keys" ]]; then
-          continue
-        fi
-        # Retrieve the widgets
-        for ((j=$#data;j>=0;j--)); do
-          if [[ "${data:$j:1}" == ' ' ]]; then
-            local k=${data:1:$j-2}
-            # Escape spaces in key bindings (space -> $ZVM_ESCAPE_SPACE)
-            k=${k// /$ZVM_ESCAPE_SPACE}
-            widgets+=("$k ${data:$j+1}")
-            break
-          fi
-        done
+    for ((i=$spos;i<$#result;i++)); do
+
+      # Save the last whitespace character of the line
+      # and continue continue handling while meeting `\n`
+      case "${result:$i:1}" in
+        ' ') spos=$i; i=$i+1; continue;;
+        [$'\n']);;
+        *) continue;;
+      esac
+
+      # Check if it has the same prefix keys and retrieve the widgets
+      if [[ "${result:$((pos+1)):$#keys}" == "$keys" ]]; then
+
+        # Get the binding keys
+        local k=${result:$((pos+1)):$((spos-pos-2))}
+
+        # Escape spaces in key bindings (space -> $ZVM_ESCAPE_SPACE)
+        k=${k// /$ZVM_ESCAPE_SPACE}
+        widgets+=("$k ${result:$((spos+1)):$((i-spos-1))}")
+
       fi
+
+      # Save as new position
+      pos=$i+1
+
+      # Skip 3 characters
+      # One key and quotes at least (i.e \n"_" )
+      i=$i+3
     done
+
     echo $widgets
   fi
 }
