@@ -86,6 +86,9 @@ export ZVM_KEYTIMEOUT=0.3
 # Plugin initial status
 export ZVM_INIT_DONE=false
 
+# Disable reset prompt (i.e. disable the widget `reset-prompt`)
+export ZVM_RESET_PROMPT_DISABLED=false
+
 # Insert mode could be `i` (insert) or `a` (append)
 export ZVM_INSERT_MODE='i'
 
@@ -754,7 +757,11 @@ function zvm_exit_insert_mode() {
 
 # Select vi mode
 function zvm_select_vi_mode() {
-  case $1 in
+  # Some plugins would reset the prompt when we select the
+  # keymap, so here we disable reset prompt temporarily.
+  ZVM_RESET_PROMPT_DISABLED=1
+
+  case "$1" in
     $ZVM_MODE_NORMAL)
       ZVM_MODE=$ZVM_MODE_NORMAL
       zvm_update_cursor_style
@@ -771,7 +778,19 @@ function zvm_select_vi_mode() {
       zle visual-mode
       ;;
   esac
+
+  # Here restore reset prompt
+  ZVM_RESET_PROMPT_DISABLED=
+
   [[ -z $2 ]] && zle reset-prompt
+}
+
+# Reset prompt
+function zvm_reset_prompt() {
+  ! (( $ZVM_RESET_PROMPT_DISABLED )) || return
+  local -i retval
+  zle .reset-prompt -- $@
+  return $retval
 }
 
 # Undo action in vi insert mode
@@ -836,6 +855,9 @@ function zvm_init() {
 
   # Ensure insert mode cursor when exiting vim
   zvm_define_widget zle-line-init zvm_zle-line-init
+
+  # Override reset-prompt widget
+  zvm_define_widget reset-prompt zvm_reset_prompt
 
   # All Key bindings
   # Emacs-like bindings
