@@ -138,24 +138,13 @@ function zvm_version() {
 function zvm_define_widget() {
   local widget=$1
   local func=$2 || $1
-  local result=$(zle -l "${widget}"; echo $?)
-  # Check if the same existing name
-  if [[ $result == 0 ]]; then
-    local rawfunc=
-    result=($(zle -l))
-    for ((i=$#result;i>=0;i--)); do
-      if [[ ${result[i]} == $widget &&
-        ${result[i+1]:0:1} == '(' ]]; then
-        rawfunc=${result[i+1]:1:-1}
-        break
-      fi
-    done
-    # Wrap raw function
-    if [[ $rawfunc ]]; then
-      local wrapper="zvm_${widget}-wrapper"
-      eval "$wrapper() { $rawfunc; $func; }"
-      func=$wrapper
-    fi
+  local result=($(zle -l -L "${widget}"))
+  # Check if existing the same name
+  if [[ ${#result[@]} == 4 ]]; then
+    local rawfunc=${result[4]}
+    local wrapper="zvm_${widget}-wrapper"
+    eval "$wrapper() { $rawfunc; $func; }"
+    func=$wrapper
   fi
   zle -N $widget $func
 }
