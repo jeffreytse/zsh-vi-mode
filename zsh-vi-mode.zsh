@@ -80,9 +80,6 @@ typeset -gr ZVM_VERSION='0.4.0'
 # Set to 0.1 second delay between switching modes (default is 0.4 seconds)
 KEYTIMEOUT=1
 
-# Set key input timeout (default is 0.3 seconds)
-ZVM_KEYTIMEOUT=0.3
-
 # Plugin initial status
 ZVM_INIT_DONE=false
 
@@ -116,6 +113,9 @@ ZVM_CURSOR_XTERM_BEAM='\x1b[\x36 q'
 
 ##########################################
 # Initial all default settings
+
+# Set key input timeout (default is 0.3 seconds)
+ZVM_KEYTIMEOUT=${ZVM_KEYTIMEOUT:-0.3}
 
 # Set the sursor stlye of defferent vi modes
 if [[ ${TERM:0:5} == 'xterm' ]]; then
