@@ -308,7 +308,7 @@ function zvm_bindkey() {
   # Check if we need to wrap the original widget
   if [[ ! -z $rawfunc && "$rawfunc" != zvm_*-wrapper ]]; then
     eval "$wrapper() { \
-      local result=(\$(zvm_readkeys $keymap '${keys:0:1}')); \
+      local result=(\$(zvm_readkeys $keymap '${key}')); \
       ZVM_KEYS=\${result[1]//${ZVM_ESCAPE_SPACE//\\/\\\\}/ }; \
       if [[ ! -z '$widget' && \${#ZVM_KEYS} == 1 ]]; then \
         local widget=$rawfunc; \
@@ -326,7 +326,7 @@ function zvm_bindkey() {
       ZVM_KEYS=; \
     }"
     zle -N $wrapper
-    bindkey -M $keymap "${keys:0:1}" $wrapper
+    bindkey -M $keymap "${key}" $wrapper
   fi
   # We should bind keys with a existing widget
   if [[ $widget ]]; then
@@ -948,11 +948,11 @@ function zvm_init() {
   done
 
   # Moving around surrounds
-  zvm_bindkey vicmd "%" zvm_move_around_surround
+  zvm_bindkey vicmd '%' zvm_move_around_surround
 
   # Fix BACKSPACE was stuck in zsh
   # Since normally '^?' (backspace) is bound to vi-backward-delete-char
-  zvm_bindkey viins "^?" backward-delete-char
+  zvm_bindkey viins '^?' backward-delete-char
 
   # Enable vi keymap
   bindkey -v
