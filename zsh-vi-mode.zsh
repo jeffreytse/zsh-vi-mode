@@ -78,25 +78,25 @@ typeset -gr ZVM_VERSION='0.4.0'
 
 # Reduce ESC delay (zle)
 # Set to 0.1 second delay between switching modes (default is 0.4 seconds)
-export KEYTIMEOUT=1
+KEYTIMEOUT=1
 
 # Set key input timeout (default is 0.3 seconds)
-export ZVM_KEYTIMEOUT=0.3
+ZVM_KEYTIMEOUT=0.3
 
 # Plugin initial status
-export ZVM_INIT_DONE=false
+ZVM_INIT_DONE=false
 
 # Disable reset prompt (i.e. disable the widget `reset-prompt`)
-export ZVM_RESET_PROMPT_DISABLED=false
+ZVM_RESET_PROMPT_DISABLED=false
 
 # Insert mode could be `i` (insert) or `a` (append)
-export ZVM_INSERT_MODE='i'
+ZVM_INSERT_MODE='i'
 
-# the Mode could be `n` (normal) or `i` (insert) or `v` (visual)
-export ZVM_MODE=''
+# The mode could be `n` (normal) or `i` (insert) or `v` (visual)
+ZVM_MODE=''
 
 # The keys typed to invoke this widget, as a literal string
-export ZVM_KEYS=''
+ZVM_KEYS=''
 
 # Default alternative character for escape space character
 ZVM_ESCAPE_SPACE='\s'
@@ -114,7 +114,10 @@ ZVM_CURSOR_BLINKING_BEAM='\e[5 q'
 ZVM_CURSOR_XTERM_BLOCK='\x1b[\x32 q'
 ZVM_CURSOR_XTERM_BEAM='\x1b[\x36 q'
 
-# Default settings
+##########################################
+# Initial all default settings
+
+# Set the sursor stlye of defferent vi modes
 if [[ ${TERM:0:5} == 'xterm' ]]; then
   ZVM_VI_NORMAL_MODE_CURSOR=${ZVM_VI_NORMAL_MODE_CURSOR:-$ZVM_CURSOR_XTERM_BLOCK}
   ZVM_VI_INSERT_MODE_CURSOR=${ZVM_VI_INSERT_MODE_CURSOR:-$ZVM_CURSOR_XTERM_BEAM}
@@ -415,7 +418,7 @@ function zvm_open_line_below() {
   zle vi-open-line-below
 }
 
-# Open line below
+# Open line above
 function zvm_open_line_above() {
   ZVM_MODE=$ZVM_MODE_INSERT
   zvm_update_cursor_style
