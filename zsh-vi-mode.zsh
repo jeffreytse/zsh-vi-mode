@@ -897,6 +897,43 @@ function zvm_change_surround_text_object() {
   esac
 }
 
+# Highlight content by current mode
+function zvm_highlight() {
+  case "$ZVM_MODE" in
+    $ZVM_MODE_VISUAL_LINE)
+      zle redisplay
+      local ret=($(zvm_calc_selection))
+      local bpos=$ret[1] epos=$ret[2]
+      region_highlight+=("$((bpos)) $((epos)) bg=$ZVM_VI_REGION_HIGHLIGHT")
+      zle -R
+      ;;
+  esac
+}
+
+# Down line in visual mode
+function zvm_down_line() {
+  zle down-line
+  zvm_highlight
+}
+
+# Up line in visual mode
+function zvm_up_line() {
+  zle up-line
+  zvm_highlight
+}
+
+# Backward character in visual mode
+function zvm_backward_char() {
+  zle vi-backward-char
+  zvm_highlight
+}
+
+# Forward character in visual mode
+function zvm_forward_char() {
+  zle vi-forward-char
+  zvm_highlight
+}
+
 # Enter the visual mode
 function zvm_enter_visual_mode() {
   local mode=
@@ -905,6 +942,7 @@ function zvm_enter_visual_mode() {
     V) mode=$ZVM_MODE_VISUAL_LINE;;
   esac
   zvm_select_vi_mode $mode
+  zvm_highlight
 }
 
 # Exit the visual mode
@@ -1022,6 +1060,10 @@ function zvm_init() {
   zvm_define_widget zvm_change_surround
   zvm_define_widget zvm_move_around_surround
   zvm_define_widget zvm_change_surround_text_object
+  zvm_define_widget zvm_down_line
+  zvm_define_widget zvm_up_line
+  zvm_define_widget zvm_backward_char
+  zvm_define_widget zvm_forward_char
   zvm_define_widget zvm_enter_insert_mode
   zvm_define_widget zvm_exit_insert_mode
   zvm_define_widget zvm_enter_visual_mode
@@ -1069,6 +1111,10 @@ function zvm_init() {
   zvm_bindkey viins '^[' zvm_exit_insert_mode
 
   # Other key bindings
+  zvm_bindkey visual 'j'  zvm_down_line
+  zvm_bindkey visual 'k'  zvm_up_line
+  zvm_bindkey visual 'h'  zvm_backward_char
+  zvm_bindkey visual 'l'  zvm_forward_char
   zvm_bindkey vicmd  'v'  zvm_enter_visual_mode
   zvm_bindkey vicmd  'V'  zvm_enter_visual_mode
   zvm_bindkey visual '^[' zvm_exit_visual_mode
