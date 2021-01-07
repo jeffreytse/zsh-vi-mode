@@ -958,6 +958,8 @@ function zvm_exit_visual_mode() {
     $ZVM_MODE_VISUAL) zle visual-mode;;
     $ZVM_MODE_VISUAL_LINE) zle visual-line-mode;;
   esac
+  region_highlight=()
+  zle -R
   zvm_select_vi_mode $ZVM_MODE_NORMAL
 }
 
