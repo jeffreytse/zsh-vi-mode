@@ -89,7 +89,11 @@ ZVM_RESET_PROMPT_DISABLED=false
 # Insert mode could be `i` (insert) or `a` (append)
 ZVM_INSERT_MODE='i'
 
-# The mode could be `n` (normal) or `i` (insert) or `v` (visual)
+# The mode could be the below value:
+# `n` (normal)
+# `i` (insert)
+# `v` (visual)
+# `vl` (visual-line)
 ZVM_MODE=''
 
 # The keys typed to invoke this widget, as a literal string
@@ -102,6 +106,7 @@ ZVM_ESCAPE_SPACE='\s'
 ZVM_MODE_NORMAL='n'
 ZVM_MODE_INSERT='i'
 ZVM_MODE_VISUAL='v'
+ZVM_MODE_VISUAL_LINE='vl'
 
 # Default cursor styles
 ZVM_CURSOR_BLOCK='\e[2 q'
@@ -386,29 +391,28 @@ function zvm_forward_kill_line() {
 
 # Remove all characters of the line.
 function zvm_kill_line() {
-  local ret=($(zvm_current_line))
+  local ret=($(zvm_calc_selection $ZVM_MODE_VISUAL_LINE))
   local bpos=${ret[1]} epos=${ret[2]}
-  if (( $epos < $#BUFFER )); then
-    epos=$epos-1
-  fi
-  CUTBUFFER=${BUFFER:$bpos:$((epos-bpos))}
+  CUTBUFFER=${BUFFER:$bpos:$((epos-bpos))}$'\n'
   BUFFER="${BUFFER:0:$bpos}${BUFFER:$epos}"
-  MARK=$bpos CURSOR=$epos
+  CURSOR=$bpos
 }
 
 # Remove all characters of the whole line.
 function zvm_kill_whole_line() {
-  local ret=($(zvm_current_line))
-  local bpos=${ret[1]} epos=${ret[2]}
-  if (( $bpos > 0 )); then
+  local ret=($(zvm_calc_selection $ZVM_MODE_VISUAL_LINE))
+  local bpos=$ret[1] epos=$ret[2] cpos=$ret[3]
+  CUTBUFFER=${BUFFER:$bpos:$((epos-bpos))}$'\n'
+
+  # Check if it is visual line mode
+  if (( $epos < $#BUFFER )); then
+    epos=$epos+1
+  elif (( $bpos > 0 )); then
     bpos=$bpos-1
-    if (( $epos < $#BUFFER )); then
-      epos=$epos-1
-    fi
   fi
-  CUTBUFFER=${BUFFER:$bpos:$((epos-bpos))}
+
   BUFFER="${BUFFER:0:$bpos}${BUFFER:$epos}"
-  MARK=$bpos CURSOR=$epos
+  MARK=$cpos
 }
 
 # Open line below
@@ -431,58 +435,191 @@ function zvm_vi_substitue() {
   zvm_select_vi_mode $ZVM_MODE_INSERT
 }
 
-# Get current cursor line position information
-function zvm_current_line() {
-  local bpos=0 epos=$#BUFFER
-  for ((i=$CURSOR;i>=0;i--)); do
-    if [[ "${BUFFER[$i]}" == $'\n' ]]; then
-      bpos=$i
-      break
-    fi
-  done
-  for ((i=$CURSOR+1;i<$#BUFFER;i++)); do
-    if [[ "${BUFFER[$i]}" == $'\n' ]]; then
-      epos=$i
-      break
-    fi
-  done
-  echo $bpos $epos
-}
+# Calculate the region of selection
+function zvm_calc_selection() {
+  local bpos= epos= cpos=
 
-# Yank characters of the marked region
-function zvm_yank() {
-  local bpos= epos=
+  # Get the beginning and end position of selection
   if (( MARK > CURSOR )) ; then
     bpos=$((CURSOR+1)) epos=$((MARK+1))
   else
     bpos=$MARK epos=$((CURSOR+1))
   fi
+
+  # Save the current cursor position
+  cpos=$bpos
+
+  # Check if it is visual line mode
+  if [[ "${1:-$ZVM_MODE}" == $ZVM_MODE_VISUAL_LINE ]]; then
+
+    # Extend the selection to whole line
+    for (( ; $bpos>0; bpos-- )); do
+      if [[ "${BUFFER:$bpos:1}" == $'\n' ]]; then
+        bpos=$bpos+1
+        break
+      fi
+    done
+    for (( ; $epos<$#BUFFER; epos++ )); do
+      if [[ "${BUFFER:$epos:1}" == $'\n' ]]; then
+        break
+      fi
+    done
+
+    ###########################################
+    # Calculate the new cursor position
+
+    # Calculate the indent of current cursor line
+    for ((cpos=$((CURSOR-1)); $cpos>=0; cpos--)); do
+      [[ "${BUFFER:$cpos:1}" == $'\n' ]] && break
+    done
+
+    local indent=$((CURSOR-cpos-1))
+
+    if (( $epos < $#BUFFER )); then
+      cpos=$bpos
+    else
+      # Calculate the cursor postion on above line
+      for ((cpos=$((bpos-2)); $cpos>0; cpos--)); do
+        if [[ "${BUFFER:$cpos:1}" == $'\n' ]]; then
+          cpos=$cpos+1
+          break
+        fi
+      done
+    fi
+
+    cpos=$((cpos+indent))
+  fi
+
+  echo $bpos $epos $cpos
+}
+
+# Yank characters of the marked region
+function zvm_yank() {
+  local ret=($(zvm_calc_selection $1))
+  local bpos=$ret[1] epos=$ret[2] cpos=$ret[3]
   CUTBUFFER=${BUFFER:$bpos:$((epos-bpos))}
-  echo $bpos $epos
+  if [[ ${1:-$ZVM_MODE} == $ZVM_MODE_VISUAL_LINE ]]; then
+    CUTBUFFER=${CUTBUFFER}$'\n'
+  fi
+  MARK=$bpos CURSOR=$epos
 }
 
 # Yank characters of the visual selection
 function zvm_vi_yank() {
-  zvm_yank &>/dev/null
+  zvm_yank
   zvm_exit_visual_mode
+}
+
+# Put cutbuffer after the cursor
+function zvm_vi_put_after() {
+  local content=${CUTBUFFER}
+  if [[ ${content: -1} == $'\n' ]]; then
+    local pos=${CURSOR}
+
+    # Find the end of current line
+    for ((; $pos<$#BUFFER; pos++)); do
+      if [[ ${BUFFER:$pos:1} == $'\n' ]]; then
+        pos=$pos+1
+        break
+      fi
+    done
+
+    # Check if it is an empty line
+    if [[ ${BUFFER:$CURSOR:1} == $'\n' &&
+      ${BUFFER:$((CURSOR-1)):1} == $'\n' ]]; then
+      local head=${BUFFER:0:$pos}
+      local foot=${BUFFER:$pos}
+    else
+      local head=${BUFFER:0:$pos}
+      local foot=${BUFFER:$pos}
+      if [[ $pos == $#BUFFER ]]; then
+        content=$'\n'${content:0:-1}
+      fi
+    fi
+
+    BUFFER="${head}${content}${foot}"
+    CURSOR=$pos
+  else
+    local head="${BUFFER:0:$CURSOR}"
+    local foot="${BUFFER:$((CURSOR+1))}"
+    BUFFER="${head}${BUFFER:$CURSOR:1}${content}${foot}"
+    CURSOR=$CURSOR+$#content
+  fi
+}
+
+# Put cutbuffer before the cursor
+function zvm_vi_put_before() {
+  local content=${CUTBUFFER}
+  if [[ ${content: -1} == $'\n' ]]; then
+    local pos=$CURSOR
+
+    # Find the beginning of current line
+    for ((; $pos>0; pos--)); do
+      if [[ "${BUFFER:$pos:1}" == $'\n' ]]; then
+        pos=$pos+1
+        break
+      fi
+    done
+
+    # Check if it is an empty line
+    if [[ ${BUFFER:$CURSOR:1} == $'\n' &&
+      ${BUFFER:$((CURSOR-1)):1} == $'\n' ]]; then
+      local head=${BUFFER:0:$((pos-1))}
+      local foot=$'\n'${BUFFER:$pos}
+    else
+      local head=${BUFFER:0:$pos}
+      local foot=${BUFFER:$pos}
+    fi
+
+    BUFFER="${head}${content}${foot}"
+    CURSOR=$pos
+  else
+    local head="${BUFFER:0:$CURSOR}"
+    local foot="${BUFFER:$((CURSOR+1))}"
+    BUFFER="${head}${content}${BUFFER:$CURSOR:1}${foot}"
+    CURSOR=$CURSOR+$#content
+  fi
 }
 
 # Delete characters of the visual selection
 function zvm_vi_delete() {
-  local ret=($(zvm_yank))
-  local bpos=${ret[1]} epos=${ret[2]}
+  local ret=($(zvm_calc_selection))
+  local bpos=$ret[1] epos=$ret[2] cpos=$ret[3]
+
+  CUTBUFFER=${BUFFER:$bpos:$((epos-bpos))}
+
+  # Check if it is visual line mode
+  if [[ $ZVM_MODE == $ZVM_MODE_VISUAL_LINE ]]; then
+    if (( $epos < $#BUFFER )); then
+      epos=$epos+1
+    elif (( $bpos > 0 )); then
+      bpos=$bpos-1
+    fi
+    CUTBUFFER=${CUTBUFFER}$'\n'
+  fi
+
   BUFFER="${BUFFER:0:$bpos}${BUFFER:$epos}"
-  CURSOR=$bpos
+  CURSOR=$cpos
+
   zvm_exit_visual_mode
 }
 
 # Yank characters of the visual selection
 function zvm_vi_change() {
-  local ret=($(zvm_yank))
+  local ret=($(zvm_calc_selection))
   local bpos=$ret[1] epos=$ret[2]
+
+  CUTBUFFER=${BUFFER:$bpos:$((epos-bpos))}
+
+  # Check if it is visual line mode
+  if [[ $ZVM_MODE == $ZVM_MODE_VISUAL_LINE ]]; then
+    CUTBUFFER=${CUTBUFFER}$'\n'
+  fi
+
   BUFFER="${BUFFER:0:$bpos}${BUFFER:$epos}"
   CURSOR=$bpos
-  zle visual-mode
+
+  zvm_exit_visual_mode
   zvm_select_vi_mode $ZVM_MODE_INSERT
 }
 
@@ -512,12 +649,19 @@ function zvm_range_handler() {
     'aw') zle select-a-word; cursor=$MARK;;
   esac
   case "${keys}" in
-    yy) zle vi-yank-whole-line; zle visual-mode;;
-    dd) zvm_kill_whole_line; zle visual-mode;;
+    yy)
+      zvm_yank $ZVM_MODE_VISUAL_LINE
+      zle visual-mode
+      ;;
+    dd)
+      zvm_kill_whole_line
+      cursor=$CURSOR
+      zle visual-mode
+      ;;
     cc)
-      zvm_kill_line;
-      cursor=$MARK;
-      zle visual-mode;
+      zvm_kill_line
+      cursor=$CURSOR
+      zle visual-mode
       zvm_select_vi_mode $ZVM_MODE_INSERT
       ;;
     y*) zvm_vi_yank;;
@@ -695,7 +839,7 @@ function zvm_change_surround() {
   if [[ -z $is_appending ]]; then
     region_highlight=("${region_highlight[@]:0:-2}")
   fi
-  # Check if canceling changing surround
+  # Check if canceling changing surround (^[)
   [[ $key == '' ]] && return
   # Start changing surround
   ret=($(zvm_match_surround "$key"))
@@ -741,12 +885,20 @@ function zvm_change_surround_text_object() {
 
 # Enter the visual mode
 function zvm_enter_visual_mode() {
-  zvm_select_vi_mode $ZVM_MODE_VISUAL
+  local mode=
+  case "$(zvm_keys)" in
+    v) mode=$ZVM_MODE_VISUAL;;
+    V) mode=$ZVM_MODE_VISUAL_LINE;;
+  esac
+  zvm_select_vi_mode $mode
 }
 
 # Exit the visual mode
 function zvm_exit_visual_mode() {
-  zle visual-mode
+  case "$ZVM_MODE" in
+    $ZVM_MODE_VISUAL) zle visual-mode;;
+    $ZVM_MODE_VISUAL_LINE) zle visual-line-mode;;
+  esac
   zvm_select_vi_mode $ZVM_MODE_NORMAL
 }
 
@@ -788,6 +940,11 @@ function zvm_select_vi_mode() {
       zvm_update_cursor_style
       zle visual-mode
       ;;
+    $ZVM_MODE_VISUAL_LINE)
+      ZVM_MODE=$ZVM_MODE_VISUAL_LINE
+      zvm_update_cursor_style
+      zle visual-line-mode
+      ;;
   esac
 
   # Here restore reset prompt
@@ -823,6 +980,7 @@ function zvm_update_cursor_style() {
     n) zvm_set_normal_mode_cursor;;
     i) zvm_set_insert_mode_cursor;;
     v) zvm_set_normal_mode_cursor;;
+    vl) zvm_set_normal_mode_cursor;;
   esac
 }
 
@@ -860,6 +1018,8 @@ function zvm_init() {
   zvm_define_widget zvm_vi_change
   zvm_define_widget zvm_vi_delete
   zvm_define_widget zvm_vi_yank
+  zvm_define_widget zvm_vi_put_after
+  zvm_define_widget zvm_vi_put_before
 
   # Override standard widgets
   zvm_define_widget zle-line-pre-redraw zvm_zle-line-pre-redraw
@@ -896,6 +1056,7 @@ function zvm_init() {
 
   # Other key bindings
   zvm_bindkey vicmd  'v'  zvm_enter_visual_mode
+  zvm_bindkey vicmd  'V'  zvm_enter_visual_mode
   zvm_bindkey visual '^[' zvm_exit_visual_mode
   zvm_bindkey vicmd  'o'  zvm_open_line_below
   zvm_bindkey vicmd  'O'  zvm_open_line_above
@@ -903,6 +1064,8 @@ function zvm_init() {
   zvm_bindkey visual 'c'  zvm_vi_change
   zvm_bindkey visual 'd'  zvm_vi_delete
   zvm_bindkey visual 'y'  zvm_vi_yank
+  zvm_bindkey vicmd  'p'  zvm_vi_put_after
+  zvm_bindkey vicmd  'P'  zvm_vi_put_before
 
   # Binding and overwrite original y/d/c of vicmd
   for c in {y,d,c}; do
