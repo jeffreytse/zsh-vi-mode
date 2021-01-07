@@ -415,6 +415,13 @@ function zvm_kill_whole_line() {
   MARK=$cpos
 }
 
+# Exchange the point and mark
+function zvm_exchange_point_and_mark() {
+  cursor=$MARK
+  MARK=$CURSOR CURSOR=$cursor
+  zvm_highlight
+}
+
 # Open line below
 function zvm_open_line_below() {
   ZVM_MODE=$ZVM_MODE_INSERT
@@ -1068,6 +1075,7 @@ function zvm_init() {
   zvm_define_widget zvm_exit_insert_mode
   zvm_define_widget zvm_enter_visual_mode
   zvm_define_widget zvm_exit_visual_mode
+  zvm_define_widget zvm_exchange_point_and_mark
   zvm_define_widget zvm_open_line_below
   zvm_define_widget zvm_open_line_above
   zvm_define_widget zvm_vi_substitue
@@ -1118,6 +1126,7 @@ function zvm_init() {
   zvm_bindkey vicmd  'v'  zvm_enter_visual_mode
   zvm_bindkey vicmd  'V'  zvm_enter_visual_mode
   zvm_bindkey visual '^[' zvm_exit_visual_mode
+  zvm_bindkey visual 'o'  zvm_exchange_point_and_mark
   zvm_bindkey vicmd  'o'  zvm_open_line_below
   zvm_bindkey vicmd  'O'  zvm_open_line_above
   zvm_bindkey vicmd  's'  zvm_vi_substitue
