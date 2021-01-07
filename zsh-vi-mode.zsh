@@ -453,13 +453,13 @@ function zvm_calc_selection() {
   if [[ "${1:-$ZVM_MODE}" == $ZVM_MODE_VISUAL_LINE ]]; then
 
     # Extend the selection to whole line
-    for (( ; $bpos>0; bpos-- )); do
+    for ((bpos=$bpos-1; $bpos>0; bpos--)); do
       if [[ "${BUFFER:$bpos:1}" == $'\n' ]]; then
         bpos=$bpos+1
         break
       fi
     done
-    for (( ; $epos<$#BUFFER; epos++ )); do
+    for (( ; $epos<$#BUFFER; epos++)); do
       if [[ "${BUFFER:$epos:1}" == $'\n' ]]; then
         break
       fi
