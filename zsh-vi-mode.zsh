@@ -512,7 +512,9 @@ function zvm_vi_yank() {
 
 # Put cutbuffer after the cursor
 function zvm_vi_put_after() {
+  local head= foot=
   local content=${CUTBUFFER}
+
   if [[ ${content: -1} == $'\n' ]]; then
     local pos=${CURSOR}
 
@@ -527,11 +529,11 @@ function zvm_vi_put_after() {
     # Check if it is an empty line
     if [[ ${BUFFER:$CURSOR:1} == $'\n' &&
       ${BUFFER:$((CURSOR-1)):1} == $'\n' ]]; then
-      local head=${BUFFER:0:$pos}
-      local foot=${BUFFER:$pos}
+      head=${BUFFER:0:$pos}
+      foot=${BUFFER:$pos}
     else
-      local head=${BUFFER:0:$pos}
-      local foot=${BUFFER:$pos}
+      head=${BUFFER:0:$pos}
+      foot=${BUFFER:$pos}
       if [[ $pos == $#BUFFER ]]; then
         content=$'\n'${content:0:-1}
       fi
@@ -540,16 +542,23 @@ function zvm_vi_put_after() {
     BUFFER="${head}${content}${foot}"
     CURSOR=$pos
   else
-    local head="${BUFFER:0:$CURSOR}"
-    local foot="${BUFFER:$((CURSOR+1))}"
+    head="${BUFFER:0:$CURSOR}"
+    foot="${BUFFER:$((CURSOR+1))}"
     BUFFER="${head}${BUFFER:$CURSOR:1}${content}${foot}"
     CURSOR=$CURSOR+$#content
   fi
+
+  # Reresh display and highlight buffer
+  zle redisplay
+  region_highlight+=("$#head $(($#head+$#content)) bg=$ZVM_VI_REGION_HIGHLIGHT")
+  zle -R
 }
 
 # Put cutbuffer before the cursor
 function zvm_vi_put_before() {
+  local head= foot=
   local content=${CUTBUFFER}
+
   if [[ ${content: -1} == $'\n' ]]; then
     local pos=$CURSOR
 
@@ -564,21 +573,26 @@ function zvm_vi_put_before() {
     # Check if it is an empty line
     if [[ ${BUFFER:$CURSOR:1} == $'\n' &&
       ${BUFFER:$((CURSOR-1)):1} == $'\n' ]]; then
-      local head=${BUFFER:0:$((pos-1))}
-      local foot=$'\n'${BUFFER:$pos}
+      head=${BUFFER:0:$((pos-1))}
+      foot=$'\n'${BUFFER:$pos}
     else
-      local head=${BUFFER:0:$pos}
-      local foot=${BUFFER:$pos}
+      head=${BUFFER:0:$pos}
+      foot=${BUFFER:$pos}
     fi
 
     BUFFER="${head}${content}${foot}"
     CURSOR=$pos
   else
-    local head="${BUFFER:0:$CURSOR}"
-    local foot="${BUFFER:$((CURSOR+1))}"
+    head="${BUFFER:0:$CURSOR}"
+    foot="${BUFFER:$((CURSOR+1))}"
     BUFFER="${head}${content}${BUFFER:$CURSOR:1}${foot}"
     CURSOR=$CURSOR+$#content
   fi
+
+  # Reresh display and highlight buffer
+  zle redisplay
+  region_highlight+=("$#head $(($#head+$#content)) bg=$ZVM_VI_REGION_HIGHLIGHT")
+  zle -R
 }
 
 # Delete characters of the visual selection
