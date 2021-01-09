@@ -31,12 +31,12 @@
 # ZVM_VI_INSERT_MODE_LEGACY_UNDO:
 # using legacy undo behavior in vi insert mode
 #
-# ZVM_VI_REGION_HIGHLIGHT:
-# the behavior of region (surround objects) in vi mode
+# ZVM_VI_HIGHLIGHT_BACKGROUND:
+# the behavior of highlight (surrounds, visual-line, etc) in vi mode
 #
 # For example:
-#   ZVM_VI_REGION_HIGHLIGHT=red      # Color name
-#   ZVM_VI_REGION_HIGHLIGHT=#ff0000  # Hex value
+#   ZVM_VI_HIGHLIGHT_BACKGROUND=red      # Color name
+#   ZVM_VI_HIGHLIGHT_BACKGROUND=#ff0000  # Hex value
 #
 # ZVM_VI_SURROUND_BINDKEY
 # the key binding mode for surround operating (default is 'classic')
@@ -99,6 +99,9 @@ ZVM_MODE=''
 # The keys typed to invoke this widget, as a literal string
 ZVM_KEYS=''
 
+# The region hilight information
+ZVM_REGION_HIGHLIGHT=()
+
 # Default alternative character for escape space character
 ZVM_ESCAPE_SPACE='\s'
 
@@ -132,8 +135,8 @@ else
 fi
 
 ZVM_VI_INSERT_MODE_LEGACY_UNDO=${ZVM_VI_INSERT_MODE_LEGACY_UNDO:-false}
-ZVM_VI_REGION_HIGHLIGHT=${ZVM_VI_REGION_HIGHLIGHT:-'#cc0000'}
 ZVM_VI_SURROUND_BINDKEY=${ZVM_VI_SURROUND_BINDKEY:-classic}
+ZVM_VI_HIGHLIGHT_BACKGROUND=${ZVM_VI_HIGHLIGHT_BACKGROUND:-#cc0000}
 
 # Display version information
 function zvm_version() {
@@ -556,9 +559,8 @@ function zvm_vi_put_after() {
   fi
 
   # Reresh display and highlight buffer
-  zle redisplay
-  region_highlight+=("$#head $(($#head+$#content)) bg=$ZVM_VI_REGION_HIGHLIGHT")
-  zle -R
+  zvm_highlight custom $#head $(($#head+$#content))
+  zvm_highlight refresh
 }
 
 # Put cutbuffer before the cursor
@@ -597,9 +599,8 @@ function zvm_vi_put_before() {
   fi
 
   # Reresh display and highlight buffer
-  zle redisplay
-  region_highlight+=("$#head $(($#head+$#content)) bg=$ZVM_VI_REGION_HIGHLIGHT")
-  zle -R
+  zvm_highlight custom $#head $(($#head+$#content))
+  zvm_highlight refresh
 }
 
 # Delete characters of the visual selection
@@ -844,9 +845,9 @@ function zvm_change_surround() {
     (( ${#ret[@]} )) || return
     bpos=${ret[1]}
     epos=${ret[2]}
-    region_highlight+=("$bpos $(($bpos+1)) bg=$ZVM_VI_REGION_HIGHLIGHT")
-    region_highlight+=("$epos $(($epos+1)) bg=$ZVM_VI_REGION_HIGHLIGHT")
-    zle -R
+    zvm_highlight custom $bpos $(($bpos+1))
+    zvm_highlight custom $epos $(($epos+1))
+    zvm_highlight redraw
   fi
   local key=
   case $action in
@@ -858,7 +859,7 @@ function zvm_change_surround() {
       ;;
   esac
   if [[ -z $is_appending ]]; then
-    region_highlight=("${region_highlight[@]:0:-2}")
+    zvm_highlight clear
   fi
   # Check if canceling changing surround (^[)
   [[ $key == '' ]] && return
@@ -904,17 +905,48 @@ function zvm_change_surround_text_object() {
   esac
 }
 
-# Highlight content by current mode
+# Highlight content
 function zvm_highlight() {
-  case "$ZVM_MODE" in
-    $ZVM_MODE_VISUAL_LINE)
-      zle redisplay
-      local ret=($(zvm_calc_selection))
-      local bpos=$ret[1] epos=$ret[2]
-      region_highlight+=("$((bpos)) $((epos)) bg=$ZVM_VI_REGION_HIGHLIGHT")
-      zle -R
+  local opt=${1:-mode}
+  local region=()
+  local rh_length=${#ZVM_REGION_HIGHLIGHT[@]}
+  local redraw=
+
+  # Hanlde region by the option
+  case "$opt" in
+    mode)
+      case "$ZVM_MODE" in
+        $ZVM_MODE_VISUAL_LINE)
+          local ret=($(zvm_calc_selection))
+          local bpos=$ret[1] epos=$ret[2]
+          region=("$((bpos)) $((epos)) bg=$ZVM_VI_HIGHLIGHT_BACKGROUND")
+          ;;
+      esac
+      redraw=true
       ;;
+    custom)
+      region=("${ZVM_REGION_HIGHLIGHT[@]}")
+      region+=("$2 $3 bg=${4:-$ZVM_VI_HIGHLIGHT_BACKGROUND}")
+      ;;
+    clear) redraw=true;;
+    redraw) redraw=true;;
   esac
+
+  # Update region highlight
+  if (( $#region > 0 )) || [[ "$opt" == 'clear' ]]; then
+    zle redisplay
+    ZVM_REGION_HIGHLIGHT=("${region[@]}")
+    # Remove old region highlight
+    if (( $rh_length > 0 && $rh_length <= ${#region_highlight} )); then
+      region_highlight=("${region_highlight[@]:0:-$rh_length}")
+    fi
+    region_highlight+=("${ZVM_REGION_HIGHLIGHT[@]}")
+  fi
+
+  # Check if we need to refresh the region highlight
+  if [[ $redraw ]]; then
+    zle -R
+  fi
 }
 
 # Down line in visual mode
@@ -958,8 +990,7 @@ function zvm_exit_visual_mode() {
     $ZVM_MODE_VISUAL) zle visual-mode;;
     $ZVM_MODE_VISUAL_LINE) zle visual-line-mode;;
   esac
-  region_highlight=()
-  zle -R
+  zvm_highlight clear
   zvm_select_vi_mode $ZVM_MODE_NORMAL
 }
 
