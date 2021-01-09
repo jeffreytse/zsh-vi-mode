@@ -138,6 +138,12 @@ ZVM_VI_INSERT_MODE_LEGACY_UNDO=${ZVM_VI_INSERT_MODE_LEGACY_UNDO:-false}
 ZVM_VI_SURROUND_BINDKEY=${ZVM_VI_SURROUND_BINDKEY:-classic}
 ZVM_VI_HIGHLIGHT_BACKGROUND=${ZVM_VI_HIGHLIGHT_BACKGROUND:-#cc0000}
 
+# Here is all the extra commands
+zvm_before_init_commands=()
+zvm_after_init_commands=()
+zvm_before_select_vi_mode_commands=()
+zvm_after_select_vi_mode_commands=()
+
 # Display version information
 function zvm_version() {
   echo -e "$ZVM_NAME $ZVM_VERSION"
@@ -1012,6 +1018,8 @@ function zvm_exit_insert_mode() {
 
 # Select vi mode
 function zvm_select_vi_mode() {
+  zvm_exec_commands 'before_select_vi_mode'
+
   # Some plugins would reset the prompt when we select the
   # keymap, so here we disable reset prompt temporarily.
   ZVM_RESET_PROMPT_DISABLED=1
@@ -1043,6 +1051,8 @@ function zvm_select_vi_mode() {
   ZVM_RESET_PROMPT_DISABLED=
 
   [[ -z $2 ]] && zle reset-prompt
+
+  zvm_exec_commands 'after_select_vi_mode'
 }
 
 # Reset prompt
@@ -1090,6 +1100,8 @@ function zvm_zle-line-init() {
 
 # Initialize vi-mode for widgets, keybindings, etc.
 function zvm_init() {
+  zvm_exec_commands 'before_init'
+
   # Create User-defined widgets
   zvm_define_widget zvm_default_handler
   zvm_define_widget zvm_backward_kill_line
@@ -1221,6 +1233,8 @@ function zvm_init() {
 
   # Enable vi keymap
   bindkey -v
+
+  zvm_exec_commands 'after_init'
 }
 
 # Precmd function
@@ -1232,6 +1246,31 @@ function zvm_precmd_function() {
   fi
   # Set insert mode cursor when starting new command line
   zvm_set_insert_mode_cursor
+}
+
+# Check if a command is existed
+function zvm_exist_command() {
+  local ret=($(type ${1}; echo $?))
+  return ${ret: -1}
+}
+
+# Execute commands
+function zvm_exec_commands() {
+  local commands="zvm_${1}_commands"
+  commands=(${(P)commands})
+
+  # Execute the default command
+  if zvm_exist_command "zvm_$1"; then
+    eval "zvm_$1" ${@:2}
+  fi
+
+  # Execute extra commands
+  for cmd in $commands; do
+    if zvm_exist_command ${cmd}; then
+      cmd="$cmd ${@:2}"
+    fi
+    eval $cmd
+  done
 }
 
 # Initialize the plugin when starting new command line
