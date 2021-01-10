@@ -69,6 +69,11 @@
 # ZVM_KEYTIMEOUT:
 # the key input timeout for waiting for next key (default is 0.3 seconds)
 #
+# ZVM_LAZY_KEYBINDINGS:
+# the setting for lazy keybindings (default is true), and lazy keybindings
+# will postpone the keybindings of vicmd and visual keymaps to the first
+# time entering normal mode
+#
 
 # Plugin information
 typeset -gr ZVM_NAME='zsh-vi-mode'
@@ -125,6 +130,16 @@ ZVM_CURSOR_XTERM_BEAM='\x1b[\x36 q'
 # Set key input timeout (default is 0.3 seconds)
 ZVM_KEYTIMEOUT=${ZVM_KEYTIMEOUT:-0.3}
 
+# Set keybindings mode (default is true)
+# The lazy keybindings will post the keybindings of vicmd and visual
+# keymaps to the first time entering the normal mode
+ZVM_LAZY_KEYBINDINGS=${ZVM_LAZY_KEYBINDINGS:-true}
+
+# All keybindings for lazy loading
+if $ZVM_LAZY_KEYBINDINGS; then
+  ZVM_LAZY_KEYBINDINGS_LIST=()
+fi
+
 # Set the sursor stlye of defferent vi modes
 if [[ ${TERM:0:5} == 'xterm' ]]; then
   ZVM_VI_NORMAL_MODE_CURSOR=${ZVM_VI_NORMAL_MODE_CURSOR:-$ZVM_CURSOR_XTERM_BLOCK}
@@ -138,11 +153,13 @@ ZVM_VI_INSERT_MODE_LEGACY_UNDO=${ZVM_VI_INSERT_MODE_LEGACY_UNDO:-false}
 ZVM_VI_SURROUND_BINDKEY=${ZVM_VI_SURROUND_BINDKEY:-classic}
 ZVM_VI_HIGHLIGHT_BACKGROUND=${ZVM_VI_HIGHLIGHT_BACKGROUND:-#cc0000}
 
-# Here is all the extra commands
+# All the extra commands
 zvm_before_init_commands=()
 zvm_after_init_commands=()
 zvm_before_select_vi_mode_commands=()
 zvm_after_select_vi_mode_commands=()
+zvm_before_lazy_keybindings_commands=()
+zvm_after_lazy_keybindings_commands=()
 
 # Display version information
 function zvm_version() {
@@ -310,15 +327,26 @@ function zvm_bindkey() {
   local keys=$2
   local widget=$3
   local key=
+
+  # If lazy keybindings is enabled, we need to add to the lazy list
+  if [[ ${ZVM_LAZY_KEYBINDINGS_LIST+x} && ${keymap} != viins ]]; then
+    keys=${keys//\"/\\\"}
+    keys=${keys//\`/\\\`}
+    ZVM_LAZY_KEYBINDINGS_LIST+=("${keymap} \"${keys}\" ${widget}")
+    return
+  fi
+
   # Get the first key (especially check if ctrl characters)
   if [[ $#keys -gt 1 && "${keys:0:1}" == '^' ]]; then
     key=${keys:0:2}
   else
     key=${keys:0:1}
   fi
+
   local result=($(zvm_find_bindkey_widget $keymap "$key"))
   local rawfunc=${result[2]}
   local wrapper="zvm_${rawfunc}-wrapper"
+
   # Check if we need to wrap the original widget
   if [[ ! -z $rawfunc && "$rawfunc" != zvm_*-wrapper ]]; then
     eval "$wrapper() { \
@@ -342,6 +370,7 @@ function zvm_bindkey() {
     zle -N $wrapper
     bindkey -M $keymap "${key}" $wrapper
   fi
+
   # We should bind keys with a existing widget
   if [[ $widget ]]; then
     bindkey -M $keymap "${keys}" $widget
@@ -1020,6 +1049,21 @@ function zvm_exit_insert_mode() {
 
 # Select vi mode
 function zvm_select_vi_mode() {
+  # Start the lazy keybindings when the first time entering the normal mode
+  if [[ $1 != $ZVM_MODE_INSERT ]] && (($#ZVM_LAZY_KEYBINDINGS_LIST > 0 )); then
+    zvm_exec_commands 'before_lazy_keybindings'
+
+    # Here we should unset the list for normal keybindings
+    local list=("${ZVM_LAZY_KEYBINDINGS_LIST[@]}")
+    unset ZVM_LAZY_KEYBINDINGS_LIST
+
+    for r in "${list[@]}"; do
+      eval "zvm_bindkey ${r}"
+    done
+
+    zvm_exec_commands 'after_lazy_keybindings'
+  fi
+
   zvm_exec_commands 'before_select_vi_mode'
 
   # Some plugins would reset the prompt when we select the
