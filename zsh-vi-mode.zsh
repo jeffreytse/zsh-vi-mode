@@ -442,15 +442,13 @@ function zvm_kill_whole_line() {
   local bpos=$ret[1] epos=$ret[2] cpos=$ret[3]
   CUTBUFFER=${BUFFER:$bpos:$((epos-bpos))}$'\n'
 
-  # Check if it is visual line mode
+  # Adjust region range of deletion
   if (( $epos < $#BUFFER )); then
     epos=$epos+1
-  elif (( $bpos > 0 )); then
-    bpos=$bpos-1
   fi
 
   BUFFER="${BUFFER:0:$bpos}${BUFFER:$epos}"
-  MARK=$cpos
+  CURSOR=$cpos
 }
 
 # Exchange the point and mark
@@ -500,18 +498,24 @@ function zvm_calc_selection() {
     # Extend the selection to whole line
     for ((bpos=$bpos-1; $bpos>0; bpos--)); do
       if [[ "${BUFFER:$bpos:1}" == $'\n' ]]; then
-        bpos=$bpos+1
+        bpos=$((bpos+1))
         break
       fi
     done
-    for (( ; $epos<$#BUFFER; epos++)); do
+    for ((epos=$epos-1; $epos<$#BUFFER; epos++)); do
       if [[ "${BUFFER:$epos:1}" == $'\n' ]]; then
         break
       fi
     done
 
+    # The begin position must not be less than zero
+    if (( bpos < 0 )); then
+      bpos=0
+    fi
+
     ###########################################
-    # Calculate the new cursor position
+    # Calculate the new cursor position, here we consider that
+    # the selection will be delected.
 
     # Calculate the indent of current cursor line
     for ((cpos=$((CURSOR-1)); $cpos>=0; cpos--)); do
@@ -520,19 +524,43 @@ function zvm_calc_selection() {
 
     local indent=$((CURSOR-cpos-1))
 
+    # If the selection includes the last line, the cursor
+    # will move up to above line. Otherwise the cursor will
+    # keep in the same line.
+
+    local hpos= # Line head position
+    local rpos= # Reference position
+
     if (( $epos < $#BUFFER )); then
-      cpos=$bpos
+      # Get the head position of next line
+      hpos=$((epos+1))
+      rpos=$bpos
     else
-      # Calculate the cursor postion on above line
-      for ((cpos=$((bpos-2)); $cpos>0; cpos--)); do
-        if [[ "${BUFFER:$cpos:1}" == $'\n' ]]; then
-          cpos=$cpos+1
+      # Get the head position of above line
+      for ((hpos=$((bpos-2)); $hpos>0; hpos--)); do
+        if [[ "${BUFFER:$hpos:1}" == $'\n' ]]; then
           break
         fi
       done
+      if (( $hpos < -1 )); then
+        hpos=-1
+      fi
+      hpos=$((hpos+1))
+      rpos=$hpos
     fi
 
-    cpos=$((cpos+indent))
+    # Calculate the cursor postion, the indent must be
+    # less than the line characters.
+    for ((cpos=$hpos; $cpos<$#BUFFER; cpos++)); do
+      if [[ "${BUFFER:$cpos:1}" == $'\n' ]]; then
+        break
+      fi
+      if (( $hpos + $indent <= $cpos )); then
+        break
+      fi
+    done
+
+    cpos=$((rpos+cpos-hpos))
   fi
 
   echo $bpos $epos $cpos
@@ -581,6 +609,7 @@ function zvm_vi_put_after() {
       foot=${BUFFER:$pos}
       if [[ $pos == $#BUFFER ]]; then
         content=$'\n'${content:0:-1}
+        pos=$pos+1
       fi
     fi
 
@@ -620,6 +649,7 @@ function zvm_vi_put_before() {
       ${BUFFER:$((CURSOR-1)):1} == $'\n' ]]; then
       head=${BUFFER:0:$((pos-1))}
       foot=$'\n'${BUFFER:$pos}
+      pos=$pos-1
     else
       head=${BUFFER:0:$pos}
       foot=${BUFFER:$pos}
