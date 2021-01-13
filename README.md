@@ -124,10 +124,13 @@ Then source it in your `.zshrc` (or `.bashrc`)
 source $HOME/.zsh-vi-mode/zsh-vi-mode.plugin.zsh
 ```
 
-## 📚 Usages
+## 📚 Usage
 
 Use `ESC` or `CTRL-[` to enter `Normal mode` (Each command line starting with
 `Insert mode` by default).
+
+Also, you can use the `ZVM_VI_ESCAPE_BINDKEY` option to custom the escape key
+which could better matches your flavor, such as `jj` or `jk` and so on.
 
 
 History
