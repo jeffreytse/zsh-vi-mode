@@ -22,6 +22,10 @@
 # All Settings
 # Set these variables before sourcing this file.
 #
+# ZVM_VI_ESCAPE_BINDKEY
+# the vi escape key (default is ^[ => <ESC>), you can set it to whatever
+# you like, such as `jj`, `jk` and so on.
+#
 # ZVM_VI_NORMAL_MODE_CURSOR:
 # the prompt cursor in vi normal mode
 #
@@ -148,6 +152,9 @@ else
   ZVM_VI_NORMAL_MODE_CURSOR=${ZVM_VI_NORMAL_MODE_CURSOR:-$ZVM_CURSOR_BLOCK}
   ZVM_VI_INSERT_MODE_CURSOR=${ZVM_VI_INSERT_MODE_CURSOR:-$ZVM_CURSOR_BEAM}
 fi
+
+# Set the vi escape key (default is ^[ => <ESC>)
+ZVM_VI_ESCAPE_BINDKEY=${ZVM_VI_ESCAPE_BINDKEY:-^[}
 
 ZVM_VI_INSERT_MODE_LEGACY_UNDO=${ZVM_VI_INSERT_MODE_LEGACY_UNDO:-false}
 ZVM_VI_SURROUND_BINDKEY=${ZVM_VI_SURROUND_BINDKEY:-classic}
@@ -785,11 +792,11 @@ function zvm_parse_surround_keys() {
   local action=
   local surround=
   case "${keys}" in
-    vS*) action=S; surround=${keys:2:1};;
-    vys*) action=y; surround=${keys:3:1};;
-    s[adr]*) action=${keys:1:1}; surround=${keys:2:1};;
-    [acd]s*) action=${keys:0:1}; surround=${keys:2:1};;
-    [cdvy][ia]*) action=${keys:0:2}; surround=${keys:2:1};;
+    vS*) action=S; surround=${keys:2};;
+    vys*) action=y; surround=${keys:3};;
+    s[adr]*) action=${keys:1:1}; surround=${keys:2};;
+    [acd]s*) action=${keys:0:1}; surround=${keys:2};;
+    [cdvy][ia]*) action=${keys:0:2}; surround=${keys:2};;
   esac
   echo $action ${surround// /$ZVM_ESCAPE_SPACE}
 }
@@ -928,8 +935,11 @@ function zvm_change_surround() {
   if [[ -z $is_appending ]]; then
     zvm_highlight clear
   fi
-  # Check if canceling changing surround (^[)
-  [[ $key == '' ]] && return
+
+  # Check if canceling changing surround (ZVM_VI_ESCAPE_BINDKEY)
+  [[ "$key" == '' ]] && return
+  [[ "$key" == "${ZVM_VI_ESCAPE_BINDKEY//\^\[/}" ]] && return
+
   # Start changing surround
   ret=($(zvm_match_surround "$key"))
   local bchar=${${ret[1]//$ZVM_ESCAPE_SPACE/ }:-$key}
@@ -1237,7 +1247,6 @@ function zvm_init() {
   # Fix the cursor position when exiting insert mode
   zvm_bindkey vicmd 'i'  zvm_enter_insert_mode
   zvm_bindkey vicmd 'a'  zvm_enter_insert_mode
-  zvm_bindkey viins '^[' zvm_exit_insert_mode
 
   # Other key bindings
   zvm_bindkey visual 'j'  zvm_down_line
@@ -1246,7 +1255,6 @@ function zvm_init() {
   zvm_bindkey visual 'l'  zvm_forward_char
   zvm_bindkey vicmd  'v'  zvm_enter_visual_mode
   zvm_bindkey vicmd  'V'  zvm_enter_visual_mode
-  zvm_bindkey visual '^[' zvm_exit_visual_mode
   zvm_bindkey visual 'o'  zvm_exchange_point_and_mark
   zvm_bindkey vicmd  'o'  zvm_open_line_below
   zvm_bindkey vicmd  'O'  zvm_open_line_above
@@ -1256,6 +1264,19 @@ function zvm_init() {
   zvm_bindkey visual 'y'  zvm_vi_yank
   zvm_bindkey vicmd  'p'  zvm_vi_put_after
   zvm_bindkey vicmd  'P'  zvm_vi_put_before
+
+  # Binding escape key
+  zvm_bindkey viins "$ZVM_VI_ESCAPE_BINDKEY" zvm_exit_insert_mode
+  zvm_bindkey visual "$ZVM_VI_ESCAPE_BINDKEY" zvm_exit_visual_mode
+
+  if [[ "$ZVM_VI_ESCAPE_BINDKEY" != '^[' ]]; then
+    local is_custom_escape_key=true
+  fi
+
+  if $is_custom_escape_key; then
+    zvm_bindkey viins '^[' zvm_exit_insert_mode
+    zvm_bindkey visual '^[' zvm_exit_visual_mode
+  fi
 
   # Binding and overwrite original y/d/c of vicmd
   for c in {y,d,c}; do
@@ -1270,10 +1291,16 @@ function zvm_init() {
   for s in ${(s..)^:-'()[]{}<>'}; do
     surrounds+=($s)
   done
+
   # Append quotes
   for s in {\',\",\`,\ ,'^['}; do
     surrounds+=($s)
   done
+
+  # Append for escaping visual mode
+  if $is_custom_escape_key; then
+    surrounds+=("$ZVM_VI_ESCAPE_BINDKEY")
+  fi
 
   # Surround key bindings
   for s in $surrounds; do
