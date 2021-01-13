@@ -197,7 +197,22 @@ function zvm_default_handler() {
     vicmd)
       case "$keys" in
         [cdy]*) zvm_range_handler "$keys";;
+        *)
+          for ((i=0;i<$#keys;i++)) do
+            zvm_navigation_handler ${keys:$i:1}
+            zvm_highlight
+          done
+          ;;
       esac
+      ;;
+    viins|main)
+      for ((i=0;i<$#keys;i++)) do
+        BUFFER="${BUFFER:0:$CURSOR}${keys:$i:1}${BUFFER:$CURSOR}"
+        CURSOR=$((CURSOR+1))
+        zle redisplay
+      done
+      ;;
+    visual)
       ;;
   esac
 }
@@ -205,10 +220,13 @@ function zvm_default_handler() {
 # Get the keys typed to invoke this widget, as a literal string
 function zvm_keys() {
   local keys=${ZVM_KEYS:-$KEYS}
+
   # Append `v` a the prefix of keys if it is visual mode
-  if [[ $ZVM_MODE == 'v' ]]; then
-    keys="v${keys}"
-  fi
+  case "${ZVM_MODE}" in
+    $ZVM_MODE_VISUAL) keys="v${keys}";;
+    $ZVM_MODE_VISUAL_LINE) keys="V${keys}";;
+  esac
+
   echo ${keys// /$ZVM_ESCAPE_SPACE}
 }
 
@@ -719,13 +737,9 @@ function zvm_vi_change() {
   zvm_select_vi_mode $ZVM_MODE_INSERT
 }
 
-# Handle a range of characters
-function zvm_range_handler() {
-  zle visual-mode
-  local keys=${1:-$(zvm_keys)}
-  local cursor=$CURSOR
-  MARK=$CURSOR
-  case "${keys:1}" in
+# Handle the navigation action
+function zvm_navigation_handler() {
+  case "$1" in
     '^') zle vi-first-non-blank;;
     '$') zle vi-end-of-line;;
     '0') zle vi-digit-or-beginning-of-line;;
@@ -736,35 +750,54 @@ function zvm_range_handler() {
     'l') zle vi-forward-char;;
     'w') zle vi-forward-word;;
     'e') zle vi-forward-word-end;;
-    'b') zle vi-backward-word; cursor=$CURSOR;;
+    'b') zle vi-backward-word; ;;
     'f') zle vi-find-next-char;;
-    'F') zle vi-find-prev-char; cursor=$CURSOR;;
+    'F') zle vi-find-prev-char;;
     't') zle vi-find-next-char-skip;;
-    'T') zle vi-find-prev-char-skip; cursor=$CURSOR;;
-    'iw') zle select-in-word; cursor=$MARK;;
-    'aw') zle select-a-word; cursor=$MARK;;
+    'T') zle vi-find-prev-char-skip;;
   esac
+}
+
+# Handle a range of characters
+function zvm_range_handler() {
+  local keys=${1:-$(zvm_keys)}
+  local cursor=$CURSOR
+  local mode=
+  MARK=$CURSOR
+
+  # Enter visual mode or visual line mode
+  if [[ $ZVM_MODE != $ZVM_MODE_VISUAL &&
+    $ZVM_MODE != $ZVM_MODE_VISUAL_LINE ]]; then
+    case "${keys}" in
+      [cdy][jk]) mode=$ZVM_MODE_VISUAL_LINE;;
+      cc|dd|yy) mode=$ZVM_MODE_VISUAL_LINE;;
+      *) mode=$ZVM_MODE_VISUAL;;
+    esac
+    # Select the mode
+    if [[ ! -z $mode ]]; then
+      zvm_select_vi_mode $mode
+    fi
+  fi
+
+  zvm_navigation_handler "${keys:1}"
+
+  # Extra handle
+  case "${keys:1}" in
+    b|F|T) cursor=$CURSOR;;
+    iw) zle select-in-word; cursor=$MARK;;
+    aw) zle select-a-word; cursor=$MARK;;
+  esac
+
   case "${keys}" in
-    yy)
-      zvm_yank $ZVM_MODE_VISUAL_LINE
-      zle visual-mode
-      ;;
-    dd)
-      zvm_kill_whole_line
-      cursor=$CURSOR
-      zle visual-mode
-      ;;
-    cc)
-      zvm_kill_line
-      cursor=$CURSOR
-      zle visual-mode
-      zvm_select_vi_mode $ZVM_MODE_INSERT
-      ;;
     y*) zvm_vi_yank;;
-    d*) zvm_vi_delete;;
-    c*) zvm_vi_change;;
+    d*) zvm_vi_delete; cursor=;;
+    c*) zvm_vi_change; cursor=;;
   esac
-  CURSOR=$cursor
+
+  # Change the cursor position if the cursor is not null
+  if [[ ! -z $cursor ]]; then
+    CURSOR=$cursor
+  fi
 }
 
 # Get the substr position in a string
