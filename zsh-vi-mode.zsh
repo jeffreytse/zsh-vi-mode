@@ -221,7 +221,7 @@ function zvm_default_handler() {
 function zvm_keys() {
   local keys=${ZVM_KEYS:-$KEYS}
 
-  # Append `v` a the prefix of keys if it is visual mode
+  # Append the prefix of keys if it is visual or visual-line mode
   case "${ZVM_MODE}" in
     $ZVM_MODE_VISUAL) keys="v${keys}";;
     $ZVM_MODE_VISUAL_LINE) keys="V${keys}";;
@@ -396,7 +396,7 @@ function zvm_bindkey() {
     bindkey -M $keymap "${key}" $wrapper
   fi
 
-  # We should bind keys with a existing widget
+  # We should bind keys with an existing widget
   if [[ $widget ]]; then
     bindkey -M $keymap "${keys}" $widget
   fi
@@ -420,7 +420,7 @@ function zvm_escape_non_printed_characters() {
   echo $str
 }
 
-# Change cursor with support for inside/outside tmux
+# Change cursor to support for inside/outside tmux
 function zvm_set_cursor() {
     if [[ -z $TMUX ]]; then
       echo -ne $1
@@ -517,7 +517,7 @@ function zvm_calc_selection() {
   # Save the current cursor position
   cpos=$bpos
 
-  # Check if it is visual line mode
+  # Check if it is visual-line mode
   if [[ "${1:-$ZVM_MODE}" == $ZVM_MODE_VISUAL_LINE ]]; then
 
     # Extend the selection to whole line
@@ -781,7 +781,7 @@ function zvm_range_handler() {
 
   zvm_navigation_handler "${keys:1}"
 
-  # Extra handle
+  # Extra handling
   case "${keys:1}" in
     b|F|T) cursor=$CURSOR;;
     iw) zle select-in-word; cursor=$MARK;;
@@ -1140,7 +1140,7 @@ function zvm_select_vi_mode() {
   zvm_exec_commands 'before_select_vi_mode'
 
   # Some plugins would reset the prompt when we select the
-  # keymap, so here we disable reset prompt temporarily.
+  # keymap, so here we disable the reset-prompt temporarily.
   ZVM_RESET_PROMPT_DISABLED=1
 
   case "$1" in
@@ -1166,7 +1166,7 @@ function zvm_select_vi_mode() {
       ;;
   esac
 
-  # Here restore reset prompt
+  # Here restore the reset-prompt
   ZVM_RESET_PROMPT_DISABLED=
 
   [[ -z $2 ]] && zle reset-prompt
