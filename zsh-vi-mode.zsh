@@ -650,7 +650,7 @@ function zvm_vi_put_after() {
   # Reresh display and highlight buffer
   zvm_highlight clear
   zvm_highlight custom $#head $(($#head+$#content))
-  zvm_highlight refresh
+  zvm_highlight redraw
 }
 
 # Put cutbuffer before the cursor
@@ -692,7 +692,7 @@ function zvm_vi_put_before() {
   # Reresh display and highlight buffer
   zvm_highlight clear
   zvm_highlight custom $#head $(($#head+$#content))
-  zvm_highlight refresh
+  zvm_highlight redraw
 }
 
 # Delete characters of the visual selection
