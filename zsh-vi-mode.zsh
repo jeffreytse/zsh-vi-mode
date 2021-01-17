@@ -168,6 +168,12 @@ zvm_after_select_vi_mode_commands=()
 zvm_before_lazy_keybindings_commands=()
 zvm_after_lazy_keybindings_commands=()
 
+# All the handlers for switching keyword
+zvm_switch_keyword_handlers=(
+  zvm_switch_number
+  zvm_switch_boolean
+)
+
 # Display version information
 function zvm_version() {
   echo -e "$ZVM_NAME $ZVM_VERSION"
@@ -219,7 +225,7 @@ function zvm_default_handler() {
 
 # Get the keys typed to invoke this widget, as a literal string
 function zvm_keys() {
-  local keys=${ZVM_KEYS:-$KEYS}
+  local keys=${ZVM_KEYS:-$(zvm_escape_non_printed_characters "$KEYS")}
 
   # Append the prefix of keys if it is visual or visual-line mode
   case "${ZVM_MODE}" in
@@ -1015,6 +1021,280 @@ function zvm_change_surround_text_object() {
   esac
 }
 
+# Select a word under the cursor
+function zvm_select_in_word() {
+  local cursor=${1:-$CURSOR}
+  local buffer=${2:-$BUFFER}
+  local bpos=$cursor epos=$cursor
+  local pattern='[0-9a-zA-Z_]'
+
+  if ! [[ "${buffer:$cursor:1}" =~ $pattern ]]; then
+    pattern="[^${pattern:1:-1}]"
+  fi
+
+  for ((; $bpos>=0; bpos--)); do
+    [[ "${buffer:$bpos:1}" =~ $pattern ]] || break
+  done
+  for ((; $epos<$#buffer; epos++)); do
+    [[ "${buffer:$epos:1}" =~ $pattern ]] || break
+  done
+
+  echo $((bpos+1)) $((epos-1))
+}
+
+# Switch keyword
+function zvm_switch_keyword() {
+  local bpos= epos= cpos=$CURSOR
+
+  if [[ ${BUFFER:$cpos:2} =~ -[0-9] ]]; then
+    cpos=$((cpos+1))
+  fi
+
+  local result=($(zvm_select_in_word $cpos))
+  bpos=${result[1]} epos=$((${result[2]}+1))
+
+  # Extend beginning position for special word
+  if (( bpos > 0 )) && [[ ${BUFFER:$((bpos-1)):2} =~ -[0-9] ]]; then
+    bpos=$((bpos-1))
+  fi
+
+  local word=${BUFFER:$bpos:$((epos-bpos))}
+  local keys=$(zvm_keys)
+
+  if [[ $keys == '^A' ]]; then
+    local increase=true
+  else
+    local increase=false
+  fi
+
+  # Execute extra commands
+  for handler in $zvm_switch_keyword_handlers; do
+    if ! zvm_exist_command ${handler}; then
+      continue
+    fi
+
+    result=($($handler $word $increase));
+
+    if (( $#result == 0 )); then
+      continue
+    fi
+
+    epos=$(( bpos + ${result[3]} ))
+    bpos=$(( bpos + ${result[2]} ))
+
+    if (( cpos < bpos )) || (( cpos >= epos )); then
+      continue
+    fi
+
+    BUFFER="${BUFFER:0:$bpos}${result[1]}${BUFFER:$epos}"
+    CURSOR=$((bpos + ${#result[1]} - 1))
+
+    zle reset-prompt
+    return
+  done
+}
+
+# Switch number keyword
+function zvm_switch_number {
+  local word=$1
+  local increase=${2:-true}
+  local result= bpos= epos=
+
+  # Hexadecimal
+  if [[ $word =~ [^0-9]?(0[xX][0-9a-fA-F]*) ]]; then
+    local number=${match[1]}
+    local prefix=${number:0:2}
+    bpos=$((mbegin-1)) epos=$mend
+
+    # Hexadecimal cases:
+    #
+    # 1. Increasement:
+    # 0xDe => 0xdf
+    # 0xdE => 0xDF
+    # 0xde0 => 0xddf
+    # 0xffffffffffffffff => 0x0000000000000000
+    # 0X9 => 0XA
+    # 0Xdf => 0Xe0
+    #
+    # 2. Decreasement:
+    # 0xdE0 => 0xDDF
+    # 0xffFf0 => 0xfffef
+    # 0xfffF0 => 0xFFFEF
+    # 0x0 => 0xffffffffffffffff
+    # 0X0 => 0XFFFFFFFFFFFFFFFF
+    # 0Xf => 0Xe
+
+    local lower=true
+    if [[ $number =~ [A-Z][0-9]*$ ]]; then
+      lower=false
+    fi
+
+    # Fix the number truncated after 15 digits issue
+    if (( $#number > 17 )); then
+      local d=$(($#number - 15))
+      local h=${number:0:$d}
+      number="0x${number:$d}"
+    fi
+
+    local p=$(($#number - 2))
+
+    if $increase; then
+      if (( $number == 0x${(l:15::f:)} )); then
+        h=$(([##16]$h+1))
+        h=${h: -1}
+        number=${(l:15::0:)}
+      else
+        h=${h:2}
+        number=$(([##16]$number + 1))
+      fi
+    else
+      if (( $number == 0 )); then
+        if (( ${h:-0} == 0 )); then
+          h=f
+        else
+          h=$(([##16]$h-1))
+          h=${h: -1}
+        fi
+        number=${(l:15::f:)}
+      else
+        h=${h:2}
+        number=$(([##16]$number - 1))
+      fi
+    fi
+
+    # Padding with zero
+    if (( $#number < $p )); then
+      number=${(l:$p::0:)number}
+    fi
+
+    result="${h}${number}"
+
+    # Transform the case
+    if $lower; then
+      result="${(L)result}"
+    fi
+
+    result="${prefix}${result}"
+
+  # Binary
+  elif [[ $word =~ [^0-9]?(0[bB][01]*) ]]; then
+    # Binary cases:
+    #
+    # 1. Increasement:
+    # 0b1 => 0b10
+    # 0x1111111111111111111111111111111111111111111111111111111111111111 =>
+    # 0x0000000000000000000000000000000000000000000000000000000000000000
+    # 0B0 => 0B1
+    #
+    # 2. Decreasement:
+    # 0b1 => 0b0
+    # 0b100 => 0b011
+    # 0B010 => 0B001
+    # 0b0 =>
+    # 0x1111111111111111111111111111111111111111111111111111111111111111
+
+    local number=${match[1]}
+    local prefix=${number:0:2}
+    bpos=$((mbegin-1)) epos=$mend
+
+    # Fix the number truncated after 63 digits issue
+    if (( $#number > 65 )); then
+      local d=$(($#number - 63))
+      local h=${number:0:$d}
+      number="0b${number:$d}"
+    fi
+
+    local p=$(($#number - 2))
+
+    if $increase; then
+      if (( $number == 0b${(l:63::1:)} )); then
+        h=$(([##2]$h+1))
+        h=${h: -1}
+        number=${(l:63::0:)}
+      else
+        h=${h:2}
+        number=$(([##2]$number + 1))
+      fi
+    else
+      if (( $number == 0b0 )); then
+        if (( ${h:-0} == 0 )); then
+          h=1
+        else
+          h=$(([##2]$h-1))
+          h=${h: -1}
+        fi
+        number=${(l:63::1:)}
+      else
+        h=${h:2}
+        number=$(([##2]$number - 1))
+      fi
+    fi
+
+    # Padding with zero
+    if (( $#number < $p )); then
+      number=${(l:$p::0:)number}
+    fi
+
+    result="${prefix}${number}"
+
+  # Decimal
+  elif [[ $word =~ (-?[0-9]+) ]]; then
+    # Decimal cases:
+    #
+    # 1. Increasement:
+    # 0 => 1
+    # 99 => 100
+    #
+    # 2. Decreasement:
+    # 0 => -1
+    # 10 => 9
+    # aa1230xa => aa1231xa
+    # aa1230bb => aa1231bb
+    # aa123a0bb => aa124a0bb
+
+    local number=${match[1]}
+    bpos=$((mbegin-1)) epos=$mend
+
+    if $increase; then
+      result=$(($number + 1))
+    else
+      result=$(($number - 1))
+    fi
+  fi
+
+  if [[ $result ]]; then
+    echo $result $bpos $epos
+  fi
+}
+
+# Switch boolean keyword
+function zvm_switch_boolean() {
+  local word=$1
+  local increase=$2
+  local result=
+
+  case ${(L)word} in
+    true) result=false;;
+    false) result=true;;
+    yes) result=no;;
+    no) result=yes;;
+    on) result=off;;
+    off) result=on;;
+    y) result=n;;
+    n) result=y;;
+    *) return;;
+  esac
+
+  # Transform the case
+  if [[ $word =~ ^[A-Z]+$ ]]; then
+    result=${(U)result}
+  elif [[ $word =~ ^[A-Z] ]]; then
+    result=${(U)result:0:1}${result:1}
+  fi
+
+  echo $result 0 $#word
+}
+
 # Highlight content
 function zvm_highlight() {
   local opt=${1:-mode}
@@ -1248,6 +1528,7 @@ function zvm_init() {
   zvm_define_widget zvm_vi_yank
   zvm_define_widget zvm_vi_put_after
   zvm_define_widget zvm_vi_put_before
+  zvm_define_widget zvm_switch_keyword
 
   # Override standard widgets
   zvm_define_widget zle-line-pre-redraw zvm_zle-line-pre-redraw
@@ -1297,6 +1578,9 @@ function zvm_init() {
   zvm_bindkey visual 'y'  zvm_vi_yank
   zvm_bindkey vicmd  'p'  zvm_vi_put_after
   zvm_bindkey vicmd  'P'  zvm_vi_put_before
+
+  zvm_bindkey vicmd '^A' zvm_switch_keyword
+  zvm_bindkey vicmd '^X' zvm_switch_keyword
 
   # Binding escape key
   zvm_bindkey viins "$ZVM_VI_ESCAPE_BINDKEY" zvm_exit_insert_mode
