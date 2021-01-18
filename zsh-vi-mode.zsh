@@ -172,6 +172,7 @@ zvm_after_lazy_keybindings_commands=()
 zvm_switch_keyword_handlers=(
   zvm_switch_number
   zvm_switch_boolean
+  zvm_switch_weekday
 )
 
 # Display version information
@@ -1284,6 +1285,65 @@ function zvm_switch_boolean() {
     n) result=y;;
     *) return;;
   esac
+
+  # Transform the case
+  if [[ $word =~ ^[A-Z]+$ ]]; then
+    result=${(U)result}
+  elif [[ $word =~ ^[A-Z] ]]; then
+    result=${(U)result:0:1}${result:1}
+  fi
+
+  echo $result 0 $#word
+}
+# Switch weekday keyword
+function zvm_switch_weekday() {
+  local word=$1
+  local increase=$2
+  local result=${(L)word}
+  local weekdays=(
+    sunday
+    monday
+    tuesday
+    wednesday
+    thursday
+    friday
+    saturday
+  )
+
+  local i=1
+
+  for ((; i<=${#weekdays[@]}; i++)); do
+    if [[ ${weekdays[i]:0:$#result} == ${result} ]]; then
+      result=${weekdays[i]}
+      break
+    fi
+  done
+
+  # No match
+  if (( i > ${#weekdays[@]} )); then
+    return
+  fi
+
+  if $increase; then
+    if (( i == ${#weekdays[@]} )); then
+      i=1
+    else
+      i=$((i+1))
+    fi
+  else
+    if (( i == 1 )); then
+      i=${#weekdays[@]}
+    else
+      i=$((i-1))
+    fi
+  fi
+
+  # Abbreviation
+  if (( $#result == $#word )); then
+    result=${weekdays[i]}
+  else
+    result=${weekdays[i]:0:$#word}
+  fi
 
   # Transform the case
   if [[ $word =~ ^[A-Z]+$ ]]; then
