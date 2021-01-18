@@ -1284,6 +1284,8 @@ function zvm_switch_boolean() {
     off) result=on;;
     y) result=n;;
     n) result=y;;
+    t) result=f;;
+    f) result=t;;
     *) return;;
   esac
 
