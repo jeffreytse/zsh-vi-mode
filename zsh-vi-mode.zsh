@@ -173,6 +173,7 @@ zvm_switch_keyword_handlers=(
   zvm_switch_number
   zvm_switch_boolean
   zvm_switch_weekday
+  zvm_switch_month
 )
 
 # Display version information
@@ -1343,6 +1344,71 @@ function zvm_switch_weekday() {
     result=${weekdays[i]}
   else
     result=${weekdays[i]:0:$#word}
+  fi
+
+  # Transform the case
+  if [[ $word =~ ^[A-Z]+$ ]]; then
+    result=${(U)result}
+  elif [[ $word =~ ^[A-Z] ]]; then
+    result=${(U)result:0:1}${result:1}
+  fi
+
+  echo $result 0 $#word
+}
+
+# Switch month keyword
+function zvm_switch_month() {
+  local word=$1
+  local increase=$2
+  local result=${(L)word}
+  local months=(
+    january
+    february
+    march
+    april
+    may
+    june
+    july
+    august
+    september
+    october
+    november
+    december
+  )
+
+  local i=1
+
+  for ((; i<=${#months[@]}; i++)); do
+    if [[ ${months[i]:0:$#result} == ${result} ]]; then
+      result=${months[i]}
+      break
+    fi
+  done
+
+  # No match
+  if (( i > ${#months[@]} )); then
+    return
+  fi
+
+  if $increase; then
+    if (( i == ${#months[@]} )); then
+      i=1
+    else
+      i=$((i+1))
+    fi
+  else
+    if (( i == 1 )); then
+      i=${#months[@]}
+    else
+      i=$((i-1))
+    fi
+  fi
+
+  # Abbreviation
+  if (( $#result == $#word )); then
+    result=${months[i]}
+  else
+    result=${months[i]:0:$#word}
   fi
 
   # Transform the case
