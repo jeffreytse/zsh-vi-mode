@@ -69,8 +69,8 @@
 - 🔎 Searching history.
 - ❇️  Undo, Redo, Cut, Copy, Paste, and Delete.
 - 🔮 Better surrounds functionality (Add, Replace, Delete, Move Around, and Highlight).
-- 🔣 Switch keywords (Increase/Decrease Number, Boolean, etc. **In progress**).
-
+- 🔣 Switch keywords (Increase/Decrease Number, Boolean, Weekday, Month, etc.).
+- 📋 System clipboard (**In progress**).
 
 ## 🛠️ Installation
 
@@ -210,11 +210,120 @@ Then you can do any operation for the selection:
 - `vi"` -> `S[` or `sa[` => `"object"` -> `"[object]"`
 - `va"` -> `S[` or `sa[` => `"object"` -> `["object"]`
 
- 2. Delete/Yank/Change text object
+2. Delete/Yank/Change text object
 
--   `di(` or `vi(` -> `d`
--   `ca(` or `va(` -> `c`
--   `yi(` or `vi(` -> `y`
+- `di(` or `vi(` -> `d`
+- `ca(` or `va(` -> `c`
+- `yi(` or `vi(` -> `y`
+
+Increment and Decrement
+--------
+
+In normal mode, typing `ctrl-a` will increase to the next keyword, and typing
+`ctrl-x` will decrease to the next keyword. The keyword can be at the cursor,
+or to the right of the cursor (on the same line). The keyword could be as
+below:
+
+- Number (Decimal, Hexadecimal, Binary...)
+- Boolean (True or False, Yes or No, On or Off...)
+- Weekday (Sunday, Monday, Tuesday, Wednesday...)
+- Month (January, February, March, April, May...)
+- ...
+
+For examples:
+
+1. Increment
+
+- `9` => `10`
+- `aa99bb` => `aa100bb`
+- `aa100bc` => `aa101bc`
+- `0xDe` => `0xdf`
+- `0Xdf` => `0Xe0`
+- `0b101` => `0b110`
+- `0B11` => `0B101`
+- `true` => `false`
+- `yes` => `no`
+- `on` => `off`
+- `T` => `F`
+- `Fri` => `Sat`
+- `Oct` => `Nov`
+- `Monday` => `Tuesday`
+- `January` => `February`
+- ...
+
+2. Decrement:
+
+- `100` => `99`
+- `aa100bb` => `aa99bb`
+- `0` => `-1`
+- `0xdE0` => `0xDDF`
+- `0xffFf0` => `0xfffef`
+- `0xfffF0` => `0xFFFEF`
+- `0x0` => `0xffffffffffffffff`
+- `0Xf` => `0Xe`
+- `0b100` => `0b010`
+- `0B100` => `0B011`
+- `True` => `False`
+- `On` => `Off`
+- `Sun` => `Sat`
+- `Jan` => `Dec`
+- `Monday` => `Sunday`
+- `August` => `July`
+- ...
+
+Execute Extra Commands
+--------
+
+This plugin has provided a mechanism to execute extra commands, and now
+you have the below aspects for executing something:
+
+```zsh
+zvm_before_init_commands=()
+zvm_after_init_commands=()
+zvm_before_select_vi_mode_commands=()
+zvm_after_select_vi_mode_commands=()
+zvm_before_lazy_keybindings_commands=()
+zvm_after_lazy_keybindings_commands=()
+```
+
+Since this plugin will overwrite the previous key bindings, this causes the
+key bindings of other plugins ( such as `fzf` ) to fail.
+
+You can solve the compatibility issue as below:
+
+```zsh
+# Append a command directly
+zvm_after_init_commands+=([' -f ~/.fzf.zsh ] && source ~/.fzf.zsh')
+```
+
+or
+
+```zsh
+# Define an init function and append to zvm_after_init_commands
+function my_init() {
+  [ -f ~/.fzf.zsh ] && source ~/.fzf.zsh
+}
+zvm_after_init_commands+=(my_init)
+```
+
+or
+
+```zsh
+# The plugin will auto execute this zvm_after_init function
+function zvm_after_init() {
+  [ -f ~/.fzf.zsh ] && source ~/.fzf.zsh
+}
+```
+
+Lazy Keybindings
+--------
+
+This plugin has supported the lazy keybindings feature, and it is enabled
+by default. To disable it, you can set the option `ZVM_LAZY_KEYBINDINGS`
+to `false`. This feature will postpone some keybindings (i.e. `normal`/`visual`
+mode) to the first time you enter the normal mode. And it can greatly
+improve the startup speed, especially you open the terminal and just want
+to execute a simple command.
 
 
 ## 💎 Credits
