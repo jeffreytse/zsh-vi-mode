@@ -1031,7 +1031,7 @@ function zvm_select_in_word() {
   local pattern='[0-9a-zA-Z_]'
 
   if ! [[ "${buffer:$cursor:1}" =~ $pattern ]]; then
-    pattern="[^${pattern:1:-1}]"
+    pattern="[^${pattern:1:-1} ]"
   fi
 
   for ((; $bpos>=0; bpos--)); do
@@ -1298,6 +1298,7 @@ function zvm_switch_boolean() {
 
   echo $result 0 $#word
 }
+
 # Switch weekday keyword
 function zvm_switch_weekday() {
   local word=$1
