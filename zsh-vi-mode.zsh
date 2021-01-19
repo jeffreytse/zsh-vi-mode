@@ -172,6 +172,7 @@ zvm_after_lazy_keybindings_commands=()
 zvm_switch_keyword_handlers=(
   zvm_switch_number
   zvm_switch_boolean
+  zvm_switch_operator
   zvm_switch_weekday
   zvm_switch_month
 )
@@ -1048,15 +1049,45 @@ function zvm_select_in_word() {
 function zvm_switch_keyword() {
   local bpos= epos= cpos=$CURSOR
 
-  if [[ ${BUFFER:$cpos:2} =~ -[0-9] ]]; then
-    cpos=$((cpos+1))
+  # Cursor position cases:
+  #
+  # 1. Cursor on symbol:
+  # 2+2   => +
+  # 2-2   => -
+  # 2 + 2 => +
+  # 2 +2  => +2
+  # 2 -2  => -2
+  # 2 -a  => -a
+  #
+  # 2. Cursor on number or alpha:
+  # 2+2   => +2
+  # 2-2   => -2
+  # 2 + 2 => 2
+  # 2 +2  => +2
+  # 2 -2  => -2
+  # 2 -a  => -a
+
+  # if cursor is on the `+` or `-`, we need to check if it is a
+  # number with a sign or an operator, only the number needs to
+  # forward the cursor.
+  if [[ ${BUFFER:$cpos:2} =~ [+-][0-9] ]]; then
+    if [[ $cpos == 0 || ${BUFFER:$((cpos-1)):1} =~ [^0-9] ]]; then
+      cpos=$((cpos+1))
+    fi
+
+  # if cursor is on the `+` or `-`, we need to check if it is a
+  # short option, only the short option needs to forward the cursor.
+  elif [[ ${BUFFER:$cpos:2} =~ [+-][a-zA-Z] ]]; then
+    if [[ $cpos == 0 || ${BUFFER:$((cpos-1)):1} == ' ' ]]; then
+      cpos=$((cpos+1))
+    fi
   fi
 
   local result=($(zvm_select_in_word $cpos))
   bpos=${result[1]} epos=$((${result[2]}+1))
 
-  # Extend beginning position for special word
-  if (( bpos > 0 )) && [[ ${BUFFER:$((bpos-1)):2} =~ -[0-9] ]]; then
+  # Backward the cursor
+  if [[ $bpos != 0 && ${BUFFER:$((bpos-1)):1} == [+-] ]]; then
     bpos=$((bpos-1))
   fi
 
@@ -1110,7 +1141,7 @@ function zvm_switch_number {
 
     # Hexadecimal cases:
     #
-    # 1. Increasement:
+    # 1. Increment:
     # 0xDe => 0xdf
     # 0xdE => 0xDF
     # 0xde0 => 0xddf
@@ -1118,7 +1149,7 @@ function zvm_switch_number {
     # 0X9 => 0XA
     # 0Xdf => 0Xe0
     #
-    # 2. Decreasement:
+    # 2. Decrement:
     # 0xdE0 => 0xDDF
     # 0xffFf0 => 0xfffef
     # 0xfffF0 => 0xFFFEF
@@ -1240,7 +1271,7 @@ function zvm_switch_number {
     result="${prefix}${number}"
 
   # Decimal
-  elif [[ $word =~ (-?[0-9]+) ]]; then
+  elif [[ $word =~ ([-+]?[0-9]+) ]]; then
     # Decimal cases:
     #
     # 1. Increasement:
@@ -1261,6 +1292,11 @@ function zvm_switch_number {
       result=$(($number + 1))
     else
       result=$(($number - 1))
+    fi
+
+    # Check if need the plus sign prefix
+    if [[ ${word:$bpos:1} == '+' ]]; then
+      result="+${result}"
     fi
   fi
 
@@ -1323,7 +1359,7 @@ function zvm_switch_weekday() {
     fi
   done
 
-  # No match
+  # Return if no match
   if (( i > ${#weekdays[@]} )); then
     return
   fi
@@ -1359,6 +1395,29 @@ function zvm_switch_weekday() {
   echo $result 0 $#word
 }
 
+# Switch operator keyword
+function zvm_switch_operator() {
+  local word=$1
+  local increase=$2
+  local result=
+
+  case ${word} in
+    '&&') result='||';;
+    '||') result='&&';;
+    '++') result='--';;
+    '--') result='++';;
+    '+') result='-';;
+    '-') result='*';;
+    '*') result='/';;
+    '/') result='+';;
+    *) return;;
+  esac
+
+  # Since the `echo` command can not print the character
+  # `-`, here we use `printf` command alternatively.
+  printf "%s 0 $#word" "${result}"
+}
+
 # Switch month keyword
 function zvm_switch_month() {
   local word=$1
@@ -1388,7 +1447,7 @@ function zvm_switch_month() {
     fi
   done
 
-  # No match
+  # Return if no match
   if (( i > ${#months[@]} )); then
     return
   fi
