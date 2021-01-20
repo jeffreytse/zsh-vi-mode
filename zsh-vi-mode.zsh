@@ -1406,6 +1406,10 @@ function zvm_switch_operator() {
     '||') result='&&';;
     '++') result='--';;
     '--') result='++';;
+    '==') result='!=';;
+    '!=') result='==';;
+    '===') result='!==';;
+    '!==') result='===';;
     '+') result='-';;
     '-') result='*';;
     '*') result='/';;
