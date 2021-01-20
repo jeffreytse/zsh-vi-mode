@@ -1401,7 +1401,7 @@ function zvm_switch_operator() {
   local increase=$2
   local result=
 
-  case ${word} in
+  case ${(L)word} in
     '&&') result='||';;
     '||') result='&&';;
     '++') result='--';;
@@ -1414,8 +1414,17 @@ function zvm_switch_operator() {
     '-') result='*';;
     '*') result='/';;
     '/') result='+';;
+    'and') result='or';;
+    'or') result='and';;
     *) return;;
   esac
+
+  # Transform the case
+  if [[ $word =~ ^[A-Z]+$ ]]; then
+    result=${(U)result}
+  elif [[ $word =~ ^[A-Z] ]]; then
+    result=${(U)result:0:1}${result:1}
+  fi
 
   # Since the `echo` command can not print the character
   # `-`, here we use `printf` command alternatively.
