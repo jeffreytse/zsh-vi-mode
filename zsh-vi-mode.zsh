@@ -26,12 +26,6 @@
 # the vi escape key (default is ^[ => <ESC>), you can set it to whatever
 # you like, such as `jj`, `jk` and so on.
 #
-# ZVM_VI_NORMAL_MODE_CURSOR:
-# the prompt cursor in vi normal mode
-#
-# ZVM_VI_INSERT_MODE_CURSOR:
-# the prompt cursor in vi insert mode
-#
 # ZVM_VI_INSERT_MODE_LEGACY_UNDO:
 # using legacy undo behavior in vi insert mode
 #
@@ -78,6 +72,29 @@
 # will postpone the keybindings of vicmd and visual keymaps to the first
 # time entering normal mode
 #
+# ZVM_NORMAL_MODE_CURSOR:
+# the prompt cursor in normal mode
+#
+# ZVM_INSERT_MODE_CURSOR:
+# the prompt cursor in insert mode
+#
+# ZVM_VISUAL_MODE_CURSOR:
+# the prompt cursor in visual mode
+#
+# ZVM_VISUAL_LINE_MODE_CURSOR:
+# the prompt cursor in visual line mode
+#
+# You can change the cursor style by below:
+#  ZVM_INSERT_MODE_CURSOR=$ZVM_CURSOR_BLOCK
+#
+# and the below cursor style are supported:
+#  ZVM_CURSOR_BLOCK
+#  ZVM_CURSOR_UNDERLINE
+#  ZVM_CURSOR_BEAM
+#  ZVM_CURSOR_BLINKING_BLOCK
+#  ZVM_CURSOR_BLINKING_UNDERLINE
+#  ZVM_CURSOR_BLINKING_BEAM
+#
 
 # Plugin information
 typeset -gr ZVM_NAME='zsh-vi-mode'
@@ -121,12 +138,12 @@ ZVM_MODE_VISUAL='v'
 ZVM_MODE_VISUAL_LINE='vl'
 
 # Default cursor styles
-ZVM_CURSOR_BLOCK='\e[2 q'
-ZVM_CURSOR_BEAM='\e[6 q'
-ZVM_CURSOR_BLINKING_BLOCK='\e[1 q'
-ZVM_CURSOR_BLINKING_BEAM='\e[5 q'
-ZVM_CURSOR_XTERM_BLOCK='\x1b[\x32 q'
-ZVM_CURSOR_XTERM_BEAM='\x1b[\x36 q'
+ZVM_CURSOR_BLOCK='bl'
+ZVM_CURSOR_UNDERLINE='ul'
+ZVM_CURSOR_BEAM='be'
+ZVM_CURSOR_BLINKING_BLOCK='bbl'
+ZVM_CURSOR_BLINKING_UNDERLINE='bul'
+ZVM_CURSOR_BLINKING_BEAM='bbe'
 
 ##########################################
 # Initial all default settings
@@ -144,14 +161,13 @@ if $ZVM_LAZY_KEYBINDINGS; then
   ZVM_LAZY_KEYBINDINGS_LIST=()
 fi
 
-# Set the sursor stlye of defferent vi modes
-if [[ ${TERM:0:5} == 'xterm' ]]; then
-  ZVM_VI_NORMAL_MODE_CURSOR=${ZVM_VI_NORMAL_MODE_CURSOR:-$ZVM_CURSOR_XTERM_BLOCK}
-  ZVM_VI_INSERT_MODE_CURSOR=${ZVM_VI_INSERT_MODE_CURSOR:-$ZVM_CURSOR_XTERM_BEAM}
-else
-  ZVM_VI_NORMAL_MODE_CURSOR=${ZVM_VI_NORMAL_MODE_CURSOR:-$ZVM_CURSOR_BLOCK}
-  ZVM_VI_INSERT_MODE_CURSOR=${ZVM_VI_INSERT_MODE_CURSOR:-$ZVM_CURSOR_BEAM}
-fi
+# Set the cursor stlye in defferent vi modes, the value you could use
+# the predefined value, such as $ZVM_CURSOR_BLOCK, $ZVM_CURSOR_BEAM,
+# $ZVM_CURSOR_BLINKING_BLOCK and so on.
+ZVM_INSERT_MODE_CURSOR=${ZVM_INSERT_MODE_CURSOR:-$ZVM_CURSOR_BEAM}
+ZVM_NORMAL_MODE_CURSOR=${ZVM_NORMAL_MODE_CURSOR:-$ZVM_CURSOR_BLOCK}
+ZVM_VISUAL_MODE_CURSOR=${ZVM_VISUAL_MODE_CURSOR:-$ZVM_CURSOR_BLOCK}
+ZVM_VISUAL_LINE_MODE_CURSOR=${ZVM_VISUAL_LINE_MODE_CURSOR:-$ZVM_CURSOR_BLOCK}
 
 # Set the vi escape key (default is ^[ => <ESC>)
 ZVM_VI_ESCAPE_BINDKEY=${ZVM_VI_ESCAPE_BINDKEY:-^[}
@@ -429,25 +445,6 @@ function zvm_escape_non_printed_characters() {
   echo $str
 }
 
-# Change cursor to support for inside/outside tmux
-function zvm_set_cursor() {
-    if [[ -z $TMUX ]]; then
-      echo -ne $1
-    else
-      echo -ne "\ePtmux;\e\e$1\e\\"
-    fi
-}
-
-# Change to normal cursor
-function zvm_set_normal_mode_cursor() {
-  zvm_set_cursor $ZVM_VI_NORMAL_MODE_CURSOR
-}
-
-# Change to beam/pipe cursor
-function zvm_set_insert_mode_cursor() {
-  zvm_set_cursor $ZVM_VI_INSERT_MODE_CURSOR
-}
-
 # Remove all characters between the cursor position and the
 # beginning of the line.
 function zvm_backward_kill_line() {
@@ -495,14 +492,14 @@ function zvm_exchange_point_and_mark() {
 # Open line below
 function zvm_open_line_below() {
   ZVM_MODE=$ZVM_MODE_INSERT
-  zvm_update_cursor_style
+  zvm_update_cursor
   zle vi-open-line-below
 }
 
 # Open line above
 function zvm_open_line_above() {
   ZVM_MODE=$ZVM_MODE_INSERT
-  zvm_update_cursor_style
+  zvm_update_cursor
   zle vi-open-line-above
 }
 
@@ -1627,22 +1624,22 @@ function zvm_select_vi_mode() {
   case "$1" in
     $ZVM_MODE_NORMAL)
       ZVM_MODE=$ZVM_MODE_NORMAL
-      zvm_update_cursor_style
+      zvm_update_cursor
       zle vi-cmd-mode
       ;;
     $ZVM_MODE_INSERT)
       ZVM_MODE=$ZVM_MODE_INSERT
-      zvm_update_cursor_style
+      zvm_update_cursor
       zle vi-insert
       ;;
     $ZVM_MODE_VISUAL)
       ZVM_MODE=$ZVM_MODE_VISUAL
-      zvm_update_cursor_style
+      zvm_update_cursor
       zle visual-mode
       ;;
     $ZVM_MODE_VISUAL_LINE)
       ZVM_MODE=$ZVM_MODE_VISUAL_LINE
-      zvm_update_cursor_style
+      zvm_update_cursor
       zle visual-line-mode
       ;;
   esac
@@ -1676,21 +1673,70 @@ function zvm_viins_undo() {
   fi
 }
 
-# Update the cursor style by current vi mode
-function zvm_update_cursor_style() {
-  case "$ZVM_MODE" in
-    n) zvm_set_normal_mode_cursor;;
-    i) zvm_set_insert_mode_cursor;;
-    v) zvm_set_normal_mode_cursor;;
-    vl) zvm_set_normal_mode_cursor;;
+# Change cursor to support for inside/outside tmux
+function zvm_set_cursor() {
+  if [[ -z $TMUX ]]; then
+    echo -ne $1
+  else
+    echo -ne "\ePtmux;\e\e$1\e\\"
+  fi
+}
+
+# Get the escape sequence of cursor style
+function zvm_cursor_style() {
+  local style=${(L)1}
+  local term=${2:-$TERM}
+
+  case $term in
+    # For xterm and rxvt and their derivatives use the same
+    # sequences as the VT520 terminal.
+    xterm*|rxvt*)
+      case $style in
+        $ZVM_CURSOR_BLOCK) style='\e[2 q';;
+        $ZVM_CURSOR_UNDERLINE) style='\e[4 q';;
+        $ZVM_CURSOR_BEAM) style='\e[6 q';;
+        $ZVM_CURSOR_BLINKING_BLOCK) style='\e[1 q';;
+        $ZVM_CURSOR_BLINKING_UNDERLINE) style='\e[3 q';;
+        $ZVM_CURSOR_BLINKING_BEAM) style='\e[5 q';;
+      esac
+      ;;
+    *) style='\e[0 q';;
   esac
+
+  echo $style
+}
+
+# Update the cursor according current vi mode
+function zvm_update_cursor() {
+  local shape=
+
+  case "${1:-$ZVM_MODE}" in
+    $ZVM_MODE_NORMAL)
+      shape=$(zvm_cursor_style $ZVM_NORMAL_MODE_CURSOR)
+      ;;
+    $ZVM_MODE_INSERT)
+      shape=$(zvm_cursor_style $ZVM_INSERT_MODE_CURSOR)
+      ;;
+    $ZVM_MODE_VISUAL)
+      shape=$(zvm_cursor_style $ZVM_VISUAL_MODE_CURSOR)
+      ;;
+    $ZVM_MODE_VISUAL_LINE)
+      shape=$(zvm_cursor_style $ZVM_VISUAL_LINE_MODE_CURSOR)
+      ;;
+  esac
+
+  if [[ $shape ]]; then
+    zvm_set_cursor $shape
+  fi
 }
 
 # Updates editor information when line pre redraw
 function zvm_zle-line-pre-redraw() {
-  # Fix cursor style is not updated in tmux environment
-  # Update cursor style when line pre redraw
-  zvm_update_cursor_style
+  # Fix cursor style is not updated in tmux environment, when
+  # there are one more panel in the same window, the program
+  # in other panel could change the cursor shape, we need to
+  # update cursor style when line is redrawing.
+  zvm_update_cursor
 }
 
 # Start every prompt in insert mode
@@ -1866,7 +1912,7 @@ function zvm_precmd_function() {
     zvm_init
   fi
   # Set insert mode cursor when starting new command line
-  zvm_set_insert_mode_cursor
+  zvm_update_cursor $ZVM_MODE_INSERT
 }
 
 # Check if a command is existed
