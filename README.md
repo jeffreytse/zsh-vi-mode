@@ -130,7 +130,7 @@ Use `ESC` or `CTRL-[` to enter `Normal mode` (Each command line starting with
 `Insert mode` by default).
 
 Also, you can use the `ZVM_VI_ESCAPE_BINDKEY` option to custom the escape key
-which could better matches your flavor, such as `jj` or `jk` and so on.
+which could better match your flavor, such as `jj` or `jk` and so on.
 
 
 History
@@ -184,7 +184,7 @@ Surround
 
 There are 2 kinds of keybinding mode for surround operating, default is
 `classic` mode, you can choose the mode by setting `ZVM_VI_SURROUND_BINDKEY`
-variable.
+option.
 
 1. `classic` mode (verb->s->surround)
 
@@ -228,9 +228,10 @@ below:
 - Boolean (True or False, Yes or No, On or Off...)
 - Weekday (Sunday, Monday, Tuesday, Wednesday...)
 - Month (January, February, March, April, May...)
+- Operator (&&, ||, ++, --, ==, !==, and, or...)
 - ...
 
-For examples:
+For example:
 
 1. Increment
 
@@ -249,6 +250,12 @@ For examples:
 - `Oct` => `Nov`
 - `Monday` => `Tuesday`
 - `January` => `February`
+- `+` => `-`
+- `++` => `--`
+- `==` => `!=`
+- `!==` => `===`
+- `&&` => `||`
+- `and` => `or`
 - ...
 
 2. Decrement:
@@ -269,6 +276,12 @@ For examples:
 - `Jan` => `Dec`
 - `Monday` => `Sunday`
 - `August` => `July`
+- `/` => `*`
+- `++` => `--`
+- `==` => `!=`
+- `!==` => `===`
+- `||` => `&&`
+- `or` => `and`
 - ...
 
 Execute Extra Commands
