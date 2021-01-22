@@ -1064,7 +1064,7 @@ function zvm_switch_keyword() {
   # 2 -2  => -2
   # 2 -a  => -a
 
-  # if cursor is on the `+` or `-`, we need to check if it is a
+  # If cursor is on the `+` or `-`, we need to check if it is a
   # number with a sign or an operator, only the number needs to
   # forward the cursor.
   if [[ ${BUFFER:$cpos:2} =~ [+-][0-9] ]]; then
@@ -1072,7 +1072,7 @@ function zvm_switch_keyword() {
       cpos=$((cpos+1))
     fi
 
-  # if cursor is on the `+` or `-`, we need to check if it is a
+  # If cursor is on the `+` or `-`, we need to check if it is a
   # short option, only the short option needs to forward the cursor.
   elif [[ ${BUFFER:$cpos:2} =~ [+-][a-zA-Z] ]]; then
     if [[ $cpos == 0 || ${BUFFER:$((cpos-1)):1} == ' ' ]]; then
@@ -1210,13 +1210,13 @@ function zvm_switch_number {
   elif [[ $word =~ [^0-9]?(0[bB][01]*) ]]; then
     # Binary cases:
     #
-    # 1. Increasement:
+    # 1. Increment:
     # 0b1 => 0b10
     # 0x1111111111111111111111111111111111111111111111111111111111111111 =>
     # 0x0000000000000000000000000000000000000000000000000000000000000000
     # 0B0 => 0B1
     #
-    # 2. Decreasement:
+    # 2. Decrement:
     # 0b1 => 0b0
     # 0b100 => 0b011
     # 0B010 => 0B001
@@ -1271,11 +1271,11 @@ function zvm_switch_number {
   elif [[ $word =~ ([-+]?[0-9]+) ]]; then
     # Decimal cases:
     #
-    # 1. Increasement:
+    # 1. Increment:
     # 0 => 1
     # 99 => 100
     #
-    # 2. Decreasement:
+    # 2. Decrement:
     # 0 => -1
     # 10 => 9
     # aa1230xa => aa1231xa
@@ -1810,21 +1810,21 @@ function zvm_init() {
   zvm_bindkey vicmd 'a'  zvm_enter_insert_mode
 
   # Other key bindings
-  zvm_bindkey visual 'j'  zvm_down_line
-  zvm_bindkey visual 'k'  zvm_up_line
-  zvm_bindkey visual 'h'  zvm_backward_char
-  zvm_bindkey visual 'l'  zvm_forward_char
-  zvm_bindkey vicmd  'v'  zvm_enter_visual_mode
-  zvm_bindkey vicmd  'V'  zvm_enter_visual_mode
-  zvm_bindkey visual 'o'  zvm_exchange_point_and_mark
-  zvm_bindkey vicmd  'o'  zvm_open_line_below
-  zvm_bindkey vicmd  'O'  zvm_open_line_above
-  zvm_bindkey vicmd  's'  zvm_vi_substitue
-  zvm_bindkey visual 'c'  zvm_vi_change
-  zvm_bindkey visual 'd'  zvm_vi_delete
-  zvm_bindkey visual 'y'  zvm_vi_yank
-  zvm_bindkey vicmd  'p'  zvm_vi_put_after
-  zvm_bindkey vicmd  'P'  zvm_vi_put_before
+  zvm_bindkey visual 'j' zvm_down_line
+  zvm_bindkey visual 'k' zvm_up_line
+  zvm_bindkey visual 'h' zvm_backward_char
+  zvm_bindkey visual 'l' zvm_forward_char
+  zvm_bindkey vicmd  'v' zvm_enter_visual_mode
+  zvm_bindkey vicmd  'V' zvm_enter_visual_mode
+  zvm_bindkey visual 'o' zvm_exchange_point_and_mark
+  zvm_bindkey vicmd  'o' zvm_open_line_below
+  zvm_bindkey vicmd  'O' zvm_open_line_above
+  zvm_bindkey vicmd  's' zvm_vi_substitue
+  zvm_bindkey visual 'c' zvm_vi_change
+  zvm_bindkey visual 'd' zvm_vi_delete
+  zvm_bindkey visual 'y' zvm_vi_yank
+  zvm_bindkey vicmd  'p' zvm_vi_put_after
+  zvm_bindkey vicmd  'P' zvm_vi_put_before
 
   zvm_bindkey vicmd '^A' zvm_switch_keyword
   zvm_bindkey vicmd '^X' zvm_switch_keyword
