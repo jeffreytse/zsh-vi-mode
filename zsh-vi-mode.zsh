@@ -832,8 +832,9 @@ function zvm_parse_surround_keys() {
   local surround=
   case "${keys}" in
     vS*) action=S; surround=${keys:2};;
+    vsa*) action=a; surround=${keys:3};;
     vys*) action=y; surround=${keys:3};;
-    s[adr]*) action=${keys:1:1}; surround=${keys:2};;
+    s[dr]*) action=${keys:1:1}; surround=${keys:2};;
     [acd]s*) action=${keys:0:1}; surround=${keys:2};;
     [cdvy][ia]*) action=${keys:0:2}; surround=${keys:2};;
   esac
