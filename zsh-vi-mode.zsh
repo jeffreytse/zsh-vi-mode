@@ -1596,7 +1596,22 @@ function zvm_enter_insert_mode() {
 
 # Exit the vi insert mode
 function zvm_exit_insert_mode() {
+  ZVM_INSERT_MODE=
   zvm_select_vi_mode $ZVM_MODE_NORMAL
+}
+
+# Insert at the beginning of the line
+function zvm_insert_bol() {
+  ZVM_INSERT_MODE='I'
+  zle vi-first-non-blank
+  zvm_select_vi_mode $ZVM_MODE_INSERT
+}
+
+# Append at the end of the line
+function zvm_append_eol() {
+  ZVM_INSERT_MODE='A'
+  zle vi-end-of-line
+  zvm_select_vi_mode $ZVM_MODE_INSERT
 }
 
 # Select vi mode
@@ -1770,6 +1785,8 @@ function zvm_init() {
   zvm_define_widget zvm_exchange_point_and_mark
   zvm_define_widget zvm_open_line_below
   zvm_define_widget zvm_open_line_above
+  zvm_define_widget zvm_insert_bol
+  zvm_define_widget zvm_append_eol
   zvm_define_widget zvm_vi_substitue
   zvm_define_widget zvm_vi_change
   zvm_define_widget zvm_vi_delete
@@ -1806,9 +1823,11 @@ function zvm_init() {
   zvm_bindkey viins '^P' up-line-or-history
   zvm_bindkey viins '^N' down-line-or-history
 
-  # Fix the cursor position when exiting insert mode
+  # Insert mode
   zvm_bindkey vicmd 'i'  zvm_enter_insert_mode
   zvm_bindkey vicmd 'a'  zvm_enter_insert_mode
+  zvm_bindkey vicmd 'I'  zvm_insert_bol
+  zvm_bindkey vicmd 'A'  zvm_append_eol
 
   # Other key bindings
   zvm_bindkey visual 'j' zvm_down_line
