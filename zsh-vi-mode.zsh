@@ -981,23 +981,19 @@ function zvm_change_surround() {
   local action=${1:-${ret[1]}}
   local surround=${2:-${ret[2]//$ZVM_ESCAPE_SPACE/ }}
   local bpos=${3} epos=${4}
-  local is_appending=
+  local is_appending=false
   case $action in
-    S|y|a) is_appending=1;;
+    S|y|a) is_appending=true;;
   esac
-  if [[ $is_appending ]]; then
+  if $is_appending; then
     if [[ -z $bpos && -z $epos ]]; then
-      if (( MARK > CURSOR )) ; then
-        bpos=$CURSOR+1 epos=$MARK+1
-      else
-        bpos=$MARK epos=$CURSOR+1
-      fi
+      ret=($(zvm_selection))
+      bpos=${ret[1]} epos=${ret[2]}
     fi
   else
     ret=($(zvm_search_surround "$surround"))
     (( ${#ret[@]} )) || return
-    bpos=${ret[1]}
-    epos=${ret[2]}
+    bpos=${ret[1]} epos=${ret[2]}
     zvm_highlight custom $bpos $(($bpos+1))
     zvm_highlight custom $epos $(($epos+1))
     zvm_highlight redraw
@@ -1011,9 +1007,6 @@ function zvm_change_surround() {
       zvm_select_vi_mode $ZVM_MODE_NORMAL
       ;;
   esac
-  if [[ -z $is_appending ]]; then
-    zvm_highlight clear
-  fi
 
   # Check if canceling changing surround (ZVM_VI_ESCAPE_BINDKEY)
   [[ "$key" == '' ]] && return
@@ -1023,11 +1016,14 @@ function zvm_change_surround() {
   ret=($(zvm_match_surround "$key"))
   local bchar=${${ret[1]//$ZVM_ESCAPE_SPACE/ }:-$key}
   local echar=${${ret[2]//$ZVM_ESCAPE_SPACE/ }:-$key}
-  local value=$([[ $is_appending ]] && echo 0 || echo 1 )
+  local value=$($is_appending && echo 0 || echo 1 )
   local head=${BUFFER:0:$bpos}
   local body=${BUFFER:$((bpos+value)):$((epos-(bpos+value)))}
   local foot=${BUFFER:$((epos+value))}
   BUFFER="${head}${bchar}${body}${echar}${foot}"
+
+  # Clear highliht
+  zvm_highlight clear
 }
 
 # Change surround text object
