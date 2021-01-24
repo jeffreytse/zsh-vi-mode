@@ -509,16 +509,21 @@ function zvm_vi_substitue() {
   zvm_select_vi_mode $ZVM_MODE_INSERT
 }
 
-# Calculate the region of selection
-function zvm_calc_selection() {
-  local bpos= epos= cpos=
-
-  # Get the beginning and end position of selection
+# Get the beginning and end position of selection
+function zvm_selection() {
+  local bpos= epos=
   if (( MARK > CURSOR )) ; then
     bpos=$((CURSOR+1)) epos=$((MARK+1))
   else
     bpos=$MARK epos=$((CURSOR+1))
   fi
+  echo $bpos $epos
+}
+
+# Calculate the region of selection
+function zvm_calc_selection() {
+  local ret=($(zvm_selection))
+  local bpos=${ret[1]} epos=${ret[2]} cpos=
 
   # Save the current cursor position
   cpos=$bpos
@@ -606,6 +611,40 @@ function zvm_yank() {
     CUTBUFFER=${CUTBUFFER}$'\n'
   fi
   MARK=$bpos CURSOR=$epos
+}
+
+# Up case of the visual selection
+function zvm_vi_up_case() {
+  local ret=($(zvm_selection))
+  local bpos=${ret[1]} epos=${ret[2]}
+  local content=${BUFFER:$bpos:$((epos-bpos))}
+  BUFFER="${BUFFER:0:$bpos}${(U)content}${BUFFER:$epos}"
+  zvm_exit_visual_mode
+}
+
+# Down case of the visual selection
+function zvm_vi_down_case() {
+  local ret=($(zvm_selection))
+  local bpos=${ret[1]} epos=${ret[2]}
+  local content=${BUFFER:$bpos:$((epos-bpos))}
+  BUFFER="${BUFFER:0:$bpos}${(L)content}${BUFFER:$epos}"
+  zvm_exit_visual_mode
+}
+
+# Opposite case of the visual selection
+function zvm_vi_opp_case() {
+  local ret=($(zvm_selection))
+  local bpos=${ret[1]} epos=${ret[2]}
+  local content=${BUFFER:$bpos:$((epos-bpos))}
+  for ((i=1; i<=$#content; i++)); do
+    if [[ ${content[i]} =~ [A-Z] ]]; then
+      content[i]=${(L)content[i]}
+    elif [[ ${content[i]} =~ [a-z] ]]; then
+      content[i]=${(U)content[i]}
+    fi
+  done
+  BUFFER="${BUFFER:0:$bpos}${content}${BUFFER:$epos}"
+  zvm_exit_visual_mode
 }
 
 # Yank characters of the visual selection
@@ -1795,6 +1834,9 @@ function zvm_init() {
   zvm_define_widget zvm_vi_yank
   zvm_define_widget zvm_vi_put_after
   zvm_define_widget zvm_vi_put_before
+  zvm_define_widget zvm_vi_up_case
+  zvm_define_widget zvm_vi_down_case
+  zvm_define_widget zvm_vi_opp_case
   zvm_define_widget zvm_switch_keyword
 
   # Override standard widgets
@@ -1847,6 +1889,9 @@ function zvm_init() {
   zvm_bindkey visual 'y' zvm_vi_yank
   zvm_bindkey vicmd  'p' zvm_vi_put_after
   zvm_bindkey vicmd  'P' zvm_vi_put_before
+  zvm_bindkey visual 'U' zvm_vi_up_case
+  zvm_bindkey visual 'u' zvm_vi_down_case
+  zvm_bindkey visual '~' zvm_vi_opp_case
 
   zvm_bindkey vicmd '^A' zvm_switch_keyword
   zvm_bindkey vicmd '^X' zvm_switch_keyword
