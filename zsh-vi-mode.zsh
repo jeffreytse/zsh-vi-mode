@@ -1705,8 +1705,10 @@ function zvm_cursor_style() {
 
   case $term in
     # For xterm and rxvt and their derivatives use the same
-    # sequences as the VT520 terminal.
-    xterm*|rxvt*)
+    # sequences as the VT520 terminal. And screen and konsole
+    # implement a superset of VT100 and VT100 is universal,
+    # they support 256 colors the same way xterm does.
+    xterm*|rxvt*|screen*|tmux*|konsole*)
       case $style in
         $ZVM_CURSOR_BLOCK) style='\e[2 q';;
         $ZVM_CURSOR_UNDERLINE) style='\e[4 q';;
@@ -1716,7 +1718,7 @@ function zvm_cursor_style() {
         $ZVM_CURSOR_BLINKING_BEAM) style='\e[5 q';;
       esac
       ;;
-    *) style='\e[0 q';;
+    *) style='\e[ q';;
   esac
 
   echo $style
