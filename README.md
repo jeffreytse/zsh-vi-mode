@@ -55,7 +55,7 @@
 </div>
 <br>
 
-<img alt="Zsh Vi-mode Demo" src="https://user-images.githubusercontent.com/9413601/101981242-61530300-3ca6-11eb-8c7a-c0f4c69562bb.gif" />
+<img alt="Zsh Vi-mode Demo" src="https://user-images.githubusercontent.com/9413601/105746868-f3734a00-5f7a-11eb-8db5-22fcf50a171b.gif" />
 
 
 ## ✨ Features
@@ -306,7 +306,7 @@ You can solve the compatibility issue as below:
 
 ```zsh
 # Append a command directly
-zvm_after_init_commands+=([' -f ~/.fzf.zsh ] && source ~/.fzf.zsh')
+zvm_after_init_commands+=('[ -f ~/.fzf.zsh ] && source ~/.fzf.zsh')
 ```
 
 or
@@ -327,6 +327,47 @@ function zvm_after_init() {
   [ -f ~/.fzf.zsh ] && source ~/.fzf.zsh
 }
 ```
+
+Custom Cursor Style
+--------
+
+This plugin has provided some options for users to custom the cursor
+style for better terminal compatibility.
+
+- You can set your cursor style for different vi mode:
+
+```zsh
+# ZVM_NORMAL_MODE_CURSOR:
+# the prompt cursor in normal mode
+#
+# ZVM_INSERT_MODE_CURSOR:
+# the prompt cursor in insert mode
+#
+# ZVM_VISUAL_MODE_CURSOR:
+# the prompt cursor in visual mode
+#
+# ZVM_VISUAL_LINE_MODE_CURSOR:
+# the prompt cursor in visual line mode
+```
+
+- And the below cursor styles are supported:
+
+```zsh
+ZVM_CURSOR_BLOCK
+ZVM_CURSOR_UNDERLINE
+ZVM_CURSOR_BEAM
+ZVM_CURSOR_BLINKING_BLOCK
+ZVM_CURSOR_BLINKING_UNDERLINE
+ZVM_CURSOR_BLINKING_BEAM
+```
+
+- Custom your cursor style is easy as below:
+
+```zsh
+ZVM_INSERT_MODE_CURSOR=$ZVM_CURSOR_BLOCK
+ZVM_NORMAL_MODE_CURSOR=$ZVM_CURSOR_BLINKING_UNDERLINE
+```
+
 
 Lazy Keybindings
 --------
