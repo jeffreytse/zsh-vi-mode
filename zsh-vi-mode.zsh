@@ -112,7 +112,11 @@ ZVM_INIT_DONE=false
 # Disable reset prompt (i.e. disable the widget `reset-prompt`)
 ZVM_RESET_PROMPT_DISABLED=false
 
-# Insert mode could be `i` (insert) or `a` (append)
+# Insert mode could be
+# `i` (insert)
+# `a` (append)
+# `I` (insert at the non-blank beginning of current line)
+# `A` (append at the end of current line)
 ZVM_INSERT_MODE='i'
 
 # The mode could be the below value:
