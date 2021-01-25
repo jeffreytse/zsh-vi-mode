@@ -1347,6 +1347,14 @@ function zvm_switch_boolean() {
   local word=$1
   local increase=$2
   local result=
+  local bpos=0 epos=$#word
+
+  # Remove option prefix
+  if [[ $word =~ (^[+-]{0,2}) ]]; then
+    local prefix=${match[1]}
+    bpos=$mend
+    word=${word:$bpos}
+  fi
 
   case ${(L)word} in
     true) result=false;;
@@ -1369,7 +1377,7 @@ function zvm_switch_boolean() {
     result=${(U)result:0:1}${result:1}
   fi
 
-  echo $result 0 $#word
+  echo $result $bpos $epos
 }
 
 # Switch weekday keyword
