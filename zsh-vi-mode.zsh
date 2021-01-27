@@ -354,7 +354,6 @@ function zvm_readkeys() {
     fi
     # Transform the non-printed characters
     key=$(zvm_escape_non_printed_characters "${key}")
-    key=${key// /$ZVM_ESCAPE_SPACE}
 
     # Escape keys
     # " -> \" It's a special character in bash syntax
@@ -446,7 +445,7 @@ function zvm_escape_non_printed_characters() {
       str="${str}${c}"
     fi
   done
-  echo $str
+  echo ${str// /$ZVM_ESCAPE_SPACE}
 }
 
 # Remove all characters between the cursor position and the
