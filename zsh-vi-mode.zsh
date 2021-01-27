@@ -263,31 +263,9 @@ function zvm_keys() {
 function zvm_find_bindkey_widget() {
   local keymap=$1
   local keys=$2
-  local prefix_mode=$3
+  local prefix_mode=${3:-false}
 
-  if [[ -z $prefix_mode ]]; then
-    local result=$(bindkey -M ${keymap} "$keys")
-    if [[ "${result: -14}" == ' undefined-key' ]]; then
-      return
-    fi
-
-    # Escape spaces in key bindings (space -> $ZVM_ESCAPE_SPACE)
-    for ((i=$#result;i>=0;i--)); do
-
-      # Backward find the first whitespace character
-      [[ "${result:$i:1}" == ' ' ]] || continue
-
-      # Retrieve the keys and widget
-      local k=${result:1:$i-2}
-
-      # Escape spaces in key bindings (space -> $ZVM_ESCAPE_SPACE)
-      k=${k// /$ZVM_ESCAPE_SPACE}
-      result="$k ${result:$i+1}"
-      break
-    done
-
-    echo $result
-  else
+  if $prefix_mode; then
     local widgets=()
     local pos=0
     local spos=3
@@ -325,6 +303,28 @@ function zvm_find_bindkey_widget() {
     done
 
     echo $widgets
+  else
+    local result=$(bindkey -M ${keymap} "$keys")
+    if [[ "${result: -14}" == ' undefined-key' ]]; then
+      return
+    fi
+
+    # Escape spaces in key bindings (space -> $ZVM_ESCAPE_SPACE)
+    for ((i=$#result;i>=0;i--)); do
+
+      # Backward find the first whitespace character
+      [[ "${result:$i:1}" == ' ' ]] || continue
+
+      # Retrieve the keys and widget
+      local k=${result:1:$i-2}
+
+      # Escape spaces in key bindings (space -> $ZVM_ESCAPE_SPACE)
+      k=${k// /$ZVM_ESCAPE_SPACE}
+      result="$k ${result:$i+1}"
+      break
+    done
+
+    echo $result
   fi
 }
 
