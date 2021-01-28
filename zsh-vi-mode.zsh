@@ -1662,21 +1662,6 @@ function zvm_append_eol() {
 
 # Select vi mode
 function zvm_select_vi_mode() {
-  # Start the lazy keybindings when the first time entering the normal mode
-  if [[ $1 != $ZVM_MODE_INSERT ]] && (($#ZVM_LAZY_KEYBINDINGS_LIST > 0 )); then
-    zvm_exec_commands 'before_lazy_keybindings'
-
-    # Here we should unset the list for normal keybindings
-    local list=("${ZVM_LAZY_KEYBINDINGS_LIST[@]}")
-    unset ZVM_LAZY_KEYBINDINGS_LIST
-
-    for r in "${list[@]}"; do
-      eval "zvm_bindkey ${r}"
-    done
-
-    zvm_exec_commands 'after_lazy_keybindings'
-  fi
-
   zvm_exec_commands 'before_select_vi_mode'
 
   # Some plugins would reset the prompt when we select the
@@ -1710,6 +1695,21 @@ function zvm_select_vi_mode() {
   ZVM_RESET_PROMPT_DISABLED=
 
   [[ -z $2 ]] && zle reset-prompt
+
+  # Start the lazy keybindings when the first time entering the normal mode
+  if [[ $1 != $ZVM_MODE_INSERT ]] && (($#ZVM_LAZY_KEYBINDINGS_LIST > 0 )); then
+    zvm_exec_commands 'before_lazy_keybindings'
+
+    # Here we should unset the list for normal keybindings
+    local list=("${ZVM_LAZY_KEYBINDINGS_LIST[@]}")
+    unset ZVM_LAZY_KEYBINDINGS_LIST
+
+    for r in "${list[@]}"; do
+      eval "zvm_bindkey ${r}"
+    done
+
+    zvm_exec_commands 'after_lazy_keybindings'
+  fi
 
   zvm_exec_commands 'after_select_vi_mode'
 }
