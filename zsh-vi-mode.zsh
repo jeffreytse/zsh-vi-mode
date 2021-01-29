@@ -266,10 +266,10 @@ function zvm_find_bindkey_widget() {
   local prefix_mode=${3:-false}
 
   if $prefix_mode; then
-    local widgets=()
     local pos=0
     local spos=3
-    local result=$(bindkey -M ${keymap})$'\n'
+    local result=$(bindkey -M ${keymap} -p "${keys:0:-1}")$'\n'
+    retval=()
 
     # Split string to array by newline
     for ((i=$spos;i<$#result;i++)); do
@@ -290,8 +290,7 @@ function zvm_find_bindkey_widget() {
 
         # Escape spaces in key bindings (space -> $ZVM_ESCAPE_SPACE)
         k=${k// /$ZVM_ESCAPE_SPACE}
-        widgets+=("$k ${result:$((spos+1)):$((i-spos-1))}")
-
+        retval+=($k ${result:$((spos+1)):$((i-spos-1))})
       fi
 
       # Save as new position
@@ -301,8 +300,6 @@ function zvm_find_bindkey_widget() {
       # One key and quotes at least (i.e \n"_" )
       i=$i+3
     done
-
-    echo $widgets
   else
     local result=$(bindkey -M ${keymap} "$keys")
     if [[ "${result: -14}" == ' undefined-key' ]]; then
@@ -320,11 +317,10 @@ function zvm_find_bindkey_widget() {
 
       # Escape spaces in key bindings (space -> $ZVM_ESCAPE_SPACE)
       k=${k// /$ZVM_ESCAPE_SPACE}
-      result="$k ${result:$i+1}"
+      retval=($k ${result:$i+1})
+
       break
     done
-
-    echo $result
   fi
 }
 
@@ -336,15 +332,20 @@ function zvm_readkeys() {
   local widget=
   local result=
   local pattern=
+
   while :; do
     # Escape space in pattern
     pattern=${keys//$ZVM_ESCAPE_SPACE/ }
+
     # Find out widgets that match this key pattern
-    result=($(zvm_find_bindkey_widget $keymap "$pattern" true))
+    zvm_find_bindkey_widget $keymap "$pattern" true
+    result=(${retval[@]})
+
     # Exit key input if no any more widgets matched
     if [[ -z $result ]]; then
       break
     fi
+
     # Wait for reading next key
     key=
     if [[ "${result[1]}" == "${keys}" ]]; then
@@ -352,6 +353,7 @@ function zvm_readkeys() {
     else
       read -k 1 key
     fi
+
     # Transform the non-printed characters
     key=$(zvm_escape_non_printed_characters "${key}")
 
@@ -360,18 +362,20 @@ function zvm_readkeys() {
     # ` -> \` It's a special character in bash syntax
     key=${key//\"/\\\"}
     key=${key//\`/\\\`}
-
     keys="${keys}${key}"
+
     # Get current widget as final one when keytimeout
     if [[ -z "$key" ]]; then
       widget=${result[2]}
       break
     fi
   done
+
   # Remove escape slash character
   keys=${keys//\\\"/\"}
   keys=${keys//\\\`/\`}
-  echo ${keys} $widget
+
+  retval=(${keys} $widget)
 }
 
 # Add key bindings
@@ -396,19 +400,21 @@ function zvm_bindkey() {
     key=${keys:0:1}
   fi
 
-  local result=($(zvm_find_bindkey_widget $keymap "$key"))
+  # Find the widget of the prefix key
+  zvm_find_bindkey_widget $keymap "$key"
+
+  local result=(${retval[@]})
   local rawfunc=${result[2]}
-  local wrapper="zvm_${rawfunc}-wrapper"
+  local wrapper="zvm-${keymap}-${rawfunc}-wrapper"
 
   # Check if we need to wrap the original widget
-  if [[ ! -z $rawfunc && "$rawfunc" != zvm_*-wrapper ]]; then
+  if [[ ! -z $rawfunc && "$rawfunc" != zvm-*-wrapper ]]; then
     eval "$wrapper() { \
-      local result=(\$(zvm_readkeys $keymap '${key}')); \
-      ZVM_KEYS=\${result[1]//${ZVM_ESCAPE_SPACE//\\/\\\\}/ }; \
-      if [[ ! -z '$widget' && \${#ZVM_KEYS} == 1 ]]; then \
-        local widget=$rawfunc; \
-      else \
-        local widget=\${result[2]}; \
+      zvm_readkeys $keymap '$key'; \
+      local keys=\${retval[1]} widget=\${retval[2]}; \
+      ZVM_KEYS=\${keys//${ZVM_ESCAPE_SPACE//\\/\\\\}/ }; \
+      if [[ \${#ZVM_KEYS} == 1 ]]; then \
+        widget=$rawfunc; \
       fi; \
       if [[ -z \${widget} ]]; then \
         zle zvm_default_handler; \
