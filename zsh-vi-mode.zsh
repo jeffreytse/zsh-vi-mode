@@ -511,7 +511,11 @@ function zvm_open_line_above() {
 
 # Substitute characters of selection
 function zvm_vi_substitue() {
-  zle vi-substitute
+  if [[ $ZVM_MODE == $ZVM_MODE_NORMAL ]]; then
+    BUFFER="${BUFFER:0:$CURSOR}${BUFFER:$((CURSOR+1))}"
+  else
+    zvm_vi_delete false
+  fi
   zvm_select_vi_mode $ZVM_MODE_INSERT
 }
 
@@ -766,7 +770,7 @@ function zvm_vi_delete() {
   BUFFER="${BUFFER:0:$bpos}${BUFFER:$epos}"
   CURSOR=$cpos
 
-  zvm_exit_visual_mode
+  zvm_exit_visual_mode ${1:-true}
 }
 
 # Yank characters of the visual selection
