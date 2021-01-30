@@ -829,7 +829,7 @@ function zvm_range_handler() {
     esac
     # Select the mode
     if [[ ! -z $mode ]]; then
-      zvm_select_vi_mode $mode
+      zvm_select_vi_mode $mode false
     fi
   fi
 
@@ -1005,7 +1005,6 @@ function zvm_change_surround() {
     bpos=${ret[1]} epos=${ret[2]}
     zvm_highlight custom $bpos $(($bpos+1))
     zvm_highlight custom $epos $(($epos+1))
-    zvm_highlight redraw
   fi
   local key=
   case $action in
@@ -1013,7 +1012,7 @@ function zvm_change_surround() {
     S|y|a)
       key=$surround
       [[ -z $@ ]] && zle visual-mode
-      zvm_select_vi_mode $ZVM_MODE_NORMAL
+      zvm_select_vi_mode $ZVM_MODE_NORMAL false
       ;;
   esac
 
@@ -1550,7 +1549,6 @@ function zvm_switch_month() {
 function zvm_highlight() {
   local opt=${1:-mode}
   local region=()
-  local rh_length=${#ZVM_REGION_HIGHLIGHT[@]}
   local redraw=
 
   # Hanlde region by the option
@@ -1568,6 +1566,7 @@ function zvm_highlight() {
     custom)
       region=("${ZVM_REGION_HIGHLIGHT[@]}")
       region+=("$2 $3 bg=${4:-$ZVM_VI_HIGHLIGHT_BACKGROUND}")
+      redraw=true
       ;;
     clear) redraw=true;;
     redraw) redraw=true;;
@@ -1575,13 +1574,27 @@ function zvm_highlight() {
 
   # Update region highlight
   if (( $#region > 0 )) || [[ "$opt" == 'clear' ]]; then
+    # refresh current display
     zle redisplay
-    ZVM_REGION_HIGHLIGHT=("${region[@]}")
+
     # Remove old region highlight
-    if (( $rh_length > 0 && $rh_length <= ${#region_highlight} )); then
-      region_highlight=("${region_highlight[@]:0:-$rh_length}")
-    fi
-    region_highlight+=("${ZVM_REGION_HIGHLIGHT[@]}")
+    local rawhighlight=()
+    for ((i=1; i<=${#region_highlight[@]}; i++)); do
+      local raw=true
+      for ((j=1; j<=${#ZVM_REGION_HIGHLIGHT[@]}; j++)); do
+        if [[ "${region_highlight[i]}" == "${ZVM_REGION_HIGHLIGHT[j]}" ]]; then
+          raw=false
+          break
+        fi
+      done
+      if $raw; then
+        rawhighlight+=("${region_highlight[i]}")
+      fi
+    done
+
+    # Assign new region highlight
+    ZVM_REGION_HIGHLIGHT=("${region[@]}")
+    region_highlight=("${rawhighlight[@]}" "${ZVM_REGION_HIGHLIGHT[@]}")
   fi
 
   # Check if we need to refresh the region highlight
