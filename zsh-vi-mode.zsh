@@ -420,9 +420,6 @@ function zvm_bindkey() {
         zle zvm_default_handler; \
       else \
         zle \$widget; \
-        case \${ZVM_KEYS} in \
-          c|d|s|y) zle reset-prompt;; \
-        esac \
       fi; \
       ZVM_KEYS=; \
     }"
@@ -787,7 +784,7 @@ function zvm_vi_change() {
   BUFFER="${BUFFER:0:$bpos}${BUFFER:$epos}"
   CURSOR=$bpos
 
-  zvm_exit_visual_mode
+  zvm_exit_visual_mode false
   zvm_select_vi_mode $ZVM_MODE_INSERT
 }
 
@@ -980,8 +977,9 @@ function zvm_select_surround() {
     ((epos++))
   fi
   MARK=$bpos; CURSOR=$epos-1
+
   # refresh current mode for prompt redraw
-  zvm_select_vi_mode
+  zle reset-prompt
 }
 
 # Change surround in vicmd or visual mode
@@ -1009,11 +1007,7 @@ function zvm_change_surround() {
   local key=
   case $action in
     c|r) read -k 1 key;;
-    S|y|a)
-      key=$surround
-      [[ -z $@ ]] && zle visual-mode
-      zvm_select_vi_mode $ZVM_MODE_NORMAL false
-      ;;
+    S|y|a) key=$surround; [[ -z $@ ]] && zle visual-mode;;
   esac
 
   # Check if canceling changing surround (ZVM_VI_ESCAPE_BINDKEY)
@@ -1032,6 +1026,10 @@ function zvm_change_surround() {
 
   # Clear highliht
   zvm_highlight clear
+
+  case $action in
+    S|y|a) zvm_select_vi_mode $ZVM_MODE_NORMAL;;
+  esac
 }
 
 # Change surround text object
@@ -1634,8 +1632,8 @@ function zvm_enter_visual_mode() {
     v) mode=$ZVM_MODE_VISUAL;;
     V) mode=$ZVM_MODE_VISUAL_LINE;;
   esac
-  zvm_select_vi_mode $mode
   zvm_highlight
+  zvm_select_vi_mode $mode
 }
 
 # Exit the visual mode
@@ -1645,7 +1643,7 @@ function zvm_exit_visual_mode() {
     $ZVM_MODE_VISUAL_LINE) zle visual-line-mode;;
   esac
   zvm_highlight clear
-  zvm_select_vi_mode $ZVM_MODE_NORMAL
+  zvm_select_vi_mode $ZVM_MODE_NORMAL ${1:-true}
 }
 
 # Enter the vi insert mode
