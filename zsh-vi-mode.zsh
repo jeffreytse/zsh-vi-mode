@@ -523,7 +523,7 @@ function zvm_vi_substitue() {
 function zvm_selection() {
   local bpos= epos=
   if (( MARK > CURSOR )) ; then
-    bpos=$((CURSOR+1)) epos=$((MARK+1))
+    bpos=$CURSOR epos=$((MARK+1))
   else
     bpos=$MARK epos=$((CURSOR+1))
   fi
