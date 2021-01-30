@@ -213,7 +213,7 @@ function zvm_define_widget() {
   if [[ ${#result[@]} == 4 ]]; then
     local rawfunc=${result[4]}
     local wrapper="zvm_${widget}-wrapper"
-    eval "$wrapper() { $rawfunc; $func; }"
+    eval "$wrapper() { local rawfunc=$rawfunc; $func \"\$@\" }"
     func=$wrapper
   fi
   zle -N $widget $func
@@ -1672,7 +1672,7 @@ function zvm_select_vi_mode() {
 
   # Some plugins would reset the prompt when we select the
   # keymap, so here we disable the reset-prompt temporarily.
-  ZVM_RESET_PROMPT_DISABLED=1
+  ZVM_RESET_PROMPT_DISABLED=true
 
   case "$1" in
     $ZVM_MODE_NORMAL)
@@ -1697,10 +1697,10 @@ function zvm_select_vi_mode() {
       ;;
   esac
 
-  # Here restore the reset-prompt
-  ZVM_RESET_PROMPT_DISABLED=
+  # Enable reset-prompt
+  ZVM_RESET_PROMPT_DISABLED=false
 
-  [[ -z $2 ]] && zle reset-prompt
+  ${2:-true} && zle reset-prompt
 
   # Start the lazy keybindings when the first time entering the normal mode
   if [[ $1 != $ZVM_MODE_INSERT ]] && (($#ZVM_LAZY_KEYBINDINGS_LIST > 0 )); then
@@ -1722,10 +1722,14 @@ function zvm_select_vi_mode() {
 
 # Reset prompt
 function zvm_reset_prompt() {
-  ! (( $ZVM_RESET_PROMPT_DISABLED )) || return
+  $ZVM_RESET_PROMPT_DISABLED && return
   local -i retval
-  zle .reset-prompt -- $@
-  return $retval
+  if [[ -z "$rawfunc" ]]; then
+    zle .reset-prompt -- "$@"
+  else
+    $rawfunc -- "$@"
+  fi
+  return retval
 }
 
 # Undo action in vi insert mode
