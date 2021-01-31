@@ -264,12 +264,12 @@ function zvm_find_bindkey_widget() {
   local keymap=$1
   local keys=$2
   local prefix_mode=${3:-false}
+  retval=()
 
   if $prefix_mode; then
     local pos=0
     local spos=3
     local result=$(bindkey -M ${keymap} -p "${keys:0:-1}")$'\n'
-    retval=()
 
     # Split string to array by newline
     for ((i=$spos;i<$#result;i++)); do
@@ -317,7 +317,7 @@ function zvm_find_bindkey_widget() {
 
       # Escape spaces in key bindings (space -> $ZVM_ESCAPE_SPACE)
       k=${k// /$ZVM_ESCAPE_SPACE}
-      retval=($k ${result:$i+1})
+      retval+=($k ${result:$i+1})
 
       break
     done
@@ -403,8 +403,7 @@ function zvm_bindkey() {
   # Find the widget of the prefix key
   zvm_find_bindkey_widget $keymap "$key"
 
-  local result=(${retval[@]})
-  local rawfunc=${result[2]}
+  local rawfunc=${retval[2]}
   local wrapper="zvm-${keymap}-${rawfunc}-wrapper"
 
   # Check if we need to wrap the original widget
