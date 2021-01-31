@@ -1556,7 +1556,7 @@ function zvm_highlight() {
   case "$opt" in
     mode)
       case "$ZVM_MODE" in
-        $ZVM_MODE_VISUAL_LINE)
+        $ZVM_MODE_VISUAL|$ZVM_MODE_VISUAL_LINE)
           local ret=($(zvm_calc_selection))
           local bpos=$ret[1] epos=$ret[2]
           region=("$((bpos)) $((epos)) bg=$ZVM_VI_HIGHLIGHT_BACKGROUND")
@@ -1575,8 +1575,6 @@ function zvm_highlight() {
 
   # Update region highlight
   if (( $#region > 0 )) || [[ "$opt" == 'clear' ]]; then
-    # refresh current display
-    zle redisplay
 
     # Remove old region highlight
     local rawhighlight=()
@@ -1604,30 +1602,6 @@ function zvm_highlight() {
   fi
 }
 
-# Down line in visual mode
-function zvm_down_line() {
-  zle down-line
-  zvm_highlight
-}
-
-# Up line in visual mode
-function zvm_up_line() {
-  zle up-line
-  zvm_highlight
-}
-
-# Backward character in visual mode
-function zvm_backward_char() {
-  zle vi-backward-char
-  zvm_highlight
-}
-
-# Forward character in visual mode
-function zvm_forward_char() {
-  zle vi-forward-char
-  zvm_highlight
-}
-
 # Enter the visual mode
 function zvm_enter_visual_mode() {
   local mode=
@@ -1635,7 +1609,6 @@ function zvm_enter_visual_mode() {
     v) mode=$ZVM_MODE_VISUAL;;
     V) mode=$ZVM_MODE_VISUAL_LINE;;
   esac
-  zvm_highlight
   zvm_select_vi_mode $mode
 }
 
@@ -1818,12 +1791,21 @@ function zvm_update_cursor() {
   fi
 }
 
+# Updates highlight region
+function zvm_update_highlight() {
+  local keys=$(zvm_keys)
+  case "$keys" in
+    [vV]*) zvm_highlight;;
+  esac
+}
+
 # Updates editor information when line pre redraw
 function zvm_zle-line-pre-redraw() {
   # Fix cursor style is not updated in tmux environment, when
   # there are one more panel in the same window, the program
   # in other panel could change the cursor shape, we need to
   # update cursor style when line is redrawing.
+  zvm_update_highlight
   zvm_update_cursor
 }
 
@@ -1846,10 +1828,6 @@ function zvm_init() {
   zvm_define_widget zvm_change_surround
   zvm_define_widget zvm_move_around_surround
   zvm_define_widget zvm_change_surround_text_object
-  zvm_define_widget zvm_down_line
-  zvm_define_widget zvm_up_line
-  zvm_define_widget zvm_backward_char
-  zvm_define_widget zvm_forward_char
   zvm_define_widget zvm_enter_insert_mode
   zvm_define_widget zvm_exit_insert_mode
   zvm_define_widget zvm_enter_visual_mode
@@ -1905,10 +1883,6 @@ function zvm_init() {
   zvm_bindkey vicmd 'A'  zvm_append_eol
 
   # Other key bindings
-  zvm_bindkey visual 'j' zvm_down_line
-  zvm_bindkey visual 'k' zvm_up_line
-  zvm_bindkey visual 'h' zvm_backward_char
-  zvm_bindkey visual 'l' zvm_forward_char
   zvm_bindkey vicmd  'v' zvm_enter_visual_mode
   zvm_bindkey vicmd  'V' zvm_enter_visual_mode
   zvm_bindkey visual 'o' zvm_exchange_point_and_mark
