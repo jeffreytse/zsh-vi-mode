@@ -1793,9 +1793,10 @@ function zvm_update_cursor() {
 
 # Updates highlight region
 function zvm_update_highlight() {
-  local keys=$(zvm_keys)
-  case "$keys" in
-    [vV]*) zvm_highlight;;
+  case "$ZVM_MODE" in
+    $ZVM_MODE_VISUAL|$ZVM_MODE_VISUAL_LINE)
+      zvm_highlight
+      ;;
   esac
 }
 
@@ -1805,8 +1806,8 @@ function zvm_zle-line-pre-redraw() {
   # there are one more panel in the same window, the program
   # in other panel could change the cursor shape, we need to
   # update cursor style when line is redrawing.
-  zvm_update_highlight
   zvm_update_cursor
+  zvm_update_highlight
 }
 
 # Start every prompt in insert mode
