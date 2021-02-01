@@ -673,6 +673,7 @@ function zvm_vi_yank() {
 function zvm_vi_put_after() {
   local head= foot=
   local content=${CUTBUFFER}
+  local offset=1
 
   if [[ ${content: -1} == $'\n' ]]; then
     local pos=${CURSOR}
@@ -699,6 +700,7 @@ function zvm_vi_put_after() {
       fi
     fi
 
+    offset=0
     BUFFER="${head}${content}${foot}"
     CURSOR=$pos
   else
@@ -710,7 +712,7 @@ function zvm_vi_put_after() {
 
   # Reresh display and highlight buffer
   zvm_highlight clear
-  zvm_highlight custom $(($#head+1)) $(($#head+$#content+1))
+  zvm_highlight custom $(($#head+$offset)) $(($#head+$#content+$offset))
 }
 
 # Put cutbuffer before the cursor
