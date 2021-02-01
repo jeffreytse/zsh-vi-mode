@@ -703,7 +703,7 @@ function zvm_vi_put_after() {
 
   # Reresh display and highlight buffer
   zvm_highlight clear
-  zvm_highlight custom $#head $(($#head+$#content))
+  zvm_highlight custom $(($#head+1)) $(($#head+$#content+1))
 }
 
 # Put cutbuffer before the cursor
