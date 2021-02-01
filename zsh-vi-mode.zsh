@@ -704,7 +704,6 @@ function zvm_vi_put_after() {
   # Reresh display and highlight buffer
   zvm_highlight clear
   zvm_highlight custom $#head $(($#head+$#content))
-  zvm_highlight redraw
 }
 
 # Put cutbuffer before the cursor
@@ -746,7 +745,6 @@ function zvm_vi_put_before() {
   # Reresh display and highlight buffer
   zvm_highlight clear
   zvm_highlight custom $#head $(($#head+$#content))
-  zvm_highlight redraw
 }
 
 # Delete characters of the visual selection
@@ -1550,7 +1548,7 @@ function zvm_switch_month() {
 function zvm_highlight() {
   local opt=${1:-mode}
   local region=()
-  local redraw=
+  local redraw=false
 
   # Hanlde region by the option
   case "$opt" in
@@ -1600,7 +1598,7 @@ function zvm_highlight() {
   fi
 
   # Check if we need to refresh the region highlight
-  if [[ $redraw ]]; then
+  if $redraw; then
     zle -R
   fi
 }
