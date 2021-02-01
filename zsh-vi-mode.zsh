@@ -619,7 +619,7 @@ function zvm_yank() {
   if [[ ${1:-$ZVM_MODE} == $ZVM_MODE_VISUAL_LINE ]]; then
     CUTBUFFER=${CUTBUFFER}$'\n'
   fi
-  MARK=$bpos CURSOR=$epos
+  CURSOR=$bpos MARK=$epos
 }
 
 # Up case of the visual selection
