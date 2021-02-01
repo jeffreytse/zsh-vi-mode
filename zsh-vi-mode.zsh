@@ -749,6 +749,7 @@ function zvm_vi_put_before() {
     foot="${BUFFER:$((CURSOR+1))}"
     BUFFER="${head}${content}${BUFFER:$CURSOR:1}${foot}"
     CURSOR=$CURSOR+$#content
+    CURSOR=$((CURSOR-1))
   fi
 
   # Reresh display and highlight buffer
