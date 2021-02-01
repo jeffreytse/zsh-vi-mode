@@ -269,7 +269,14 @@ function zvm_find_bindkey_widget() {
   if $prefix_mode; then
     local pos=0
     local spos=3
-    local result=$(bindkey -M ${keymap} -p "${keys:0:-1}")$'\n'
+    local prefix_keys=
+
+    # Get the prefix keys
+    if [[ $keys ]]; then
+      prefix_keys=${keys:0:-1}
+    fi
+
+    local result=$(bindkey -M ${keymap} -p "$prefix_keys")$'\n'
 
     # Split string to array by newline
     for ((i=$spos;i<$#result;i++)); do
