@@ -1569,7 +1569,10 @@ function zvm_highlight() {
       region+=("$2 $3 bg=${4:-$ZVM_VI_HIGHLIGHT_BACKGROUND}")
       redraw=true
       ;;
-    clear) redraw=true;;
+    clear)
+      zle redisplay
+      redraw=true
+      ;;
     redraw) redraw=true;;
   esac
 
