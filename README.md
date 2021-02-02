@@ -65,12 +65,14 @@
 - ✏️  Mode indication with different cursor styles.
 - 🧮 Cursor movement (Navigation).
 - 📝 Insert & Replace (Insert mode).
-- 💡 Text Objects.
+- 💡 Text Objects (A word, inner word, etc.).
 - 🔎 Searching history.
 - ❇️  Undo, Redo, Cut, Copy, Paste, and Delete.
 - 🔮 Better surrounds functionality (Add, Replace, Delete, Move Around, and Highlight).
 - 🔣 Switch keywords (Increase/Decrease Number, Boolean, Weekday, Month, etc.).
-- 📋 System clipboard (**In progress**).
+- ⚙️  Better functionality in command mode (**In progress**).
+- 🌀 Repeating command such as `10p` and `4fa` (**In progress**).
+- 📒 System clipboard (**In progress**).
 
 ## 🛠️ Installation
 
@@ -95,6 +97,18 @@ Include the load command in your `.zshrc`
 ```shell
 zgen load jeffreytse/zsh-vi-mode
 ```
+
+#### Using [zinit](https://github.com/zdharma/zinit)
+
+Include the load command in your `.zshrc`
+
+```shell
+zinit ice depth=1
+zinit light jeffreytse/zsh-vi-mode
+```
+
+Note: the use of `depth=1` ice is optional, other types of ice are neither
+recommended nor officially supported by this plugin.
 
 #### As an [Oh My Zsh!](https://github.com/robbyrussell/oh-my-zsh) custom plugin
 
@@ -132,6 +146,8 @@ Use `ESC` or `CTRL-[` to enter `Normal mode` (Each command line starting with
 Also, you can use the `ZVM_VI_ESCAPE_BINDKEY` option to custom the escape key
 which could better match your flavor, such as `jj` or `jk` and so on.
 
+And you can use the `ZVM_KEYTIMEOUT` option to adjust the key input timeout
+for waiting for next key, default is `0.3` seconds.
 
 History
 -------
@@ -328,6 +344,64 @@ function zvm_after_init() {
 }
 ```
 
+or if you are using the `zinit`:
+
+```zsh
+# For postponing loading `fzf`
+zinit ice lucid wait
+zinit snippet OMZP::fzf
+```
+
+By default, [the lazy keybindings feature](#lazy-keybindings) is enabled, all
+the keybindings of `normal` and `visual` mode should be executed by the
+`zvm_after_lazy_keybindings_commands`. For example:
+
+```zsh
+# The plugin will auto execute this zvm_after_lazy_keybindings function
+function zvm_after_lazy_keybindings() {
+  bindkey -M vicmd 's' your_normal_widget
+  bindkey -M visual 'n' your_visual_widget
+}
+```
+
+Vi Mode Indicator
+--------
+
+This plugin has provided a `ZVM_MODE` variable for you to retrieve
+current vi mode and better show the indicator.
+
+And currently the below modes are supported:
+
+```zsh
+ZVM_MODE_NORMAL
+ZVM_MODE_INSERT
+ZVM_MODE_VISUAL
+ZVM_MODE_VISUAL_LINE
+```
+
+For updating the vi mode indicator, we should add our commands to 
+`zvm_after_select_vi_mode_commands`. For example:
+
+```zsh
+# The plugin will auto execute this zvm_after_select_vi_mode function
+function zvm_after_select_vi_mode() {
+  case $ZVM_MODE in
+    $ZVM_MODE_NORMAL)
+      # Something you want to do...
+    ;;
+    $ZVM_MODE_INSERT)
+      # Something you want to do...
+    ;;
+    $ZVM_MODE_VISUAL)
+      # Something you want to do...
+    ;;
+    $ZVM_MODE_VISUAL_LINE)
+      # Something you want to do...
+    ;;
+  esac
+}
+```
+
 Custom Cursor Style
 --------
 
@@ -368,17 +442,17 @@ ZVM_INSERT_MODE_CURSOR=$ZVM_CURSOR_BLOCK
 ZVM_NORMAL_MODE_CURSOR=$ZVM_CURSOR_BLINKING_UNDERLINE
 ```
 
-
 Lazy Keybindings
 --------
 
 This plugin has supported the lazy keybindings feature, and it is enabled
 by default. To disable it, you can set the option `ZVM_LAZY_KEYBINDINGS`
-to `false`. This feature will postpone some keybindings (i.e. `normal`/`visual`
-mode) to the first time you enter the normal mode. And it can greatly
-improve the startup speed, especially you open the terminal and just want
-to execute a simple command.
+to `false` before this plugin is loaded. This feature will postpone all
+the keybindings of `normal` and `visual` mode) to the first time you enter
+the normal mode.
 
+It can greatly improve the startup speed, especially you open the terminal
+and just want to execute a simple command.
 
 ## 💎 Credits
 
