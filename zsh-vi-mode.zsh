@@ -1021,9 +1021,12 @@ function zvm_change_surround() {
     S|y|a) key=$surround; [[ -z $@ ]] && zle visual-mode;;
   esac
 
-  # Check if canceling changing surround (ZVM_VI_ESCAPE_BINDKEY)
-  [[ "$key" == '' ]] && return
-  [[ "$key" == "${ZVM_VI_ESCAPE_BINDKEY//\^\[/}" ]] && return
+  # Check if it is ESCAPE key (<ESC> or ZVM_VI_ESCAPE_BINDKEY)
+  case "$key" in
+    ''|"${ZVM_VI_ESCAPE_BINDKEY//\^\[/}")
+      zvm_highlight clear
+      return
+  esac
 
   # Start changing surround
   ret=($(zvm_match_surround "$key"))
