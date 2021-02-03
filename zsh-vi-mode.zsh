@@ -2004,8 +2004,7 @@ function zvm_precmd_function() {
 
 # Check if a command is existed
 function zvm_exist_command() {
-  local ret=($(type ${1}; echo $?))
-  return ${ret: -1}
+  command -v "$1" >/dev/null
 }
 
 # Execute commands
