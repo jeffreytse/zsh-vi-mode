@@ -95,6 +95,11 @@
 #  ZVM_CURSOR_BLINKING_UNDERLINE
 #  ZVM_CURSOR_BLINKING_BEAM
 #
+# ZVM_VI_EDITOR
+# the editor to edit your command line (default is $EDITOR)
+#
+# ZVM_TMPPREFIX
+# the tmp file prefix (default is $TMPPREFIX)
 
 # Plugin information
 typeset -gr ZVM_NAME='zsh-vi-mode'
@@ -179,6 +184,8 @@ ZVM_VI_ESCAPE_BINDKEY=${ZVM_VI_ESCAPE_BINDKEY:-^[}
 ZVM_VI_INSERT_MODE_LEGACY_UNDO=${ZVM_VI_INSERT_MODE_LEGACY_UNDO:-false}
 ZVM_VI_SURROUND_BINDKEY=${ZVM_VI_SURROUND_BINDKEY:-classic}
 ZVM_VI_HIGHLIGHT_BACKGROUND=${ZVM_VI_HIGHLIGHT_BACKGROUND:-#cc0000}
+ZVM_VI_EDITOR=${ZVM_VI_EDITOR:-$EDITOR}
+ZVM_TMPPREFIX=${ZVM_TMPPREFIX:-$TMPPREFIX}
 
 # All the extra commands
 zvm_before_init_commands=()
@@ -860,6 +867,20 @@ function zvm_range_handler() {
   if [[ ! -z $cursor ]]; then
     CURSOR=$cursor
   fi
+}
+
+# Edit command line in EDITOR
+function zvm_vi_edit_command_line() {
+  local tmp_file=$(mktemp $ZVM_TMPPREFIX.XXXXXX)
+  echo "$BUFFER" > "$tmp_file"
+  $ZVM_VI_EDITOR $tmp_file
+  BUFFER=$(cat $tmp_file)
+  rm "$tmp_file"
+  case $ZVM_MODE in
+    $ZVM_MODE_VISUAL|$ZVM_MODE_VISUAL_LINE)
+      zvm_exit_visual_mode
+      ;;
+  esac
 }
 
 # Get the substr position in a string
@@ -1861,6 +1882,7 @@ function zvm_init() {
   zvm_define_widget zvm_vi_up_case
   zvm_define_widget zvm_vi_down_case
   zvm_define_widget zvm_vi_opp_case
+  zvm_define_widget zvm_vi_edit_command_line
   zvm_define_widget zvm_switch_keyword
 
   # Override standard widgets
@@ -1912,6 +1934,7 @@ function zvm_init() {
   zvm_bindkey visual 'U' zvm_vi_up_case
   zvm_bindkey visual 'u' zvm_vi_down_case
   zvm_bindkey visual '~' zvm_vi_opp_case
+  zvm_bindkey visual 'v' zvm_vi_edit_command_line
 
   zvm_bindkey vicmd '^A' zvm_switch_keyword
   zvm_bindkey vicmd '^X' zvm_switch_keyword
