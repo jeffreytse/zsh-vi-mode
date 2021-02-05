@@ -161,9 +161,17 @@ History
 Mode indicators
 ---------------
 
-`Normal mode` is indicated with block style cursor, and `Insert mode` with beam
-style cursor by default.
+`Normal mode` is indicated with block style cursor, and `Insert mode` with
+beam style cursor by default.
 
+Vim edition
+-----------
+
+In `Normal mode` you can use `vv` to edit current command line in an editor
+(e.g. `vi`/`vim`/`nvim`...), because it is bound to the `Visual mode`.
+
+You can change the editor by `ZVM_VI_EDITOR` option, by default it is
+`$EDITOR`.
 
 Movement
 --------
