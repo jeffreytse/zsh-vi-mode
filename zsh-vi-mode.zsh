@@ -848,15 +848,42 @@ function zvm_range_handler() {
     fi
   fi
 
-  zvm_navigation_handler "${keys:1}"
+  #######################################
+  # Selection Cases:
+  #
+  # 1. SAMPLE: `word1   word2`, CURSOR: at `w` of `word1`
+  #
+  #  [dy]w -> `word1   `
+  #  cw -> `word1`
+  #  vw -> `word1   w`
+  #  [dcvy]e -> `word1`
+  #  [dcvy]iw -> `word1`
+  #  [dcvy]aw -> `word1   `
+  #
 
-  # Extra handling
-  case "${keys:1}" in
-    b|F|T) cursor=$CURSOR;;
-    iw) zle select-in-word; cursor=$MARK;;
-    aw) zle select-a-word; cursor=$MARK;;
+  # Pre navigation handling
+  local navkey=
+  case "${keys}" in
+    cw) navkey=e;;
+    *) navkey="${keys:1}";;
   esac
 
+  # Handle navigation
+  case "${navkey}" in
+    iw) zle select-in-word;;
+    aw) zle select-a-word;;
+    *) zvm_navigation_handler "${navkey}"
+  esac
+
+  # Post navigation handling
+  case "${keys}" in
+    [dy]w) CURSOR=$((CURSOR-1));;
+    iw) cursor=$MARK;;
+    aw) cursor=$MARK;;
+    b|F|T) cursor=$CURSOR;;
+  esac
+
+  # Handle operation
   case "${keys}" in
     y*) zvm_vi_yank;;
     d*) zvm_vi_delete; cursor=;;
