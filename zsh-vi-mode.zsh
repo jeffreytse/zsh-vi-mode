@@ -1520,9 +1520,9 @@ function zvm_switch_operator() {
     '===') result='!==';;
     '!==') result='===';;
     '+') result='-';;
-    '-') result='*';;
+    '-') result='+';;
     '*') result='/';;
-    '/') result='+';;
+    '/') result='*';;
     'and') result='or';;
     'or') result='and';;
     *) return;;
