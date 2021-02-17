@@ -126,7 +126,28 @@ plugins+=(zsh-vi-mode)
 
 Keep in mind that plugins need to be added before `oh-my-zsh.sh` is sourced.
 
+#### Arch Linux (AUR)
+
+For Arch Linux users, you can install it through the following command
+
+```shell
+yay -S zsh-vi-mode
+```
+
+or the latest update (unstable)
+
+```shell
+yay -S zsh-vi-mode-git
+```
+
+Then source it in your `.zshrc` (or `.bashrc`)
+
+```shell
+source /usr/share/zsh/plugins/zsh-vi-mode/zsh-vi-mode.plugin.zsh
+```
+
 #### Manually
+
 Clone this repository somewhere (`$HOME/.zsh-vi-mode` for example)
 
 ```shell
@@ -308,6 +329,7 @@ For example:
 - `or` => `and`
 - ...
 
+
 Execute Extra Commands
 --------
 
@@ -369,6 +391,41 @@ the keybindings of `normal` and `visual` mode should be executed by the
 function zvm_after_lazy_keybindings() {
   bindkey -M vicmd 's' your_normal_widget
   bindkey -M visual 'n' your_visual_widget
+}
+```
+
+Custom widgets and keybindings
+--------
+
+This plugin has two functions for you to define custom widgets and keybindings.
+In case of unnecessary problems, it is better to use them, especially when you
+meet the key conflicts.
+
+To define a custom widget, you should:
+
+```zsh
+# If [your_custom_widget] were ignored, it will be the same with <your_custom_widget>
+zvm_define_widget <your_custom_widget> [your_custom_function]
+```
+
+To define a keybinding, you should:
+
+```zsh
+zvm_bindkey <keymap> <keys> <widget>
+```
+
+For example:
+
+```zsh
+# Your custom widget
+function my_custom_widget() {
+  echo 'Hello, ZSH!'
+}
+
+# The plugin will auto execute this zvm_after_lazy_keybindings function
+function zvm_after_lazy_keybindings() {
+  # In normal mode, press Ctrl-E to invoke this widget
+  zvm_bindkey vicmd '^E' my_custom_widget
 }
 ```
 
@@ -477,4 +534,4 @@ You can start by [opening an issue](https://github.com/jeffreytse/zsh-vi-mode/is
 
 ## 🌈 License
 
-This theme is licensed under the [MIT license](https://opensource.org/licenses/mit-license.php) © JeffreyTse.
+This theme is licensed under the [MIT license](https://opensource.org/licenses/mit-license.php) © Jeffrey Tse.
