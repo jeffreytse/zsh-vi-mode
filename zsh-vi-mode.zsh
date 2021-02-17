@@ -104,6 +104,9 @@
 # the tmp file prefix (default is $TMPPREFIX)
 #
 
+# Avoid sourcing plugin multiple times
+command -v 'zvm_version' >/dev/null && return
+
 # Plugin information
 typeset -gr ZVM_NAME='zsh-vi-mode'
 typeset -gr ZVM_DESCRIPTION='💻 A better and friendly vi(vim) mode plugin for ZSH.'
