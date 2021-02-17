@@ -1,5 +1,7 @@
 # zsh-vi-mode.zsh -- A better and friendly vi(vim) mode for Zsh
-# Copyright © 2020 Jeffrey Tse
+# https://github.com/jeffreytse/zsh-vi-mode
+#
+# Copyright (c) 2020 Jeffrey Tse
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -100,6 +102,7 @@
 #
 # ZVM_TMPPREFIX
 # the tmp file prefix (default is $TMPPREFIX)
+#
 
 # Plugin information
 typeset -gr ZVM_NAME='zsh-vi-mode'
