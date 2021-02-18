@@ -111,7 +111,7 @@ command -v 'zvm_version' >/dev/null && return
 typeset -gr ZVM_NAME='zsh-vi-mode'
 typeset -gr ZVM_DESCRIPTION='💻 A better and friendly vi(vim) mode plugin for ZSH.'
 typeset -gr ZVM_REPOSITORY='https://github.com/jeffreytse/zsh-vi-mode'
-typeset -gr ZVM_VERSION='0.6.0'
+typeset -gr ZVM_VERSION='0.7.0'
 
 # Reduce ESC delay (zle)
 # Set to 0.1 second delay between switching modes (default is 0.4 seconds)
