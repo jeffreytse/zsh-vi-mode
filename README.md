@@ -424,6 +424,9 @@ function my_custom_widget() {
 
 # The plugin will auto execute this zvm_after_lazy_keybindings function
 function zvm_after_lazy_keybindings() {
+  # Here we define the custom widget
+  zvm_define_widget my_custom_widget
+
   # In normal mode, press Ctrl-E to invoke this widget
   zvm_bindkey vicmd '^E' my_custom_widget
 }
@@ -505,6 +508,14 @@ ZVM_CURSOR_BLINKING_BEAM
 ```zsh
 ZVM_INSERT_MODE_CURSOR=$ZVM_CURSOR_BLOCK
 ZVM_NORMAL_MODE_CURSOR=$ZVM_CURSOR_BLINKING_UNDERLINE
+```
+
+- This feature can be disabled by the `ZVM_CURSOR_STYLE_ENABLED` option
+(Default is `true`)
+
+```zsh
+# Disable the cursor style feature
+ZVM_CURSOR_STYLE_ENABLED=false
 ```
 
 Lazy Keybindings
