@@ -103,6 +103,9 @@
 # ZVM_TMPPREFIX
 # the tmp file prefix (default is $TMPPREFIX)
 #
+# ZVM_CURSOR_STYLE_ENABLED
+# enable the cursor style feature (default is true)
+#
 
 # Avoid sourcing plugin multiple times
 command -v 'zvm_version' >/dev/null && return
@@ -192,6 +195,9 @@ ZVM_VI_SURROUND_BINDKEY=${ZVM_VI_SURROUND_BINDKEY:-classic}
 ZVM_VI_HIGHLIGHT_BACKGROUND=${ZVM_VI_HIGHLIGHT_BACKGROUND:-#cc0000}
 ZVM_VI_EDITOR=${ZVM_VI_EDITOR:-$EDITOR}
 ZVM_TMPPREFIX=${ZVM_TMPPREFIX:-$TMPPREFIX}
+
+# Enable the cursor style feature
+ZVM_CURSOR_STYLE_ENABLED=${ZVM_CURSOR_STYLE_ENABLED:-true}
 
 # All the extra commands
 zvm_before_init_commands=()
@@ -1837,6 +1843,10 @@ function zvm_cursor_style() {
 
 # Update the cursor according current vi mode
 function zvm_update_cursor() {
+
+  # Check if we need to update the cursor style
+  $ZVM_CURSOR_STYLE_ENABLED || return
+
   local shape=
 
   case "${1:-$ZVM_MODE}" in
