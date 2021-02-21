@@ -1744,10 +1744,10 @@ function zvm_append_eol() {
 # Select vi mode
 function zvm_select_vi_mode() {
   local mode=$1
-  local prompt=${2:-true}
+  local reset_prompt=${2:-true}
 
   # Check if current mode is the same with the new mode
-  if [[ $mode == $ZVM_MODE ]]; then
+  if [[ $mode == "$ZVM_MODE" ]]; then
     zvm_update_cursor
     return
   fi
@@ -1784,7 +1784,7 @@ function zvm_select_vi_mode() {
   # Enable reset-prompt
   ZVM_RESET_PROMPT_DISABLED=false
 
-  $prompt && zle reset-prompt
+  $reset_prompt && zle reset-prompt
 
   # Start the lazy keybindings when the first time entering the normal mode
   if [[ $mode != $ZVM_MODE_INSERT ]] &&
