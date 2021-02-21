@@ -69,6 +69,16 @@
 # ZVM_KEYTIMEOUT:
 # the key input timeout for waiting for next key (default is 0.3 seconds)
 #
+# ZVM_LINE_INIT_MODE
+# the setting for init mode of command line (default is empty), empty will
+# keep the last command mode, for the first command line it will be insert
+# mode, you can also set it to a specific vi mode to alway keep the mode
+# for each command line
+#
+# For example:
+#   ZVM_LINE_INIT_MODE=$ZVM_MODE_INSERT
+#   ZVM_LINE_INIT_MODE=$ZVM_MODE_NORMAL
+#
 # ZVM_LAZY_KEYBINDINGS:
 # the setting for lazy keybindings (default is true), and lazy keybindings
 # will postpone the keybindings of vicmd and visual keymaps to the first
@@ -189,6 +199,10 @@ ZVM_VISUAL_LINE_MODE_CURSOR=${ZVM_VISUAL_LINE_MODE_CURSOR:-$ZVM_CURSOR_BLOCK}
 
 # Set the vi escape key (default is ^[ => <ESC>)
 ZVM_VI_ESCAPE_BINDKEY=${ZVM_VI_ESCAPE_BINDKEY:-^[}
+
+# Set the line init mode (empty will keep the last mode)
+# you can also set it to others, such as $ZVM_MODE_INSERT.
+ZVM_LINE_INIT_MODE=${ZVM_LINE_INIT_MODE:-}
 
 ZVM_VI_INSERT_MODE_LEGACY_UNDO=${ZVM_VI_INSERT_MODE_LEGACY_UNDO:-false}
 ZVM_VI_SURROUND_BINDKEY=${ZVM_VI_SURROUND_BINDKEY:-classic}
@@ -1729,13 +1743,22 @@ function zvm_append_eol() {
 
 # Select vi mode
 function zvm_select_vi_mode() {
+  local mode=$1
+  local prompt=${2:-true}
+
+  # Check if current mode is the same with the new mode
+  if [[ $mode == $ZVM_MODE ]]; then
+    zvm_update_cursor
+    return
+  fi
+
   zvm_exec_commands 'before_select_vi_mode'
 
   # Some plugins would reset the prompt when we select the
   # keymap, so here we disable the reset-prompt temporarily.
   ZVM_RESET_PROMPT_DISABLED=true
 
-  case "$1" in
+  case $mode in
     $ZVM_MODE_NORMAL)
       ZVM_MODE=$ZVM_MODE_NORMAL
       zvm_update_cursor
@@ -1761,10 +1784,12 @@ function zvm_select_vi_mode() {
   # Enable reset-prompt
   ZVM_RESET_PROMPT_DISABLED=false
 
-  ${2:-true} && zle reset-prompt
+  $prompt && zle reset-prompt
 
   # Start the lazy keybindings when the first time entering the normal mode
-  if [[ $1 != $ZVM_MODE_INSERT ]] && (($#ZVM_LAZY_KEYBINDINGS_LIST > 0 )); then
+  if [[ $mode != $ZVM_MODE_INSERT ]] &&
+    (( $#ZVM_LAZY_KEYBINDINGS_LIST > 0 )); then
+
     zvm_exec_commands 'before_lazy_keybindings'
 
     # Here we should unset the list for normal keybindings
@@ -1890,7 +1915,17 @@ function zvm_zle-line-pre-redraw() {
 
 # Start every prompt in insert mode
 function zvm_zle-line-init() {
+  # Save last mode
+  local mode=${ZVM_MODE:-$ZVM_MODE_INSERT}
+
+  # It's neccessary to set to insert mode when line init
   zvm_select_vi_mode $ZVM_MODE_INSERT
+
+  # Select line init mode
+  case ${ZVM_LINE_INIT_MODE:-$mode} in
+    $ZVM_MODE_INSERT) ;;
+    *) zvm_select_vi_mode $ZVM_MODE_NORMAL;;
+  esac
 }
 
 # Initialize vi-mode for widgets, keybindings, etc.
@@ -2068,8 +2103,6 @@ function zvm_precmd_function() {
     ZVM_INIT_DONE=true
     zvm_init
   fi
-  # Set insert mode cursor when starting new command line
-  zvm_update_cursor $ZVM_MODE_INSERT
 }
 
 # Check if a command is existed
