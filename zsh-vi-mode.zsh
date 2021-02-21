@@ -305,8 +305,14 @@ function zvm_find_bindkey_widget() {
     local prefix_keys=
 
     # Get the prefix keys
-    if [[ $keys ]]; then
-      prefix_keys=${keys:0:-1}
+    if [[ $prefix_keys ]]; then
+      prefix_keys=${prefix_keys:0:-1}
+
+      # If the last key is an escape key (e.g. \", \`, \\) we still
+      # need to remove the escape backslash `\`
+      if [[ ${prefix_keys: -1} == '\' ]]; then
+        prefix_keys=${prefix_keys:0:-1}
+      fi
     fi
 
     local result=$(bindkey -M ${keymap} -p "$prefix_keys")$'\n'
@@ -411,7 +417,7 @@ function zvm_readkeys() {
     fi
   done
 
-  # Remove escape slash character
+  # Remove escape backslash character
   keys=${keys//\\\"/\"}
   keys=${keys//\\\`/\`}
 
