@@ -161,8 +161,7 @@ source $HOME/.zsh-vi-mode/zsh-vi-mode.plugin.zsh
 
 ## 📚 Usage
 
-Use `ESC` or `CTRL-[` to enter `Normal mode` (Each command line starting with
-`Insert mode` by default).
+Use `ESC` or `CTRL-[` to enter `Normal mode`. 
 
 Also, you can use the `ZVM_VI_ESCAPE_BINDKEY` option to custom the escape key
 which could better match your flavor, such as `jj` or `jk` and so on.
@@ -476,6 +475,14 @@ Custom Cursor Style
 This plugin has provided some options for users to custom the cursor
 style for better terminal compatibility.
 
+- You can disable this feature by the `ZVM_CURSOR_STYLE_ENABLED`
+  option (Default is `true`)
+
+```zsh
+# Disable the cursor style feature
+ZVM_CURSOR_STYLE_ENABLED=false
+```
+
 - You can set your cursor style for different vi mode:
 
 ```zsh
@@ -510,12 +517,23 @@ ZVM_INSERT_MODE_CURSOR=$ZVM_CURSOR_BLOCK
 ZVM_NORMAL_MODE_CURSOR=$ZVM_CURSOR_BLINKING_UNDERLINE
 ```
 
-- This feature can be disabled by the `ZVM_CURSOR_STYLE_ENABLED` option
-(Default is `true`)
+Command Line Initial Mode
+--------
+
+You can set the command line initial mode by the `ZVM_LINE_INIT_MODE`
+option.
+
+Currently the below modes are supported:
+
+- `ZVM_MODE_LAST`   : Starting with last mode (Default).
+- `ZVM_MODE_INSERT` : Starting with insert mode.
+- `ZVM_MODE_NORMAL` : Starting with normal mode.
+
+For example:
 
 ```zsh
-# Disable the cursor style feature
-ZVM_CURSOR_STYLE_ENABLED=false
+# Always starting with insert mode for each command line
+ZVM_LINE_INIT_MODE=$ZVM_MODE_INSERT
 ```
 
 Lazy Keybindings
