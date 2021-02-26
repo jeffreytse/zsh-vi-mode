@@ -557,12 +557,19 @@ function zvm_open_line_above() {
 
 # Substitute characters of selection
 function zvm_vi_substitute() {
+  # Substitute one character in normal mode
   if [[ $ZVM_MODE == $ZVM_MODE_NORMAL ]]; then
     BUFFER="${BUFFER:0:$CURSOR}${BUFFER:$((CURSOR+1))}"
+    zvm_select_vi_mode $ZVM_MODE_INSERT
   else
-    zvm_vi_delete false
+    zvm_vi_change
   fi
-  zvm_select_vi_mode $ZVM_MODE_INSERT
+}
+
+# Substitute all characters of a line
+function zvm_vi_substitute_whole_line() {
+  zvm_select_vi_mode $ZVM_MODE_VISUAL_LINE;
+  zvm_vi_substitute
 }
 
 # Get the beginning and end position of selection
@@ -1959,6 +1966,7 @@ function zvm_init() {
   zvm_define_widget zvm_insert_bol
   zvm_define_widget zvm_append_eol
   zvm_define_widget zvm_vi_substitute
+  zvm_define_widget zvm_vi_substitute_whole_line
   zvm_define_widget zvm_vi_change
   zvm_define_widget zvm_vi_delete
   zvm_define_widget zvm_vi_yank
@@ -2015,6 +2023,7 @@ function zvm_init() {
   zvm_bindkey vicmd  'o' zvm_open_line_below
   zvm_bindkey vicmd  'O' zvm_open_line_above
   zvm_bindkey vicmd  's' zvm_vi_substitute
+  zvm_bindkey vicmd  'S' zvm_vi_substitute_whole_line
   zvm_bindkey visual 'c' zvm_vi_change
   zvm_bindkey visual 'd' zvm_vi_delete
   zvm_bindkey visual 'y' zvm_vi_yank
