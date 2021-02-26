@@ -846,6 +846,23 @@ function zvm_vi_change() {
   zvm_select_vi_mode $ZVM_MODE_INSERT
 }
 
+# Change characters from cursor to the end of current line
+function zvm_vi_change_eol() {
+  local bpos=$CURSOR epos=$CURSOR
+
+  # Find the end of current line
+  for ((; $epos<$#BUFFER; epos++)); do
+    if [[ "${BUFFER:$epos:1}" == $'\n' ]]; then
+      break
+    fi
+  done
+
+  CUTBUFFER=${BUFFER:$bpos:$((epos-bpos))}
+  BUFFER="${BUFFER:0:$bpos}${BUFFER:$epos}"
+
+  zvm_select_vi_mode $ZVM_MODE_INSERT
+}
+
 # Handle the navigation action
 function zvm_navigation_handler() {
   case "$1" in
@@ -1968,6 +1985,7 @@ function zvm_init() {
   zvm_define_widget zvm_vi_substitute
   zvm_define_widget zvm_vi_substitute_whole_line
   zvm_define_widget zvm_vi_change
+  zvm_define_widget zvm_vi_change_eol
   zvm_define_widget zvm_vi_delete
   zvm_define_widget zvm_vi_yank
   zvm_define_widget zvm_vi_put_after
@@ -2024,6 +2042,7 @@ function zvm_init() {
   zvm_bindkey vicmd  'O' zvm_open_line_above
   zvm_bindkey vicmd  's' zvm_vi_substitute
   zvm_bindkey vicmd  'S' zvm_vi_substitute_whole_line
+  zvm_bindkey vicmd  'C' zvm_vi_change_eol
   zvm_bindkey visual 'c' zvm_vi_change
   zvm_bindkey visual 'd' zvm_vi_delete
   zvm_bindkey visual 'y' zvm_vi_yank
