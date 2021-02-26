@@ -556,7 +556,7 @@ function zvm_open_line_above() {
 }
 
 # Substitute characters of selection
-function zvm_vi_substitue() {
+function zvm_vi_substitute() {
   if [[ $ZVM_MODE == $ZVM_MODE_NORMAL ]]; then
     BUFFER="${BUFFER:0:$CURSOR}${BUFFER:$((CURSOR+1))}"
   else
@@ -1958,7 +1958,7 @@ function zvm_init() {
   zvm_define_widget zvm_open_line_above
   zvm_define_widget zvm_insert_bol
   zvm_define_widget zvm_append_eol
-  zvm_define_widget zvm_vi_substitue
+  zvm_define_widget zvm_vi_substitute
   zvm_define_widget zvm_vi_change
   zvm_define_widget zvm_vi_delete
   zvm_define_widget zvm_vi_yank
@@ -2014,7 +2014,7 @@ function zvm_init() {
   zvm_bindkey visual 'o' zvm_exchange_point_and_mark
   zvm_bindkey vicmd  'o' zvm_open_line_below
   zvm_bindkey vicmd  'O' zvm_open_line_above
-  zvm_bindkey vicmd  's' zvm_vi_substitue
+  zvm_bindkey vicmd  's' zvm_vi_substitute
   zvm_bindkey visual 'c' zvm_vi_change
   zvm_bindkey visual 'd' zvm_vi_delete
   zvm_bindkey visual 'y' zvm_vi_yank
