@@ -721,6 +721,13 @@ function zvm_vi_put_after() {
   local head= foot=
   local content=${CUTBUFFER}
   local offset=1
+  local is_empty_line=false
+
+  # Check if cursor is at an empty line
+  if [[ ${BUFFER:$CURSOR:1} == $'\n' &&
+    ${BUFFER:$((CURSOR-1)):1} == $'\n' ]]; then
+    local is_empty_line=true
+  fi
 
   if [[ ${content: -1} == $'\n' ]]; then
     local pos=${CURSOR}
@@ -733,9 +740,8 @@ function zvm_vi_put_after() {
       fi
     done
 
-    # Check if it is an empty line
-    if [[ ${BUFFER:$CURSOR:1} == $'\n' &&
-      ${BUFFER:$((CURSOR-1)):1} == $'\n' ]]; then
+    # Special handling if cursor at an empty line
+    if $is_empty_line; then
       head=${BUFFER:0:$pos}
       foot=${BUFFER:$pos}
     else
@@ -751,8 +757,15 @@ function zvm_vi_put_after() {
     BUFFER="${head}${content}${foot}"
     CURSOR=$pos
   else
-    head="${BUFFER:0:$CURSOR}"
-    foot="${BUFFER:$((CURSOR+1))}"
+    # Special handling if cursor at an empty line
+    if $is_empty_line; then
+      head="${BUFFER:0:$((CURSOR-1))}"
+      foot="${BUFFER:$CURSOR}"
+    else
+      head="${BUFFER:0:$CURSOR}"
+      foot="${BUFFER:$((CURSOR+1))}"
+    fi
+
     BUFFER="${head}${BUFFER:$CURSOR:1}${content}${foot}"
     CURSOR=$CURSOR+$#content
   fi
