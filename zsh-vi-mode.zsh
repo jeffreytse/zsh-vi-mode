@@ -1780,7 +1780,7 @@ function zvm_select_vi_mode() {
   # Check if current mode is the same with the new mode
   if [[ $mode == "$ZVM_MODE" ]]; then
     zvm_update_cursor
-    return
+    mode=
   fi
 
   zvm_exec_commands 'before_select_vi_mode'
@@ -1950,11 +1950,12 @@ function zvm_zle-line-init() {
   local mode=${ZVM_MODE:-$ZVM_MODE_INSERT}
 
   # It's neccessary to set to insert mode when line init
-  zvm_select_vi_mode $ZVM_MODE_INSERT
+  # and we don't need to reset prompt.
+  zvm_select_vi_mode $ZVM_MODE_INSERT false
 
-  # Select line init mode
+  # Select line init mode and reset prompt
   case ${ZVM_LINE_INIT_MODE:-$mode} in
-    $ZVM_MODE_INSERT) ;;
+    $ZVM_MODE_INSERT) zvm_select_vi_mode $ZVM_MODE_INSERT;;
     *) zvm_select_vi_mode $ZVM_MODE_NORMAL;;
   esac
 }
