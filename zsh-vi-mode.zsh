@@ -572,6 +572,17 @@ function zvm_vi_substitute_whole_line() {
   zvm_vi_substitute
 }
 
+
+# Check if cursor is at an empty line
+function zvm_is_empty_line() {
+  local cursor=${1:-$CURSOR}
+  if [[ ${BUFFER:$cursor:1} == $'\n' &&
+    ${BUFFER:$((cursor-1)):1} == $'\n' ]]; then
+    return
+  fi
+  return 1
+}
+
 # Get the beginning and end position of selection
 function zvm_selection() {
   local bpos= epos=
@@ -721,13 +732,6 @@ function zvm_vi_put_after() {
   local head= foot=
   local content=${CUTBUFFER}
   local offset=1
-  local is_empty_line=false
-
-  # Check if cursor is at an empty line
-  if [[ ${BUFFER:$CURSOR:1} == $'\n' &&
-    ${BUFFER:$((CURSOR-1)):1} == $'\n' ]]; then
-    local is_empty_line=true
-  fi
 
   if [[ ${content: -1} == $'\n' ]]; then
     local pos=${CURSOR}
@@ -741,7 +745,7 @@ function zvm_vi_put_after() {
     done
 
     # Special handling if cursor at an empty line
-    if $is_empty_line; then
+    if zvm_is_empty_line; then
       head=${BUFFER:0:$pos}
       foot=${BUFFER:$pos}
     else
@@ -758,7 +762,7 @@ function zvm_vi_put_after() {
     CURSOR=$pos
   else
     # Special handling if cursor at an empty line
-    if $is_empty_line; then
+    if zvm_is_empty_line; then
       head="${BUFFER:0:$((CURSOR-1))}"
       foot="${BUFFER:$CURSOR}"
     else
@@ -792,11 +796,10 @@ function zvm_vi_put_before() {
     done
 
     # Check if it is an empty line
-    if [[ ${BUFFER:$CURSOR:1} == $'\n' &&
-      ${BUFFER:$((CURSOR-1)):1} == $'\n' ]]; then
+    if zvm_is_empty_line; then
       head=${BUFFER:0:$((pos-1))}
       foot=$'\n'${BUFFER:$pos}
-      pos=$pos-1
+      pos=$((pos-1))
     else
       head=${BUFFER:0:$pos}
       foot=${BUFFER:$pos}
@@ -1761,7 +1764,9 @@ function zvm_enter_insert_mode() {
     ZVM_INSERT_MODE='i'
   else
     ZVM_INSERT_MODE='a'
-    zle vi-forward-char
+    if ! zvm_is_empty_line; then
+      CURSOR=$((CURSOR+1))
+    fi
   fi
 }
 
