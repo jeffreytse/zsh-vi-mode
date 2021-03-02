@@ -456,18 +456,7 @@ function zvm_bindkey() {
   # Check if we need to wrap the original widget
   if [[ ! -z $rawfunc && "$rawfunc" != zvm-*-wrapper ]]; then
     eval "$wrapper() { \
-      zvm_readkeys $keymap '$key'; \
-      local keys=\${retval[1]} widget=\${retval[2]}; \
-      ZVM_KEYS=\${keys//${ZVM_ESCAPE_SPACE//\\/\\\\}/ }; \
-      if [[ \${#ZVM_KEYS} == 1 ]]; then \
-        widget=$rawfunc; \
-      fi; \
-      if [[ -z \${widget} ]]; then \
-        zle zvm_default_handler; \
-      else \
-        zle \$widget; \
-      fi; \
-      ZVM_KEYS=; \
+      zvm_readkeys_handler $keymap '$key' $rawfunc; \
     }"
     zle -N $wrapper
     bindkey -M $keymap "${key}" $wrapper
@@ -477,6 +466,35 @@ function zvm_bindkey() {
   if [[ $widget ]]; then
     bindkey -M $keymap "${keys}" $widget
   fi
+}
+
+# Read keys for retrieving and executing a widget
+function zvm_readkeys_handler() {
+  local keymap=$1
+  local keys=$2
+  local origin=$3
+  local widget=
+
+  # Read keys and retrieve the widget
+  zvm_readkeys $keymap $keys
+  keys=${retval[1]} widget=${retval[2]}
+
+  # Escape space in keys
+  ZVM_KEYS=${keys//$ZVM_ESCAPE_SPACE/ }
+
+  if [[ ${#ZVM_KEYS} == 1 ]]; then
+    widget=$origin
+  fi
+
+  # If the widget isn't matched, we should call the
+  # default handler
+  if [[ -z ${widget} ]]; then
+    zle zvm_default_handler
+  else
+    zle $widget
+  fi
+
+  ZVM_KEYS=
 }
 
 # Escape non-printed characters
