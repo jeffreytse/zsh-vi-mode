@@ -881,23 +881,43 @@ function zvm_vi_change_eol() {
 
 # Handle the navigation action
 function zvm_navigation_handler() {
-  case "$1" in
-    '^') zle vi-first-non-blank;;
-    '$') zle vi-end-of-line;;
-    '0') zle vi-digit-or-beginning-of-line;;
-    ' ') zle vi-forward-char;;
-    'h') zle vi-backward-char;;
-    'j') zle down-line-or-history;;
-    'k') zle up-line-or-history;;
-    'l') zle vi-forward-char;;
-    'w') zle vi-forward-word;;
-    'e') zle vi-forward-word-end;;
-    'b') zle vi-backward-word; ;;
-    'f') zle vi-find-next-char;;
-    'F') zle vi-find-prev-char;;
-    't') zle vi-find-next-char-skip;;
-    'T') zle vi-find-prev-char-skip;;
+  local keys=$1
+  local count=${keys:0:-1}
+  local widget=
+
+  # Retrieve the calling widget
+  case "${keys: -1}" in
+    '^') widget=vi-first-non-blank;;
+    '$') widget=vi-end-of-line;;
+    '0') widget=vi-digit-or-beginning-of-line;;
+    ' ') widget=vi-forward-char;;
+    'h') widget=vi-backward-char;;
+    'j') widget=down-line-or-history;;
+    'k') widget=up-line-or-history;;
+    'l') widget=vi-forward-char;;
+    'w') widget=vi-forward-word;;
+    'e') widget=vi-forward-word-end;;
+    'b') widget=vi-backward-word;;
+    'f') widget=vi-find-next-char;;
+    'F') widget=vi-find-prev-char;;
+    't') widget=vi-find-next-char-skip;;
+    'T') widget=vi-find-prev-char-skip;;
   esac
+
+  # Check widget if the widget is empty
+  if [[ -z $widget ]]; then
+    return
+  fi
+
+  # Check if keys includes the count
+  if [[ ! $count =~ ^[1-9][0-9]*$ ]]; then
+    count=1
+  fi
+
+  # Call the widget
+  for ((i=0; i<count; i++)); do
+    zle $widget
+  done
 }
 
 # Handle a range of characters
@@ -906,6 +926,21 @@ function zvm_range_handler() {
   local cursor=$CURSOR
   local mode=
   MARK=$CURSOR
+
+  # If the keys ends in numbers, we should read more
+  # keys (e.g. d2, c3, y10, etc.)
+  local key=
+  while [[ ${keys: 1} =~ ^[1-9][0-9]*$ ]]; do
+    read -k 1 key
+    keys="${keys}${key}"
+  done
+
+  # If the last character is `i` or `a`, we should, we
+  # should read one more key
+  if [[ ${keys: -1} =~ [ia] ]]; then
+    read -k 1 key
+    keys="${keys}${key}"
+  fi
 
   # Enter visual mode or visual line mode
   if [[ $ZVM_MODE != $ZVM_MODE_VISUAL &&
@@ -924,35 +959,70 @@ function zvm_range_handler() {
   #######################################
   # Selection Cases:
   #
-  # 1. SAMPLE: `word1   word2`, CURSOR: at `w` of `word1`
+  # 1. SAMPLE: `word1  word2  w`, CURSOR: at `w` of `word1`
   #
-  #  [dy]w -> `word1   `
-  #  cw -> `word1`
-  #  vw -> `word1   w`
-  #  [dcvy]e -> `word1`
-  #  [dcvy]iw -> `word1`
-  #  [dcvy]aw -> `word1   `
+  #  c[we] -> `word1`
+  #  c2[we] -> `word1  word2`
+  #  ve -> `word1`
+  #  v2e -> `word1  word2`
+  #  vw -> `word1  w`
+  #  v2w -> `word1  word2  w`
+  #  [dy]e -> `word1`
+  #  [dy]2e -> `word1  word2`
+  #  [dy]w -> `word1  `
+  #  [dy]2w -> `word1  word2  `
+  #  [cdyv]iw -> `word1`
+  #  [cdyv]aw -> `word1  `
+  #  [cdyv]2iw -> `word1  `
+  #  [cdyv]2aw -> `word1  word2  `
   #
 
   # Pre navigation handling
   local navkey=
   case "${keys}" in
-    cw) navkey=e;;
+    [cdy]*iw) navkey="${keys:1}";;
+    [cdy]*aw) navkey="${keys:1}";;
+    c*[we]) navkey="${keys:1:-1}e";;
     *) navkey="${keys:1}";;
   esac
 
   # Handle navigation
   case "${navkey}" in
-    iw) zle select-in-word;;
-    aw) zle select-a-word;;
+    *[ia]w)
+      local widget=
+      local mark=
+      local count=${navkey:0:-2}
+
+      # At least 1 time
+      if [[ -z $count ]]; then
+        count=1
+      fi
+
+      # Retrieve the widget
+      case ${navkey: -2} in
+        iw) widget=select-in-word;;
+        aw) widget=select-a-word;;
+      esac
+
+      # Execute the widget for `count` times, and
+      # save the `mark` position of the first time
+      for ((i=0; i<count; i++)); do
+        zle $widget
+        if (( i == 0 )); then
+          mark=$MARK
+        fi
+      done
+
+      MARK=$mark
+      ;;
     *) zvm_navigation_handler "${navkey}"
   esac
 
   # Post navigation handling
   case "${keys}" in
-    [dy]w) CURSOR=$((CURSOR-1));;
-    iw) cursor=$MARK;;
-    aw) cursor=$MARK;;
+    [cdy]*iw) cursor=$MARK;;
+    [cdy]*aw) cursor=$MARK;;
+    [dy]*w) CURSOR=$((CURSOR-1));;
     b|F|T) cursor=$CURSOR;;
   esac
 
