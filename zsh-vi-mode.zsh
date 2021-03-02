@@ -100,6 +100,7 @@
 #  ZVM_INSERT_MODE_CURSOR=$ZVM_CURSOR_BLOCK
 #
 # and the below cursor style are supported:
+#  ZVM_CURSOR_USER_DEFAULT
 #  ZVM_CURSOR_BLOCK
 #  ZVM_CURSOR_UNDERLINE
 #  ZVM_CURSOR_BEAM
@@ -167,6 +168,7 @@ ZVM_MODE_VISUAL='v'
 ZVM_MODE_VISUAL_LINE='vl'
 
 # Default cursor styles
+ZVM_CURSOR_USER_DEFAULT='ud'
 ZVM_CURSOR_BLOCK='bl'
 ZVM_CURSOR_UNDERLINE='ul'
 ZVM_CURSOR_BEAM='be'
@@ -1989,6 +1991,7 @@ function zvm_cursor_style() {
     # they support 256 colors the same way xterm does.
     xterm*|rxvt*|screen*|tmux*|konsole*)
       case $style in
+        $ZVM_CURSOR_USER_DEFAULT) style='\e[0 q';;
         $ZVM_CURSOR_BLOCK) style='\e[2 q';;
         $ZVM_CURSOR_UNDERLINE) style='\e[4 q';;
         $ZVM_CURSOR_BEAM) style='\e[6 q';;
@@ -1997,7 +2000,7 @@ function zvm_cursor_style() {
         $ZVM_CURSOR_BLINKING_BEAM) style='\e[5 q';;
       esac
       ;;
-    *) style='\e[ q';;
+    *) style='\e[0 q';;
   esac
 
   echo $style
@@ -2050,7 +2053,7 @@ function zvm_zle-line-pre-redraw() {
   zvm_update_highlight
 }
 
-# Start every prompt in insert mode
+# Start every prompt in the correct vi mode
 function zvm_zle-line-init() {
   # Save last mode
   local mode=${ZVM_MODE:-$ZVM_MODE_INSERT}
@@ -2065,6 +2068,20 @@ function zvm_zle-line-init() {
     *) zvm_select_vi_mode $ZVM_MODE_NORMAL;;
   esac
 }
+
+# Restore the user default cursor style after prompt finish
+function zvm_zle-line-finish() {
+  # When we start a program (e.g. vim, bash, etc.) from the
+  # command line, the cursor style is inherited by other
+  # programs, so that we need to reset the cursor style to
+  # default before executing a command and set the custom
+  # style again when the command exits. This way makes any
+  # other interactive CLI application would not be affected
+  # by it.
+  local shape=$(zvm_cursor_style $ZVM_CURSOR_USER_DEFAULT)
+  zvm_set_cursor $shape
+}
+
 
 # Initialize vi-mode for widgets, keybindings, etc.
 function zvm_init() {
@@ -2106,8 +2123,10 @@ function zvm_init() {
   # Override standard widgets
   zvm_define_widget zle-line-pre-redraw zvm_zle-line-pre-redraw
 
-  # Ensure insert mode cursor when exiting vim
+  # Ensure the correct cursor style when an interactive program
+  # (e.g. vim, bash, etc.) starts and exits
   zvm_define_widget zle-line-init zvm_zle-line-init
+  zvm_define_widget zle-line-finish zvm_zle-line-finish
 
   # Override reset-prompt widget
   zvm_define_widget reset-prompt zvm_reset_prompt
