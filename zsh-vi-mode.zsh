@@ -953,8 +953,10 @@ function zvm_navigation_handler() {
     count=1
   fi
 
-  # Call the widget
-  for ((i=0; i<count; i++)); do
+  # Call the widget, we can not use variable `i`, since
+  # some widgets will affect the variable `i`, and it
+  # will cause an infinite loop.
+  for ((c=0; c<count; c++)); do
     zle $widget
   done
 }
@@ -1045,9 +1047,9 @@ function zvm_range_handler() {
 
       # Execute the widget for `count` times, and
       # save the `mark` position of the first time
-      for ((i=0; i<count; i++)); do
+      for ((c=0; c<count; c++)); do
         zle $widget
-        if (( i == 0 )); then
+        if (( c == 0 )); then
           mark=$MARK
         fi
       done
