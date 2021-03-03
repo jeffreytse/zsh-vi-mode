@@ -4,7 +4,7 @@
   </a>
   <p> 💻 A better and friendly vi(vim) mode plugin for ZSH.  </p>
 
-  <br> <h1>⚒️  Zsh Vi Mode ⚒️</h1> <br>
+  <br> <h1>⚒️  Zsh Vi Mode ⚒️</h1>
 
 </div>
 
@@ -49,6 +49,16 @@
 </p>
 
 <div align="center">
+  <h4>
+    <a href="#-features">Features</a> |
+    <a href="#%EF%B8%8F-installation">Install</a> |
+    <a href="#-usage">Usage</a> |
+    <a href="#-credits">Credits</a> |
+    <a href="#-license">License</a>
+  </h4>
+</div>
+
+<div align="center">
   <sub>Built with ❤︎ by
   <a href="https://jeffreytse.net">jeffreytse</a> and
   <a href="https://github.com/jeffreytse/zsh-vi-mode/graphs/contributors">contributors </a>
@@ -56,6 +66,24 @@
 <br>
 
 <img alt="Zsh Vi-mode Demo" src="https://user-images.githubusercontent.com/9413601/105746868-f3734a00-5f7a-11eb-8db5-22fcf50a171b.gif" />
+
+## 🤔 Why ZVM?
+
+Maybe you have experienced the default Vi mode in ZSH, after turning on
+the default Vi mode, you gradually found that it had many problems, some
+features were not perfect or non-existent, and some behaviors even were
+different from the native Vi(Vim) mode.
+
+Although the default Vi mode was a bit embarrassing and unpleasant, you
+kept on using it and gradually lost your interest on it after using for
+a period of time. Eventually, you disappointedly gave up.
+
+You never think of the Vi mode for a long time, one day you accidentally
+discovered this plugin, you read here and realize that this plugin is to
+solve the above problems and make you fall in love to Vi mode again. A
+smile suddenly appeared on your face like regaining a good life.
+
+> If winter comes, can spring be far behind?
 
 
 ## ✨ Features
@@ -502,6 +530,7 @@ ZVM_CURSOR_STYLE_ENABLED=false
 - And the below cursor styles are supported:
 
 ```zsh
+ZVM_CURSOR_USER_DEFAULT
 ZVM_CURSOR_BLOCK
 ZVM_CURSOR_UNDERLINE
 ZVM_CURSOR_BEAM
@@ -513,8 +542,8 @@ ZVM_CURSOR_BLINKING_BEAM
 - Custom your cursor style is easy as below:
 
 ```zsh
-ZVM_INSERT_MODE_CURSOR=$ZVM_CURSOR_BLOCK
-ZVM_NORMAL_MODE_CURSOR=$ZVM_CURSOR_BLINKING_UNDERLINE
+ZVM_INSERT_MODE_CURSOR=$ZVM_CURSOR_BEAM
+ZVM_NORMAL_MODE_CURSOR=$ZVM_CURSOR_BLOCK
 ```
 
 Command Line Initial Mode
