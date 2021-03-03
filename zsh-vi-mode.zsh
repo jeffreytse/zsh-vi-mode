@@ -476,6 +476,7 @@ function zvm_readkeys_handler() {
   local keys=$2
   local origin=$3
   local widget=
+  local is_origin=false
 
   # Read keys and retrieve the widget
   zvm_readkeys $keymap $keys
@@ -486,6 +487,7 @@ function zvm_readkeys_handler() {
 
   if [[ ${#ZVM_KEYS} == 1 ]]; then
     widget=$origin
+    is_origin=true
   fi
 
   # If the widget isn't matched, we should call the
@@ -494,6 +496,20 @@ function zvm_readkeys_handler() {
     zle zvm_default_handler
   else
     zle $widget
+  fi
+
+  # Post handling after calling an original widget
+  if $is_origin; then
+
+    # Correct the vi mode
+    case "$KEYMAP" in
+      vicmd) ZVM_MODE=$ZVM_MODE_NORMAL;;
+      viins|main) ZVM_MODE=$ZVM_MODE_INSERT;;
+      visual) ZVM_MODE=$ZVM_MODE_VISUAL;;
+    esac
+
+    # Update the cursor style
+    zvm_update_cursor
   fi
 
   ZVM_KEYS=
