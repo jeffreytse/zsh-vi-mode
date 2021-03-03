@@ -517,6 +517,25 @@ function zvm_escape_non_printed_characters() {
   echo ${str// /$ZVM_ESCAPE_SPACE}
 }
 
+# Backward remove characters of an emacs region in the line
+function zvm_backward_kill_region() {
+  local bpos=$CURSOR-1 epos=$CURSOR
+
+  # Backward search the boundary of current region
+  for ((; bpos >= 0; bpos--)); do
+    # Break when cursor is at the beginning of line
+    [[ "${BUFFER:$bpos:1}" == $'\n' ]] && break
+
+    # Break when cursor is at the boundary of a word region
+    [[ "${BUFFER:$bpos:2}" =~ ^\ [^\ $'\n']$ ]] && break
+  done
+
+  bpos=$bpos+1
+  CUTBUFFER=${BUFFER:$bpos:$((epos-bpos))}
+  BUFFER="${BUFFER:0:$bpos}${BUFFER:$epos}"
+  CURSOR=$bpos
+}
+
 # Remove all characters between the cursor position and the
 # beginning of the line.
 function zvm_backward_kill_line() {
@@ -2089,6 +2108,7 @@ function zvm_init() {
 
   # Create User-defined widgets
   zvm_define_widget zvm_default_handler
+  zvm_define_widget zvm_backward_kill_region
   zvm_define_widget zvm_backward_kill_line
   zvm_define_widget zvm_forward_kill_line
   zvm_define_widget zvm_kill_line
@@ -2138,9 +2158,9 @@ function zvm_init() {
   zvm_bindkey viins '^E' end-of-line
   zvm_bindkey viins '^B' backward-char
   zvm_bindkey viins '^F' forward-char
+  zvm_bindkey viins '^W' zvm_backward_kill_region
   zvm_bindkey viins '^K' zvm_forward_kill_line
   zvm_bindkey viins '^U' zvm_viins_undo
-  zvm_bindkey viins '^W' backward-kill-word
   zvm_bindkey viins '^Y' yank
   zvm_bindkey viins '^_' undo
 
