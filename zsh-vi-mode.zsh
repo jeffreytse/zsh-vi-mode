@@ -2009,8 +2009,14 @@ function zvm_viins_undo() {
 
 # Change cursor to support for inside/outside tmux
 function zvm_set_cursor() {
+  # Term of vim isn't supported
+  if [[ -n $VIMRUNTIME ]]; then
+    return
+  fi
+
+  # Tmux sequence
   if [[ -z $TMUX ]]; then
-    echo -ne $1
+    echo -ne "$1"
   else
     echo -ne "\ePtmux;\e\e$1\e\\"
   fi
