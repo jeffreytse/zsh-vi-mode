@@ -485,7 +485,8 @@ function zvm_readkeys_handler() {
   # Escape space in keys
   ZVM_KEYS=${keys//$ZVM_ESCAPE_SPACE/ }
 
-  if [[ ${#ZVM_KEYS} == 1 ]]; then
+  # Use original widget if no keys read
+  if [[ "${ZVM_KEYS}" == "$2" ]]; then
     widget=$origin
     is_origin=true
   fi
