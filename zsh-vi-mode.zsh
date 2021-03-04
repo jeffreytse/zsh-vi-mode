@@ -271,6 +271,7 @@ function zvm_default_handler() {
       esac
       ;;
     viins|main)
+      keys=${keys//$ZVM_ESCAPE_SPACE/ }
       for ((i=0;i<$#keys;i++)) do
         BUFFER="${BUFFER:0:$CURSOR}${keys:$i:1}${BUFFER:$CURSOR}"
         CURSOR=$((CURSOR+1))
