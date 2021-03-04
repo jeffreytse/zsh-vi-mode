@@ -2193,10 +2193,6 @@ function zvm_init() {
   zvm_bindkey viins '^S' history-incremental-search-forward
   zvm_bindkey viins '^P' up-line-or-history
   zvm_bindkey viins '^N' down-line-or-history
-  zvm_bindkey viins '^[[A' history-beginning-search-backward
-  zvm_bindkey viins '^[[B' history-beginning-search-forward
-  zvm_bindkey vicmd '^[[A' history-beginning-search-backward
-  zvm_bindkey vicmd '^[[B' history-beginning-search-forward
 
   # Insert mode
   zvm_bindkey vicmd 'i'  zvm_enter_insert_mode
