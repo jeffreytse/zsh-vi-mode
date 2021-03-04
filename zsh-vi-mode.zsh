@@ -111,8 +111,8 @@
 # ZVM_VI_EDITOR
 # the editor to edit your command line (default is $EDITOR)
 #
-# ZVM_TMPPREFIX
-# the tmp file prefix (default is $TMPPREFIX)
+# ZVM_TMPDIR
+# the temporary directory (default is $TMPDIR, otherwise it's /tmp/)
 #
 # ZVM_CURSOR_STYLE_ENABLED
 # enable the cursor style feature (default is true)
@@ -211,7 +211,7 @@ ZVM_VI_INSERT_MODE_LEGACY_UNDO=${ZVM_VI_INSERT_MODE_LEGACY_UNDO:-false}
 ZVM_VI_SURROUND_BINDKEY=${ZVM_VI_SURROUND_BINDKEY:-classic}
 ZVM_VI_HIGHLIGHT_BACKGROUND=${ZVM_VI_HIGHLIGHT_BACKGROUND:-#cc0000}
 ZVM_VI_EDITOR=${ZVM_VI_EDITOR:-$EDITOR}
-ZVM_TMPPREFIX=${ZVM_TMPPREFIX:-$TMPPREFIX}
+ZVM_TMPDIR=${ZVM_TMPDIR:-${TMPDIR:-/tmp/}}
 
 # Enable the cursor style feature
 ZVM_CURSOR_STYLE_ENABLED=${ZVM_CURSOR_STYLE_ENABLED:-true}
@@ -1100,7 +1100,7 @@ function zvm_range_handler() {
 
 # Edit command line in EDITOR
 function zvm_vi_edit_command_line() {
-  local tmp_file=$(mktemp $ZVM_TMPPREFIX.XXXXXX)
+  local tmp_file=$(mktemp ${ZVM_TMPDIR}zvm.XXXXXX)
   echo "$BUFFER" > "$tmp_file"
   $ZVM_VI_EDITOR $tmp_file
   BUFFER=$(cat $tmp_file)
