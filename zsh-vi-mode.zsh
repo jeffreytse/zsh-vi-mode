@@ -2182,8 +2182,8 @@ function zvm_init() {
   zvm_bindkey viins '^E' end-of-line
   zvm_bindkey viins '^B' backward-char
   zvm_bindkey viins '^F' forward-char
-  zvm_bindkey viins '^W' zvm_backward_kill_region
   zvm_bindkey viins '^K' zvm_forward_kill_line
+  zvm_bindkey viins '^W' backward-kill-word
   zvm_bindkey viins '^U' zvm_viins_undo
   zvm_bindkey viins '^Y' yank
   zvm_bindkey viins '^_' undo
