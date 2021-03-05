@@ -1100,11 +1100,22 @@ function zvm_range_handler() {
 
 # Edit command line in EDITOR
 function zvm_vi_edit_command_line() {
+  # Create a temporary file and save the BUFFER to it
   local tmp_file=$(mktemp ${ZVM_TMPDIR}zvm.XXXXXX)
   echo "$BUFFER" > "$tmp_file"
-  $ZVM_VI_EDITOR $tmp_file
+
+  # Edit the file with the specific editor, in case of
+  # the warning about input not from a terminal (e.g.
+  # vim), we should tell the editor input is from the
+  # terminal and not from standard input.
+  $ZVM_VI_EDITOR $tmp_file </dev/tty
+
+  # Reload the content to the BUFFER from the temporary
+  # file after editing, and delete the temporary file.
   BUFFER=$(cat $tmp_file)
   rm "$tmp_file"
+
+  # Exit the visual mode
   case $ZVM_MODE in
     $ZVM_MODE_VISUAL|$ZVM_MODE_VISUAL_LINE)
       zvm_exit_visual_mode
