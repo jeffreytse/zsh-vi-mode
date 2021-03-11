@@ -127,10 +127,6 @@ typeset -gr ZVM_DESCRIPTION='💻 A better and friendly vi(vim) mode plugin for 
 typeset -gr ZVM_REPOSITORY='https://github.com/jeffreytse/zsh-vi-mode'
 typeset -gr ZVM_VERSION='0.7.0'
 
-# Reduce ESC delay (zle)
-# Set to 0.1 second delay between switching modes (default is 0.4 seconds)
-KEYTIMEOUT=1
-
 # Plugin initial status
 ZVM_INIT_DONE=false
 
@@ -240,60 +236,53 @@ function zvm_version() {
   echo -e "$ZVM_DESCRIPTION"
 }
 
+# The widget wrapper
+function zvm_widget_wrapper() {
+  local rawfunc=$1;
+  local func=$2;
+  local -i retval
+  $func "${@:3}"
+  return retval
+}
+
 # Define widget function
 function zvm_define_widget() {
   local widget=$1
   local func=$2 || $1
   local result=($(zle -l -L "${widget}"))
+
   # Check if existing the same name
   if [[ ${#result[@]} == 4 ]]; then
     local rawfunc=${result[4]}
     local wrapper="zvm_${widget}-wrapper"
-    eval "$wrapper() { local rawfunc=$rawfunc; $func \"\$@\" }"
+    eval "$wrapper() { zvm_widget_wrapper $rawfunc $func \"\$@\" }"
     func=$wrapper
   fi
-  zle -N $widget $func
-}
 
-# Default handler for unhandled key events
-function zvm_default_handler() {
-  local keys=$(zvm_keys)
-  case "$KEYMAP" in
-    vicmd)
-      case "$keys" in
-        [cdy]*) zvm_range_handler "$keys";;
-        *)
-          for ((i=0;i<$#keys;i++)) do
-            zvm_navigation_handler ${keys:$i:1}
-            zvm_highlight
-          done
-          ;;
-      esac
-      ;;
-    viins|main)
-      keys=${keys//$ZVM_ESCAPE_SPACE/ }
-      for ((i=0;i<$#keys;i++)) do
-        BUFFER="${BUFFER:0:$CURSOR}${keys:$i:1}${BUFFER:$CURSOR}"
-        CURSOR=$((CURSOR+1))
-        zle redisplay
-      done
-      ;;
-    visual)
-      ;;
-  esac
+  zle -N $widget $func
 }
 
 # Get the keys typed to invoke this widget, as a literal string
 function zvm_keys() {
-  local keys=${ZVM_KEYS:-$(zvm_escape_non_printed_characters "$KEYS")}
+  local keys=$(zvm_escape_non_printed_characters "$KEYS")
 
   # Append the prefix of keys if it is visual or visual-line mode
   case "${ZVM_MODE}" in
-    $ZVM_MODE_VISUAL) keys="v${keys}";;
-    $ZVM_MODE_VISUAL_LINE) keys="V${keys}";;
+    $ZVM_MODE_VISUAL)
+      if [[ "$keys" != v* ]]; then
+        keys="v${keys}"
+      fi
+      ;;
+    $ZVM_MODE_VISUAL_LINE)
+      if [[ "$keys" != V* ]]; then
+        keys="V${keys}"
+      fi
+      ;;
   esac
 
-  echo ${keys// /$ZVM_ESCAPE_SPACE}
+  ZVM_KEYS="${keys// /$ZVM_ESCAPE_SPACE}"
+
+  echo $ZVM_KEYS
 }
 
 # Find the widget on a specified bindkey
@@ -374,60 +363,6 @@ function zvm_find_bindkey_widget() {
   fi
 }
 
-# Read keys for retrieving widget
-function zvm_readkeys() {
-  local keymap=$1
-  local keys=${2:-$(zvm_keys)}
-  local key=
-  local widget=
-  local result=
-  local pattern=
-
-  while :; do
-    # Escape space in pattern
-    pattern=${keys//$ZVM_ESCAPE_SPACE/ }
-
-    # Find out widgets that match this key pattern
-    zvm_find_bindkey_widget $keymap "$pattern" true
-    result=(${retval[@]})
-
-    # Exit key input if no any more widgets matched
-    if [[ -z $result ]]; then
-      break
-    fi
-
-    # Wait for reading next key
-    key=
-    if [[ "${result[1]}" == "${keys}" ]]; then
-      read -t $ZVM_KEYTIMEOUT -k 1 key
-    else
-      read -k 1 key
-    fi
-
-    # Transform the non-printed characters
-    key=$(zvm_escape_non_printed_characters "${key}")
-
-    # Escape keys
-    # " -> \" It's a special character in bash syntax
-    # ` -> \` It's a special character in bash syntax
-    key=${key//\"/\\\"}
-    key=${key//\`/\\\`}
-    keys="${keys}${key}"
-
-    # Get current widget as final one when keytimeout
-    if [[ -z "$key" ]]; then
-      widget=${result[2]}
-      break
-    fi
-  done
-
-  # Remove escape backslash character
-  keys=${keys//\\\"/\"}
-  keys=${keys//\\\`/\`}
-
-  retval=(${keys} $widget)
-}
-
 # Add key bindings
 function zvm_bindkey() {
   local keymap=$1
@@ -443,78 +378,8 @@ function zvm_bindkey() {
     return
   fi
 
-  # Get the first key (especially check if ctrl characters)
-  if [[ $#keys -gt 1 && "${keys:0:1}" == '^' ]]; then
-    key=${keys:0:2}
-  else
-    key=${keys:0:1}
-  fi
-
-  # Find the widget of the prefix key
-  zvm_find_bindkey_widget $keymap "$key"
-
-  local rawfunc=${retval[2]}
-  local wrapper="zvm-${keymap}-${rawfunc}-wrapper"
-
-  # Check if we need to wrap the original widget
-  if [[ ! -z $rawfunc && "$rawfunc" != zvm-*-wrapper ]]; then
-    eval "$wrapper() { \
-      zvm_readkeys_handler $keymap '$key' $rawfunc; \
-    }"
-    zle -N $wrapper
-    bindkey -M $keymap "${key}" $wrapper
-  fi
-
-  # We should bind keys with an existing widget
-  if [[ $widget ]]; then
-    bindkey -M $keymap "${keys}" $widget
-  fi
-}
-
-# Read keys for retrieving and executing a widget
-function zvm_readkeys_handler() {
-  local keymap=$1
-  local keys=$2
-  local origin=$3
-  local widget=
-  local is_origin=false
-
-  # Read keys and retrieve the widget
-  zvm_readkeys $keymap $keys
-  keys=${retval[1]} widget=${retval[2]}
-
-  # Escape space in keys
-  ZVM_KEYS=${keys//$ZVM_ESCAPE_SPACE/ }
-
-  # Use original widget if no keys read
-  if [[ "${ZVM_KEYS}" == "$2" ]]; then
-    widget=$origin
-    is_origin=true
-  fi
-
-  # If the widget isn't matched, we should call the
-  # default handler
-  if [[ -z ${widget} ]]; then
-    zle zvm_default_handler
-  else
-    zle $widget
-  fi
-
-  # Post handling after calling an original widget
-  if $is_origin; then
-
-    # Correct the vi mode
-    case "$KEYMAP" in
-      vicmd) ZVM_MODE=$ZVM_MODE_NORMAL;;
-      viins|main) ZVM_MODE=$ZVM_MODE_INSERT;;
-      visual) ZVM_MODE=$ZVM_MODE_VISUAL;;
-    esac
-
-    # Update the cursor style
-    zvm_update_cursor
-  fi
-
-  ZVM_KEYS=
+  # Bind keys with with a widget
+  bindkey -M $keymap "${keys}" $widget
 }
 
 # Escape non-printed characters
@@ -628,7 +493,6 @@ function zvm_vi_substitute_whole_line() {
   zvm_select_vi_mode $ZVM_MODE_VISUAL_LINE;
   zvm_vi_substitute
 }
-
 
 # Check if cursor is at an empty line
 function zvm_is_empty_line() {
@@ -936,6 +800,28 @@ function zvm_vi_change_eol() {
   zvm_select_vi_mode $ZVM_MODE_INSERT
 }
 
+# Default handler for unhandled key events
+function zvm_default_handler() {
+  local keys=$(zvm_keys)
+  case "$KEYMAP" in
+    vicmd)
+      case "$keys" in
+        [cdy]*) zvm_range_handler "$keys";;
+        *)
+          for ((i=0;i<$#keys;i++)) do
+            zvm_navigation_handler ${keys:$i:1}
+            zvm_highlight
+          done
+          ;;
+      esac
+      ;;
+    viins|main)
+      ;;
+    visual)
+      ;;
+  esac
+}
+
 # Handle the navigation action
 function zvm_navigation_handler() {
   local keys=$1
@@ -983,12 +869,19 @@ function zvm_navigation_handler() {
 function zvm_range_handler() {
   local keys=${1:-$(zvm_keys)}
   local cursor=$CURSOR
+  local key=
   local mode=
   MARK=$CURSOR
 
+  # If the keys is less than 2 keys, we should read more
+  # keys (e.g. d, c, y, etc.)
+  while (( ${#keys} < 2 )); do
+    read -k 1 key
+    keys="${keys}${key}"
+  done
+
   # If the keys ends in numbers, we should read more
   # keys (e.g. d2, c3, y10, etc.)
-  local key=
   while [[ ${keys: 1} =~ ^[1-9][0-9]*$ ]]; do
     read -k 1 key
     keys="${keys}${key}"
@@ -2250,7 +2143,7 @@ function zvm_init() {
 
   # Binding and overwrite original y/d/c of vicmd
   for c in {y,d,c}; do
-    zvm_bindkey vicmd "$c"
+    zvm_bindkey vicmd "$c" zvm_default_handler
   done
 
   # Surround text-object
@@ -2306,6 +2199,9 @@ function zvm_init() {
 
   # Enable vi keymap
   bindkey -v
+
+  # Export the zle KEYTIMEOUT
+  export KEYTIMEOUT=$(($ZVM_KEYTIMEOUT * 100))
 
   zvm_exec_commands 'after_init'
 }
