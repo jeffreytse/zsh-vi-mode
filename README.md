@@ -118,6 +118,7 @@ Load `zsh-vi-mode` as a plugin in your `.zshrc`
 ```shell
 zplug "jeffreytse/zsh-vi-mode"
 ```
+
 #### Using [zgen](https://github.com/tarjoilija/zgen)
 
 Include the load command in your `.zshrc`
@@ -153,6 +154,14 @@ plugins+=(zsh-vi-mode)
 ```
 
 Keep in mind that plugins need to be added before `oh-my-zsh.sh` is sourced.
+
+#### Using [Antibody](https://getantibody.github.io/)
+
+Add `zsh-vi-mode` to your plugins file (e.g. `~/.zsh_plugins.txt`)
+
+```shell
+jeffreytse/zsh-vi-mode
+```
 
 #### Arch Linux (AUR)
 
