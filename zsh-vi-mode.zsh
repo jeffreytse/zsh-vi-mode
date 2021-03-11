@@ -67,7 +67,7 @@
 #   yi( or vi( -> y
 #
 # ZVM_KEYTIMEOUT:
-# the key input timeout for waiting for next key (default is 0.3 seconds)
+# the key input timeout for waiting for next key (default is 0.4 seconds)
 #
 # ZVM_LINE_INIT_MODE
 # the setting for init mode of command line (default is empty), empty will
@@ -175,8 +175,8 @@ ZVM_CURSOR_BLINKING_BEAM='bbe'
 ##########################################
 # Initial all default settings
 
-# Set key input timeout (default is 0.3 seconds)
-ZVM_KEYTIMEOUT=${ZVM_KEYTIMEOUT:-0.3}
+# Set key input timeout (default is 0.4 seconds)
+ZVM_KEYTIMEOUT=${ZVM_KEYTIMEOUT:-0.4}
 
 # Set keybindings mode (default is true)
 # The lazy keybindings will post the keybindings of vicmd and visual
