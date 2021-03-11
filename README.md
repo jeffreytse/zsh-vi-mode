@@ -154,6 +154,14 @@ plugins+=(zsh-vi-mode)
 
 Keep in mind that plugins need to be added before `oh-my-zsh.sh` is sourced.
 
+#### Using [Antibody](https://getantibody.github.io/)
+
+Add the repository to your plugins file (e.g. `~/.zsh_plugins.txt`)
+
+```shell
+jeffreytse/zsh-vi-mode
+```
+
 #### Arch Linux (AUR)
 
 For Arch Linux users, you can install it through the following command
