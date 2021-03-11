@@ -928,13 +928,21 @@ function zvm_range_handler() {
   #  [cdyv]2iw -> `word1  `
   #  [cdyv]2aw -> `word1  word2  `
   #
+  # 2. SAMPLE: `a  bb  c  dd`, CURSOR: at `a`
+  #
+  #  cw -> `a`
+  #  c2w -> `a bb`
+  #  ce -> `a bb`
+  #  c2e -> `a bb c`
+  #
 
   # Pre navigation handling
   local navkey=
   case "${keys}" in
     [cdy]*iw) navkey="${keys:1}";;
     [cdy]*aw) navkey="${keys:1}";;
-    c*[we]) navkey="${keys:1:-1}e";;
+    c*w) zle vi-backward-char; navkey="${keys:1:-1}e";;
+    c*e) navkey="${keys:1:-1}e";;
     *) navkey="${keys:1}";;
   esac
 
