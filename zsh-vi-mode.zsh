@@ -25,8 +25,21 @@
 # Set these variables before sourcing this file.
 #
 # ZVM_VI_ESCAPE_BINDKEY
-# the vi escape key (default is ^[ => <ESC>), you can set it to whatever
-# you like, such as `jj`, `jk` and so on.
+# the vi escape key for all modes (default is ^[ => <ESC>), you can set it
+# to whatever you like, such as `jj`, `jk` and so on.
+#
+# ZVM_VI_INSERT_ESCAPE_BINDKEY
+# the vi escape key of insert mode (default is $ZVM_VI_ESCAPE_BINDKEY), you
+# can set it to whatever, such as `jj`, `jk` and so on.
+#
+# ZVM_VI_VISUAL_ESCAPE_BINDKEY
+# the vi escape key of visual mode (default is $ZVM_VI_ESCAPE_BINDKEY), you
+# can set it to whatever, such as `jj`, `jk` and so on.
+#
+# ZVM_VI_OPPEND_ESCAPE_BINDKEY
+# the vi escape key of operator pendding mode (default is
+# $ZVM_VI_ESCAPE_BINDKEY), you can set it to whatever, such as `jj`, `jk`
+# and so on..
 #
 # ZVM_VI_INSERT_MODE_LEGACY_UNDO:
 # using legacy undo behavior in vi insert mode
@@ -66,6 +79,16 @@
 #   ca( or va( -> c
 #   yi( or vi( -> y
 #
+# ZVM_READKEY_ENGINE
+# the readkey engine for reading and processing the key events, and the
+# below engines are supported:
+#  ZVM_READKEY_ENGINE_NEX
+#  ZVM_READKEY_ENGINE_ZLE (Default)
+#
+# the NEX is a better engine for reading and handle than the Zsh's ZLE
+# engine, currently the NEX engine is at beta stage, and it will be the
+# default readkey engine in the future.
+#
 # ZVM_KEYTIMEOUT:
 # the key input timeout for waiting for next key (default is 0.4 seconds)
 #
@@ -95,6 +118,9 @@
 #
 # ZVM_VISUAL_LINE_MODE_CURSOR:
 # the prompt cursor in visual line mode
+#
+# ZVM_OPPEND_MODE_CURSOR:
+# the prompt cursor in operator pending mode
 #
 # You can change the cursor style by below:
 #  ZVM_INSERT_MODE_CURSOR=$ZVM_CURSOR_BLOCK
@@ -133,6 +159,9 @@ ZVM_INIT_DONE=false
 # Disable reset prompt (i.e. disable the widget `reset-prompt`)
 ZVM_RESET_PROMPT_DISABLED=false
 
+# Operator pending mode
+ZVM_OPPEND_MODE=false
+
 # Insert mode could be
 # `i` (insert)
 # `a` (append)
@@ -152,6 +181,10 @@ ZVM_KEYS=''
 
 # The region hilight information
 ZVM_REGION_HIGHLIGHT=()
+
+# Default zvm readkey engines
+ZVM_READKEY_ENGINE_NEX='nex'
+ZVM_READKEY_ENGINE_ZLE='zle'
 
 # Default alternative character for escape space character
 ZVM_ESCAPE_SPACE='\s'
@@ -175,8 +208,14 @@ ZVM_CURSOR_BLINKING_BEAM='bbe'
 ##########################################
 # Initial all default settings
 
+# Set the readkey engine (default is ZLE)
+ZVM_READKEY_ENGINE=${ZVM_READKEY_ENGINE:-$ZVM_READKEY_ENGINE_ZLE}
+
 # Set key input timeout (default is 0.4 seconds)
 ZVM_KEYTIMEOUT=${ZVM_KEYTIMEOUT:-0.4}
+
+# Set the escape key timeout (default is 0 seconds)
+ZVM_ESCAPE_KEYTIMEOUT=${ZVM_ESCAPE_KEYTIMEOUT:-0}
 
 # Set keybindings mode (default is true)
 # The lazy keybindings will post the keybindings of vicmd and visual
@@ -196,8 +235,14 @@ ZVM_NORMAL_MODE_CURSOR=${ZVM_NORMAL_MODE_CURSOR:-$ZVM_CURSOR_BLOCK}
 ZVM_VISUAL_MODE_CURSOR=${ZVM_VISUAL_MODE_CURSOR:-$ZVM_CURSOR_BLOCK}
 ZVM_VISUAL_LINE_MODE_CURSOR=${ZVM_VISUAL_LINE_MODE_CURSOR:-$ZVM_CURSOR_BLOCK}
 
+# Operator pending mode cursor style (default is underscore)
+ZVM_OPPEND_MODE_CURSOR=${ZVM_OPPEND_MODE_CURSOR:-$ZVM_CURSOR_UNDERLINE}
+
 # Set the vi escape key (default is ^[ => <ESC>)
 ZVM_VI_ESCAPE_BINDKEY=${ZVM_VI_ESCAPE_BINDKEY:-^[}
+ZVM_VI_INSERT_ESCAPE_BINDKEY=${ZVM_VI_INSERT_ESCAPE_BINDKEY:-$ZVM_VI_ESCAPE_BINDKEY}
+ZVM_VI_VISUAL_ESCAPE_BINDKEY=${ZVM_VI_VISUAL_ESCAPE_BINDKEY:-$ZVM_VI_ESCAPE_BINDKEY}
+ZVM_VI_OPPEND_ESCAPE_BINDKEY=${ZVM_VI_OPPEND_ESCAPE_BINDKEY:-$ZVM_VI_ESCAPE_BINDKEY}
 
 # Set the line init mode (empty will keep the last mode)
 # you can also set it to others, such as $ZVM_MODE_INSERT.
@@ -264,7 +309,7 @@ function zvm_define_widget() {
 
 # Get the keys typed to invoke this widget, as a literal string
 function zvm_keys() {
-  local keys=$(zvm_escape_non_printed_characters "$KEYS")
+  local keys=${ZVM_KEYS:-$(zvm_escape_non_printed_characters "$KEYS")}
 
   # Append the prefix of keys if it is visual or visual-line mode
   case "${ZVM_MODE}" in
@@ -363,6 +408,90 @@ function zvm_find_bindkey_widget() {
   fi
 }
 
+# Read keys for retrieving widget
+function zvm_readkeys() {
+  local keymap=$1
+  local keys=${2:-$(zvm_keys)}
+  local key=
+  local widget=
+  local result=
+  local pattern=
+  local timeout=
+
+  while :; do
+    # Escape space in pattern
+    pattern=${keys//$ZVM_ESCAPE_SPACE/ }
+
+    # Find out widgets that match this key pattern
+    zvm_find_bindkey_widget $keymap "$pattern" true
+    result=(${retval[@]})
+
+    # Special timeout for the escape sequence
+    if [[ "$pattern" == \^\[* ]]; then
+      timeout=$ZVM_ESCAPE_KEYTIMEOUT
+      # Check if there is any one custom escape sequence
+      for ((i=1; i<=${#result[@]}; i=i+2)); do
+        if [[ "${result[$i]}" =~ '^\^\[\[?[A-Z0-9]*~?\^\[' ]]; then
+          timeout=$ZVM_KEYTIMEOUT
+          break
+        fi
+      done
+    else
+      timeout=$ZVM_KEYTIMEOUT
+    fi
+
+    # Exit key input if there is only one widget matched
+    # or no more widget matched.
+    case ${#result[@]} in
+      2) key=; widget=${result[2]}; break;;
+      0) break;;
+    esac
+
+    # Wait for reading next key, and we should save the widget
+    # as the final widget if it is full matching
+    key=
+    if [[ "${result[1]}" == "${keys}" ]]; then
+      widget=${result[2]}
+      read -t $timeout -k 1 key
+    else
+      zvm_enter_oppend_mode $keys
+      read -k 1 key
+    fi
+
+    # Get current widget as final one when keytimeout
+    if [[ -z "$key" ]]; then
+      break
+    fi
+
+    # Transform the non-printed characters
+    key=$(zvm_escape_non_printed_characters "${key}")
+
+    # Escape keys
+    # " -> \" It's a special character in bash syntax
+    # ` -> \` It's a special character in bash syntax
+    key=${key//\"/\\\"}
+    key=${key//\`/\\\`}
+    keys="${keys}${key}"
+  done
+
+  # Exit operator pending mode
+  if $ZVM_OPPEND_MODE; then
+    zvm_exit_oppend_mode
+  fi
+
+  # Remove escape backslash character
+  key=${key//\\\"/\"}
+  key=${key//\\\`/\`}
+  keys=${keys//\\\"/\"}
+  keys=${keys//\\\`/\`}
+
+  if [[ -z $key ]]; then
+    retval=(${keys} $widget)
+  else
+    retval=(${keys:0:-$#key} $widget $key)
+  fi
+}
+
 # Add key bindings
 function zvm_bindkey() {
   local keymap=$1
@@ -370,12 +499,26 @@ function zvm_bindkey() {
   local widget=$3
   local key=
 
+  # We should bind keys with an existing widget
+  [[ -z $widget ]] && return
+
   # If lazy keybindings is enabled, we need to add to the lazy list
   if [[ ${ZVM_LAZY_KEYBINDINGS_LIST+x} && ${keymap} != viins ]]; then
     keys=${keys//\"/\\\"}
     keys=${keys//\`/\\\`}
     ZVM_LAZY_KEYBINDINGS_LIST+=("${keymap} \"${keys}\" ${widget}")
     return
+  fi
+
+  # Hanle the keybinding of NEX readkey engine
+  if [[ $ZVM_READKEY_ENGINE == $ZVM_READKEY_ENGINE_NEX ]]; then
+    # Get the first key (especially check if ctrl characters)
+    if [[ $#keys -gt 1 && "${keys:0:1}" == '^' ]]; then
+      key=${keys:0:2}
+    else
+      key=${keys:0:1}
+    fi
+    bindkey -M $keymap "${key}" zvm_readkeys_handler
   fi
 
   # Bind keys with with a widget
@@ -803,10 +946,29 @@ function zvm_vi_change_eol() {
 # Default handler for unhandled key events
 function zvm_default_handler() {
   local keys=$(zvm_keys)
+  local extra_keys=$1
+
+  # Exit vi mode if keys is the escape keys
+  case "$keys" in
+    '^['|$ZVM_VI_INSERT_ESCAPE_BINDKEY)
+      zvm_exit_insert_mode
+      ZVM_KEYS=${extra_keys}
+      return
+      ;;
+    [vV]'^['|[vV]$ZVM_VI_VISUAL_ESCAPE_BINDKEY)
+      zvm_exit_visual_mode
+      ZVM_KEYS=${extra_keys}
+      return
+      ;;
+  esac
+
   case "$KEYMAP" in
     vicmd)
       case "$keys" in
-        [cdy]*) zvm_range_handler "$keys";;
+        [vV]c) zvm_vi_change;;
+        [vV]d) zvm_vi_delete;;
+        [vV]y) zvm_vi_yank;;
+        [cdyvV]*) zvm_range_handler "${keys}${extra_keys}";;
         *)
           for ((i=0;i<$#keys;i++)) do
             zvm_navigation_handler ${keys:$i:1}
@@ -814,12 +976,64 @@ function zvm_default_handler() {
           done
           ;;
       esac
+      ZVM_KEYS=
       ;;
     viins|main)
+      if [[ "${keys:0:1}" =~ [a-zA-Z0-9\ ] ]]; then
+        zvm_self_insert "${keys:0:1}"
+        ZVM_KEYS="${keys:1}"
+      fi
       ;;
     visual)
       ;;
   esac
+}
+
+# Read keys for retrieving and executing a widget
+function zvm_readkeys_handler() {
+  local keymap=${1}
+  local keys=${2:-$(zvm_escape_non_printed_characters "$KEYS")}
+  local key=
+  local widget=
+
+  # Get the keymap if keymap is empty
+  if [[ -z $keymap ]]; then
+    case "$ZVM_MODE" in
+      $ZVM_MODE_INSERT) keymap=viins;;
+      $ZVM_MODE_NORMAL) keymap=vicmd;;
+      $ZVM_MODE_VISUAL|$ZVM_MODE_VISUAL_LINE) keymap=visual;;
+    esac
+  fi
+
+  # Read keys and retrieve the widget
+  zvm_readkeys $keymap $keys
+  keys=${retval[1]}
+  widget=${retval[2]}
+  key=${retval[3]}
+
+  # Escape space in keys
+  keys=${keys//$ZVM_ESCAPE_SPACE/ }
+  key=${key//$ZVM_ESCAPE_SPACE/ }
+
+  ZVM_KEYS="${keys}"
+
+  # If the widget is current handler, we should call the default handler
+  if [[ "${widget}" == "${funcstack[1]}" ]]; then
+    widget=
+  fi
+
+  # If the widget isn't matched, we should call the default handler
+  if [[ -z ${widget} ]]; then
+    zle zvm_default_handler "$key"
+
+    # Push back to the key input stack
+    if [[ -n "$ZVM_KEYS" ]]; then
+      zle -U "$ZVM_KEYS"
+    fi
+  else
+    zle $widget
+    ZVM_KEYS=
+  fi
 }
 
 # Handle the navigation action
@@ -867,7 +1081,7 @@ function zvm_navigation_handler() {
 
 # Handle a range of characters
 function zvm_range_handler() {
-  local keys=${1:-$(zvm_keys)}
+  local keys=$1
   local cursor=$CURSOR
   local key=
   local mode=
@@ -876,6 +1090,7 @@ function zvm_range_handler() {
   # If the keys is less than 2 keys, we should read more
   # keys (e.g. d, c, y, etc.)
   while (( ${#keys} < 2 )); do
+    zvm_enter_oppend_mode "$keys"
     read -k 1 key
     keys="${keys}${key}"
   done
@@ -883,6 +1098,7 @@ function zvm_range_handler() {
   # If the keys ends in numbers, we should read more
   # keys (e.g. d2, c3, y10, etc.)
   while [[ ${keys: 1} =~ ^[1-9][0-9]*$ ]]; do
+    zvm_enter_oppend_mode "$keys"
     read -k 1 key
     keys="${keys}${key}"
   done
@@ -890,8 +1106,14 @@ function zvm_range_handler() {
   # If the last character is `i` or `a`, we should, we
   # should read one more key
   if [[ ${keys: -1} =~ [ia] ]]; then
+    zvm_enter_oppend_mode "$keys"
     read -k 1 key
     keys="${keys}${key}"
+  fi
+
+  # Exit the operator pending mode
+  if $ZVM_OPPEND_MODE; then
+    zvm_exit_oppend_mode
   fi
 
   # Enter visual mode or visual line mode
@@ -939,8 +1161,8 @@ function zvm_range_handler() {
   # Pre navigation handling
   local navkey=
   case "${keys}" in
-    [cdy]*iw) navkey="${keys:1}";;
-    [cdy]*aw) navkey="${keys:1}";;
+    [cdyvV]*iw) navkey="${keys:1}";;
+    [cdyvV]*aw) navkey="${keys:1}";;
     c*w) zle vi-backward-char; navkey="${keys:1:-1}e";;
     c*e) navkey="${keys:1:-1}e";;
     *) navkey="${keys:1}";;
@@ -988,9 +1210,10 @@ function zvm_range_handler() {
 
   # Handle operation
   case "${keys}" in
-    y*) zvm_vi_yank;;
-    d*) zvm_vi_delete; cursor=;;
     c*) zvm_vi_change; cursor=;;
+    d*) zvm_vi_delete; cursor=;;
+    y*) zvm_vi_yank;;
+    [vV]*) cursor=;;
   esac
 
   # Change the cursor position if the cursor is not null
@@ -1179,7 +1402,11 @@ function zvm_change_surround() {
   fi
   local key=
   case $action in
-    c|r) read -k 1 key;;
+    c|r)
+      zvm_enter_oppend_mode
+      read -k 1 key
+      zvm_exit_oppend_mode
+      ;;
     S|y|a) key=$surround; [[ -z $@ ]] && zle visual-mode;;
   esac
 
@@ -1817,6 +2044,18 @@ function zvm_exit_insert_mode() {
   zvm_select_vi_mode $ZVM_MODE_NORMAL
 }
 
+# Enter the vi operator pending mode
+function zvm_enter_oppend_mode() {
+  ZVM_OPPEND_MODE=true
+  zvm_update_cursor
+}
+
+# Exit the vi operator pending mode
+function zvm_exit_oppend_mode() {
+  ZVM_OPPEND_MODE=false
+  zvm_update_cursor
+}
+
 # Insert at the beginning of the line
 function zvm_insert_bol() {
   ZVM_INSERT_MODE='I'
@@ -1829,6 +2068,13 @@ function zvm_append_eol() {
   ZVM_INSERT_MODE='A'
   zle vi-end-of-line
   zvm_select_vi_mode $ZVM_MODE_INSERT
+}
+
+# Self insert content to cursor position
+function zvm_self_insert() {
+  local keys=${1:-$KEYS}
+  RBUFFER="${keys}${RBUFFER}"
+  CURSOR=$((CURSOR+1))
 }
 
 # Select vi mode
@@ -1969,9 +2215,17 @@ function zvm_update_cursor() {
   # Check if we need to update the cursor style
   $ZVM_CURSOR_STYLE_ENABLED || return
 
+  local mode=$1
   local shape=
 
-  case "${1:-$ZVM_MODE}" in
+  # Check if it is operator pending mode
+  if $ZVM_OPPEND_MODE; then
+    mode=opp
+    shape=$(zvm_cursor_style $ZVM_OPPEND_MODE_CURSOR)
+  fi
+
+  # Get cursor shape by the mode
+  case "${mode:-$ZVM_MODE}" in
     $ZVM_MODE_NORMAL)
       shape=$(zvm_cursor_style $ZVM_NORMAL_MODE_CURSOR)
       ;;
@@ -2046,6 +2300,7 @@ function zvm_init() {
 
   # Create User-defined widgets
   zvm_define_widget zvm_default_handler
+  zvm_define_widget zvm_readkeys_handler
   zvm_define_widget zvm_backward_kill_region
   zvm_define_widget zvm_backward_kill_line
   zvm_define_widget zvm_forward_kill_line
@@ -2059,11 +2314,14 @@ function zvm_init() {
   zvm_define_widget zvm_exit_insert_mode
   zvm_define_widget zvm_enter_visual_mode
   zvm_define_widget zvm_exit_visual_mode
+  zvm_define_widget zvm_enter_oppend_mode
+  zvm_define_widget zvm_exit_oppend_mode
   zvm_define_widget zvm_exchange_point_and_mark
   zvm_define_widget zvm_open_line_below
   zvm_define_widget zvm_open_line_above
   zvm_define_widget zvm_insert_bol
   zvm_define_widget zvm_append_eol
+  zvm_define_widget zvm_self_insert
   zvm_define_widget zvm_vi_substitute
   zvm_define_widget zvm_vi_substitute_whole_line
   zvm_define_widget zvm_vi_change
@@ -2136,22 +2394,47 @@ function zvm_init() {
   zvm_bindkey vicmd '^A' zvm_switch_keyword
   zvm_bindkey vicmd '^X' zvm_switch_keyword
 
-  # Binding escape key
-  zvm_bindkey viins "$ZVM_VI_ESCAPE_BINDKEY" zvm_exit_insert_mode
-  zvm_bindkey visual "$ZVM_VI_ESCAPE_BINDKEY" zvm_exit_visual_mode
+  # Keybindings for escape key and some specials
+  local exit_oppend_mode_widget=
+  local exit_insert_mode_widget=
+  local exit_visual_mode_widget=
+  local default_handler_widget=
 
-  if [[ "$ZVM_VI_ESCAPE_BINDKEY" != '^[' ]]; then
-    local is_custom_escape_key=true
-  fi
+  case $ZVM_READKEY_ENGINE in
+    $ZVM_READKEY_ENGINE_NEX)
+      exit_oppend_mode_widget=zvm_readkeys_handler
+      exit_insert_mode_widget=zvm_readkeys_handler
+      exit_visual_mode_widget=zvm_readkeys_handler
+      ;;
+    $ZVM_READKEY_ENGINE_ZLE)
+      exit_insert_mode_widget=zvm_exit_insert_mode
+      exit_visual_mode_widget=zvm_exit_visual_mode
+      default_handler_widget=zvm_default_handler
+      ;;
+  esac
 
-  if $is_custom_escape_key; then
-    zvm_bindkey viins '^[' zvm_exit_insert_mode
-    zvm_bindkey visual '^[' zvm_exit_visual_mode
-  fi
+  # Bind custom escape key
+  zvm_bindkey vicmd  "$ZVM_VI_OPPEND_ESCAPE_BINDKEY" $exit_oppend_mode_widget
+  zvm_bindkey viins  "$ZVM_VI_INSERT_ESCAPE_BINDKEY" $exit_insert_mode_widget
+  zvm_bindkey visual "$ZVM_VI_VISUAL_ESCAPE_BINDKEY" $exit_visual_mode_widget
 
-  # Binding and overwrite original y/d/c of vicmd
+  # Bind the default escape key if the escape key is not the default
+  case "$ZVM_VI_OPPEND_ESCAPE_BINDKEY" in
+    '^['|'\e') ;;
+    *) zvm_bindkey vicmd '^[' $exit_oppend_mode_widget;;
+  esac
+  case "$ZVM_VI_INSERT_ESCAPE_BINDKEY" in
+    '^['|'\e') ;;
+    *) zvm_bindkey viins '^[' $exit_insert_mode_widget;;
+  esac
+  case "$ZVM_VI_VISUAL_ESCAPE_BINDKEY" in
+    '^['|'\e') ;;
+    *) zvm_bindkey visual '^[' $exit_visual_mode_widget;;
+  esac
+
+  # Bind and overwrite original y/d/c of vicmd
   for c in {y,d,c}; do
-    zvm_bindkey vicmd "$c" zvm_default_handler
+    zvm_bindkey vicmd "$c" $default_handler_widget
   done
 
   # Surround text-object
@@ -2208,8 +2491,12 @@ function zvm_init() {
   # Enable vi keymap
   bindkey -v
 
-  # Export the zle KEYTIMEOUT
-  export KEYTIMEOUT=$(($ZVM_KEYTIMEOUT * 100))
+  # Reduce ESC delay (zle default is 0.4 seconds)
+  # Set to 0.01 second delay for taking over the key input processing
+  case $ZVM_READKEY_ENGINE in
+    $ZVM_READKEY_ENGINE_NEX) KEYTIMEOUT=1;;
+    $ZVM_READKEY_ENGINE_ZLE) KEYTIMEOUT=$(($ZVM_KEYTIMEOUT*100));;
+  esac
 
   zvm_exec_commands 'after_init'
 }
