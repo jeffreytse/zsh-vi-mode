@@ -1204,7 +1204,14 @@ function zvm_range_handler() {
   case "${keys}" in
     [cdy]*iw) cursor=$MARK;;
     [cdy]*aw) cursor=$MARK;;
-    [dy]*w) CURSOR=$((CURSOR-1));;
+    [dy]*w)
+      CURSOR=$((CURSOR-1))
+      # If the CURSOR is at the newline character, we should
+      # move backward a character
+      if [[ "${BUFFER:$CURSOR:1}" == $'\n' ]]; then
+        CURSOR=$((CURSOR-1))
+      fi
+      ;;
     b|F|T) cursor=$CURSOR;;
   esac
 
