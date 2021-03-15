@@ -537,6 +537,8 @@ function zvm_escape_non_printed_characters() {
       str="${str}^${c}"
     elif [[ "$c" == '' ]]; then
       str="${str}^?"
+    elif [[ "$c" == ' ' ]]; then
+      str="${str}^@"
     else
       str="${str}${c}"
     fi
