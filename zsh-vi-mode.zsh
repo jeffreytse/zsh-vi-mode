@@ -185,7 +185,7 @@ ZVM_REGION_HIGHLIGHT=()
 # Default zvm readkey engines
 ZVM_READKEY_ENGINE_NEX='nex'
 ZVM_READKEY_ENGINE_ZLE='zle'
-ZVM_READKEY_ENGINE_DEFAULT=$ZVM_READKEY_ENGINE_ZLE
+ZVM_READKEY_ENGINE_DEFAULT=$ZVM_READKEY_ENGINE_NEX
 
 # Default alternative character for escape space character
 ZVM_ESCAPE_SPACE='\s'
@@ -209,7 +209,7 @@ ZVM_CURSOR_BLINKING_BEAM='bbe'
 ##########################################
 # Initial all default settings
 
-# Set the readkey engine (default is ZLE)
+# Set the readkey engine (default is NEX engine)
 ZVM_READKEY_ENGINE=${ZVM_READKEY_ENGINE:-$ZVM_READKEY_ENGINE_DEFAULT}
 
 # Set key input timeout (default is 0.4 seconds)
