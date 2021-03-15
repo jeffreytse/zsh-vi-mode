@@ -85,7 +85,7 @@
 #  ZVM_READKEY_ENGINE_NEX
 #  ZVM_READKEY_ENGINE_ZLE (Default)
 #
-# the NEX is a better engine for reading and handle than the Zsh's ZLE
+# the NEX is a better engine for reading and handling than the Zsh's ZLE
 # engine, currently the NEX engine is at beta stage, and it will be the
 # default readkey engine in the future.
 #
@@ -185,6 +185,7 @@ ZVM_REGION_HIGHLIGHT=()
 # Default zvm readkey engines
 ZVM_READKEY_ENGINE_NEX='nex'
 ZVM_READKEY_ENGINE_ZLE='zle'
+ZVM_READKEY_ENGINE_DEFAULT=$ZVM_READKEY_ENGINE_ZLE
 
 # Default alternative character for escape space character
 ZVM_ESCAPE_SPACE='\s'
@@ -209,7 +210,7 @@ ZVM_CURSOR_BLINKING_BEAM='bbe'
 # Initial all default settings
 
 # Set the readkey engine (default is ZLE)
-ZVM_READKEY_ENGINE=${ZVM_READKEY_ENGINE:-$ZVM_READKEY_ENGINE_ZLE}
+ZVM_READKEY_ENGINE=${ZVM_READKEY_ENGINE:-$ZVM_READKEY_ENGINE_DEFAULT}
 
 # Set key input timeout (default is 0.4 seconds)
 ZVM_KEYTIMEOUT=${ZVM_KEYTIMEOUT:-0.4}
@@ -2328,6 +2329,23 @@ function zvm_zle-line-finish() {
 function zvm_init() {
   zvm_exec_commands 'before_init'
 
+  # Correct the readkey engine
+  case $ZVM_READKEY_ENGINE in
+    $ZVM_READKEY_ENGINE_NEX|$ZVM_READKEY_ENGINE_ZLE);;
+    *)
+      echo -n "Warning: Unsupported readkey engine! "
+      echo "ZVM_READKEY_ENGINE=$ZVM_READKEY_ENGINE"
+      ZVM_READKEY_ENGINE=$ZVM_READKEY_ENGINE_DEFAULT
+      ;;
+  esac
+
+  # Reduce ESC delay (zle default is 0.4 seconds)
+  # Set to 0.01 second delay for taking over the key input processing
+  case $ZVM_READKEY_ENGINE in
+    $ZVM_READKEY_ENGINE_NEX) KEYTIMEOUT=1;;
+    $ZVM_READKEY_ENGINE_ZLE) KEYTIMEOUT=$(($ZVM_KEYTIMEOUT*100));;
+  esac
+
   # Create User-defined widgets
   zvm_define_widget zvm_default_handler
   zvm_define_widget zvm_readkeys_handler
@@ -2520,13 +2538,6 @@ function zvm_init() {
 
   # Enable vi keymap
   bindkey -v
-
-  # Reduce ESC delay (zle default is 0.4 seconds)
-  # Set to 0.01 second delay for taking over the key input processing
-  case $ZVM_READKEY_ENGINE in
-    $ZVM_READKEY_ENGINE_NEX) KEYTIMEOUT=1;;
-    $ZVM_READKEY_ENGINE_ZLE) KEYTIMEOUT=$(($ZVM_KEYTIMEOUT*100));;
-  esac
 
   zvm_exec_commands 'after_init'
 }
