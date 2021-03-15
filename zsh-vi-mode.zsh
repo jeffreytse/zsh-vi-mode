@@ -2022,10 +2022,26 @@ function zvm_highlight() {
 # Enter the visual mode
 function zvm_enter_visual_mode() {
   local mode=
+  local last_mode=$ZVM_MODE
+
+  # Exit the visual mode
+  case $last_mode in
+    $ZVM_MODE_VISUAL|$ZVM_MODE_VISUAL_LINE)
+      zvm_exit_visual_mode
+      ;;
+  esac
+
   case "$(zvm_keys)" in
     v) mode=$ZVM_MODE_VISUAL;;
     V) mode=$ZVM_MODE_VISUAL_LINE;;
   esac
+
+  # We should just exit the visual mdoe if current mode
+  # is the same with last visual mode
+  if [[ $last_mode == $mode ]]; then
+    return
+  fi
+
   zvm_select_vi_mode $mode
 }
 
