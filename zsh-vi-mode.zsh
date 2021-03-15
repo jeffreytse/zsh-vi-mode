@@ -1491,7 +1491,14 @@ function zvm_select_in_word() {
     [[ "${buffer:$epos:1}" =~ $pattern ]] || break
   done
 
-  echo $((bpos+1)) $((epos-1))
+  bpos=$((bpos+1))
+
+  # The ending position must be greater than 0
+  if (( epos > 0 )); then
+    epos=$((epos-1))
+  fi
+
+  echo $bpos $epos
 }
 
 # Switch keyword
@@ -1535,7 +1542,7 @@ function zvm_switch_keyword() {
   local result=($(zvm_select_in_word $cpos))
   bpos=${result[1]} epos=$((${result[2]}+1))
 
-  # Backward the cursor
+  # Move backward the cursor
   if [[ $bpos != 0 && ${BUFFER:$((bpos-1)):1} == [+-] ]]; then
     bpos=$((bpos-1))
   fi
