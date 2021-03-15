@@ -982,7 +982,8 @@ function zvm_default_handler() {
     viins|main)
       if [[ "${keys:0:1}" =~ [a-zA-Z0-9\ ] ]]; then
         zvm_self_insert "${keys:0:1}"
-        ZVM_KEYS="${keys:1}"
+        zle redisplay
+        ZVM_KEYS="${keys:1}${extra_keys}"
       fi
       ;;
     visual)
