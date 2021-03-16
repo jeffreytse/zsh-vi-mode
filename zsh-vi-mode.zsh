@@ -39,7 +39,7 @@
 # ZVM_VI_OPPEND_ESCAPE_BINDKEY
 # the vi escape key of operator pendding mode (default is
 # $ZVM_VI_ESCAPE_BINDKEY), you can set it to whatever, such as `jj`, `jk`
-# and so on..
+# and so on.
 #
 # ZVM_VI_INSERT_MODE_LEGACY_UNDO:
 # using legacy undo behavior in vi insert mode
@@ -82,12 +82,12 @@
 # ZVM_READKEY_ENGINE
 # the readkey engine for reading and processing the key events, and the
 # below engines are supported:
-#  ZVM_READKEY_ENGINE_NEX
-#  ZVM_READKEY_ENGINE_ZLE (Default)
+#  ZVM_READKEY_ENGINE_NEX (Default)
+#  ZVM_READKEY_ENGINE_ZLE
 #
-# the NEX is a better engine for reading and handling than the Zsh's ZLE
-# engine, currently the NEX engine is at beta stage, and it will be the
-# default readkey engine in the future.
+# the NEX is a better engine for reading and handling the key events than
+# the Zsh's ZLE engine, currently the NEX engine is at beta stage, and
+# you can change to Zsh's ZLE engine if you want.
 #
 # ZVM_KEYTIMEOUT:
 # the key input timeout for waiting for next key (default is 0.4 seconds)
@@ -2326,7 +2326,6 @@ function zvm_zle-line-finish() {
   local shape=$(zvm_cursor_style $ZVM_CURSOR_USER_DEFAULT)
   zvm_set_cursor $shape
 }
-
 
 # Initialize vi-mode for widgets, keybindings, etc.
 function zvm_init() {
