@@ -1057,8 +1057,11 @@ function zvm_navigation_handler() {
     'k') widget=up-line-or-history;;
     'l') widget=vi-forward-char;;
     'w') widget=vi-forward-word;;
+    'W') widget=vi-forward-blank-word;;
     'e') widget=vi-forward-word-end;;
+    'E') widget=vi-forward-blank-word-end;;
     'b') widget=vi-backward-word;;
+    'B') widget=vi-backward-blank-word;;
     'f') widget=vi-find-next-char;;
     'F') widget=vi-find-prev-char;;
     't') widget=vi-find-next-char-skip;;
@@ -1161,20 +1164,40 @@ function zvm_range_handler() {
   #  ce -> `a bb`
   #  c2e -> `a bb c`
   #
+  # 3. SAMPLE: ` .foo.  bar.  baz.`, CURSOR: at `f`
+  #
+  #  c[WE] -> `foo.`
+  #  c2[WE] -> `foo.  bar.`
+  #  vE -> `foo.`
+  #  v2E -> `foo.  bar.`
+  #  vW -> `foo.  b`
+  #  v2W -> `foo.  bar.  b`
+  #  d2W -> `foo.  bar.  b`
+  #  [dy]E -> `foo.`
+  #  [dy]2E -> `foo.  bar.`
+  #  [dy]W -> `foo.  `
+  #  [dy]2W -> `foo.  bar.  `
+  #  [cdyv]iW -> `.foo.`
+  #  [cdyv]aW -> `.foo.  `
+  #  [cdyv]2iW -> `.foo.  `
+  #  [cdyv]2aW -> `.foo.  bar.  `
+  #
 
   # Pre navigation handling
   local navkey=
   case "${keys}" in
-    [cdyvV]*iw) navkey="${keys:1}";;
-    [cdyvV]*aw) navkey="${keys:1}";;
+    [cdyvV]*i[wW]) navkey="${keys:1}";;
+    [cdyvV]*a[wW]) navkey="${keys:1}";;
     c*w) zle vi-backward-char; navkey="${keys:1:-1}e";;
+    c*W) zle vi-backward-blank-char; navkey="${keys:1:-1}E";;
     c*e) navkey="${keys:1:-1}e";;
+    c*E) navkey="${keys:1:-1}E";;
     *) navkey="${keys:1}";;
   esac
 
   # Handle navigation
   case "${navkey}" in
-    *[ia]w)
+    *[ia][wW])
       local widget=
       local mark=
       local count=${navkey:0:-2}
@@ -1188,6 +1211,8 @@ function zvm_range_handler() {
       case ${navkey: -2} in
         iw) widget=select-in-word;;
         aw) widget=select-a-word;;
+        iW) widget=select-in-blank-word;;
+        aW) widget=select-a-blank-word;;
       esac
 
       # Execute the widget for `count` times, and
@@ -1206,9 +1231,9 @@ function zvm_range_handler() {
 
   # Post navigation handling
   case "${keys}" in
-    [cdy]*iw) cursor=$MARK;;
-    [cdy]*aw) cursor=$MARK;;
-    [dy]*w)
+    [cdy]*i[wW]) cursor=$MARK;;
+    [cdy]*a[wW]) cursor=$MARK;;
+    [dy]*[wW])
       CURSOR=$((CURSOR-1))
       # If the CURSOR is at the newline character, we should
       # move backward a character
