@@ -69,7 +69,7 @@
 
 ## 🤔 Why ZVM?
 
-Maybe you have experienced the default Vi mode in ZSH, after turning on
+Maybe you have experienced the default Vi mode in Zsh, after turning on
 the default Vi mode, you gradually found that it had many problems, some
 features were not perfect or non-existent, and some behaviors even were
 different from the native Vi(Vim) mode.
@@ -88,18 +88,19 @@ smile suddenly appeared on your face like regaining a good life.
 
 ## ✨ Features
 
+- 🪙 Pure Zsh's script without any third-party dependencies.
 - 🎉 Better experience with the near-native vi(vim) mode.
-- ⌛ Lower delay and better response (Mode switching, widget calling).
+- ⌛ Lower delay and better response (Mode switching speed, etc.).
 - ✏️  Mode indication with different cursor styles.
 - 🧮 Cursor movement (Navigation).
 - 📝 Insert & Replace (Insert mode).
 - 💡 Text Objects (A word, inner word, etc.).
 - 🔎 Searching history.
 - ❇️  Undo, Redo, Cut, Copy, Paste, and Delete.
-- 🔮 Better surrounds functionality (Add, Replace, Delete, Move Around, and Highlight).
-- 🔣 Switch keywords (Increase/Decrease Number, Boolean, Weekday, Month, etc.).
+- 🪐 Better surrounds functionality (Add, Replace, Delete, Move Around, and Highlight).
+- 🧽 Switch keywords (Increase/Decrease Number, Boolean, Weekday, Month, etc.).
 - ⚙️  Better functionality in command mode (**In progress**).
-- 🌀 Repeating command such as `10p` and `4fa` (**In progress**).
+- 🪀 Repeating command such as `10p` and `4fa` (**In progress**).
 - 📒 System clipboard (**In progress**).
 
 ## 🛠️ Installation
@@ -198,13 +199,10 @@ source $HOME/.zsh-vi-mode/zsh-vi-mode.plugin.zsh
 
 ## 📚 Usage
 
-Use `ESC` or `CTRL-[` to enter `Normal mode`. 
+Use `ESC` or `CTRL-[` to enter `Normal mode`.
 
-Also, you can use the `ZVM_VI_ESCAPE_BINDKEY` option to custom the escape key
-which could better match your flavor, such as `jj` or `jk` and so on.
-
-And you can use the `ZVM_KEYTIMEOUT` option to adjust the key input timeout
-for waiting for next key, default is `0.3` seconds.
+But some people may like the custom escape key such as `jj`, `jk` and so on,
+if you want to custom the escape key, you can learn more from [here](#custom-escape-key).
 
 History
 -------
@@ -365,6 +363,54 @@ For example:
 - `or` => `and`
 - ...
 
+Custom Escape Key
+--------
+
+Also, you can use the below options to custom the escape key which could
+better match your flavor, such as `jj` or `jk` and so on.
+
+- `ZVM_VI_ESCAPE_BINDKEY`: The vi escape key in all modes (default is `^[`
+  => `ESC`)
+- `ZVM_VI_INSERT_ESCAPE_BINDKEY`: The vi escape key in insert mode (default
+  is `$ZVM_VI_ESCAPE_BINDKEY`)
+- `ZVM_VI_VISUAL_ESCAPE_BINDKEY`: The vi escape key in visual mode (default
+  is `$ZVM_VI_ESCAPE_BINDKEY`)
+- `ZVM_VI_OPPEND_ESCAPE_BINDKEY`: The vi escape key in operator pending mode
+  (default is `$ZVM_VI_ESCAPE_BINDKEY`)
+
+For example:
+
+```zsh
+# Only changing the escape key to `jk` in insert mode, we still
+# keep using the default keybindings `^[` in other modes
+ZVM_VI_INSERT_ESCAPE_BINDKEY=jk
+```
+
+And you can use the `ZVM_KEYTIMEOUT` option to adjust the key input timeout
+for waiting for next key, default is `0.4` seconds.
+
+Readkey Engine
+--------
+
+This plugin has supported to choose the readkey engine for reading and
+processing the key events. It easy to do by the `ZVM_READKEY_ENGINE`option,
+currently the below engines are supported:
+
+- `ZVM_READKEY_ENGINE_NEX`: It is a better readkey engine to replace ZLE (Beta).
+- `ZVM_READKEY_ENGINE_ZLE`: It is Zsh's default readkey engine (ZLE).
+- `ZVM_READKEY_ENGINE_DEFAULT`: It is the default engine of this plugin
+  (It's the NEX engine now).
+
+The NEX is a better engine for reading and handling the key events than the
+Zsh's ZLE engine, currently the NEX engine is still at beta stage, you can
+change to Zsh's ZLE engine if you want.
+
+For example:
+
+```zsh
+# Change to Zsh's default readkey engine
+ZVM_READKEY_ENGINE=$ZVM_READKEY_ENGINE_ZLE
+```
 
 Execute Extra Commands
 --------
@@ -523,17 +569,20 @@ ZVM_CURSOR_STYLE_ENABLED=false
 - You can set your cursor style for different vi mode:
 
 ```zsh
-# ZVM_NORMAL_MODE_CURSOR:
-# the prompt cursor in normal mode
-#
-# ZVM_INSERT_MODE_CURSOR:
-# the prompt cursor in insert mode
-#
-# ZVM_VISUAL_MODE_CURSOR:
-# the prompt cursor in visual mode
-#
-# ZVM_VISUAL_LINE_MODE_CURSOR:
-# the prompt cursor in visual line mode
+# The prompt cursor in normal mode
+ZVM_NORMAL_MODE_CURSOR
+
+# The prompt cursor in insert mode
+ZVM_INSERT_MODE_CURSOR
+
+# The prompt cursor in visual mode
+ZVM_VISUAL_MODE_CURSOR
+
+# The prompt cursor in visual line mode
+ZVM_VISUAL_LINE_MODE_CURSOR
+
+# The prompt cursor in operator pending mode
+ZVM_OPPEND_MODE_CURSOR
 ```
 
 - And the below cursor styles are supported:
@@ -553,6 +602,7 @@ ZVM_CURSOR_BLINKING_BEAM
 ```zsh
 ZVM_INSERT_MODE_CURSOR=$ZVM_CURSOR_BEAM
 ZVM_NORMAL_MODE_CURSOR=$ZVM_CURSOR_BLOCK
+ZVM_OPPEND_MODE_CURSOR=$ZVM_CURSOR_UNDERLINE
 ```
 
 Command Line Initial Mode
