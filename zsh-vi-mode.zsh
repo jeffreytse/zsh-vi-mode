@@ -467,7 +467,7 @@ function zvm_readkeys() {
 
     # Evaluate the readkey timeout
     # Special timeout for the escape sequence
-    if [[ "${keys}" == * ]]; then
+    if [[ "${keys}" ==  ]]; then
       timeout=$ZVM_ESCAPE_KEYTIMEOUT
       # Check if there is any one custom escape sequence
       for ((i=1; i<=${#result[@]}; i=i+2)); do
