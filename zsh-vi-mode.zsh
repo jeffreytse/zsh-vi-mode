@@ -92,6 +92,11 @@
 # ZVM_KEYTIMEOUT:
 # the key input timeout for waiting for next key (default is 0.4 seconds)
 #
+# ZVM_ESCAPE_KEYTIMEOUT:
+# the key input timeout for waiting for next key if it is beginning with
+# an escape character (default is 0.03 seconds), and this option is just
+# available for the NEX readkey engine
+#
 # ZVM_LINE_INIT_MODE
 # the setting for init mode of command line (default is empty), empty will
 # keep the last command mode, for the first command line it will be insert
@@ -215,8 +220,8 @@ ZVM_READKEY_ENGINE=${ZVM_READKEY_ENGINE:-$ZVM_READKEY_ENGINE_DEFAULT}
 # Set key input timeout (default is 0.4 seconds)
 ZVM_KEYTIMEOUT=${ZVM_KEYTIMEOUT:-0.4}
 
-# Set the escape key timeout (default is 0 seconds)
-ZVM_ESCAPE_KEYTIMEOUT=${ZVM_ESCAPE_KEYTIMEOUT:-0}
+# Set the escape key timeout (default is 0.03 seconds)
+ZVM_ESCAPE_KEYTIMEOUT=${ZVM_ESCAPE_KEYTIMEOUT:-0.03}
 
 # Set keybindings mode (default is true)
 # The lazy keybindings will post the keybindings of vicmd and visual
@@ -310,7 +315,7 @@ function zvm_define_widget() {
 
 # Get the keys typed to invoke this widget, as a literal string
 function zvm_keys() {
-  local keys=${ZVM_KEYS:-$(zvm_escape_non_printed_characters "$KEYS")}
+  local keys=${ZVM_KEYS:-$KEYS}
 
   # Append the prefix of keys if it is visual or visual-line mode
   case "${ZVM_MODE}" in
@@ -326,9 +331,7 @@ function zvm_keys() {
       ;;
   esac
 
-  ZVM_KEYS="${keys// /$ZVM_ESCAPE_SPACE}"
-
-  echo $ZVM_KEYS
+  echo "${keys// /$ZVM_ESCAPE_SPACE}"
 }
 
 # Find the widget on a specified bindkey
@@ -412,23 +415,59 @@ function zvm_find_bindkey_widget() {
 # Read keys for retrieving widget
 function zvm_readkeys() {
   local keymap=$1
-  local keys=${2:-$(zvm_keys)}
-  local key=
+  local key=${2:-$(zvm_keys)}
+  local keys=
   local widget=
   local result=
   local pattern=
   local timeout=
 
+  # Escape the non-printed characters
+  pattern=$(zvm_escape_non_printed_characters "${keys}")
+  pattern=${pattern//$ZVM_ESCAPE_SPACE/ }
+
   while :; do
-    # Escape space in pattern
-    pattern=${keys//$ZVM_ESCAPE_SPACE/ }
+    # Keep reading key for escape character
+    if [[ "$key" == '' ]]; then
+      while :; do
+        local k=
+        read -t $ZVM_ESCAPE_KEYTIMEOUT -k 1 k || break
+        key="${key}${k}"
+      done
+    fi
+
+    keys="${keys}${key}"
+
+    # Handle the pattern
+    if [[ -n "$key" ]]; then
+      # Transform the non-printed characters
+      local k=$(zvm_escape_non_printed_characters "${key}")
+
+      # Escape keys
+      # " -> \" It's a special character in bash syntax
+      # ` -> \` It's a special character in bash syntax
+      # <space> -> ` ` It's a special character in bash syntax
+      k=${k//\"/\\\"}
+      k=${k//\`/\\\`}
+      k=${k//$ZVM_ESCAPE_SPACE/ }
+
+      pattern="${pattern}${k}"
+    fi
 
     # Find out widgets that match this key pattern
     zvm_find_bindkey_widget $keymap "$pattern" true
     result=(${retval[@]})
 
+    # Exit key input if there is only one widget matched
+    # or no more widget matched.
+    case ${#result[@]} in
+      2) key=; widget=${result[2]}; break;;
+      0) break;;
+    esac
+
+    # Evaluate the readkey timeout
     # Special timeout for the escape sequence
-    if [[ "$pattern" == \^\[* ]]; then
+    if [[ "${keys}" == * ]]; then
       timeout=$ZVM_ESCAPE_KEYTIMEOUT
       # Check if there is any one custom escape sequence
       for ((i=1; i<=${#result[@]}; i=i+2)); do
@@ -441,38 +480,17 @@ function zvm_readkeys() {
       timeout=$ZVM_KEYTIMEOUT
     fi
 
-    # Exit key input if there is only one widget matched
-    # or no more widget matched.
-    case ${#result[@]} in
-      2) key=; widget=${result[2]}; break;;
-      0) break;;
-    esac
-
     # Wait for reading next key, and we should save the widget
     # as the final widget if it is full matching
     key=
-    if [[ "${result[1]}" == "${keys}" ]]; then
+    if [[ "${result[1]}" == "${pattern}" ]]; then
       widget=${result[2]}
-      read -t $timeout -k 1 key
+      # Get current widget as final widget when reading key timeout
+      read -t $timeout -k 1 key || break
     else
       zvm_enter_oppend_mode $keys
       read -k 1 key
     fi
-
-    # Get current widget as final one when keytimeout
-    if [[ -z "$key" ]]; then
-      break
-    fi
-
-    # Transform the non-printed characters
-    key=$(zvm_escape_non_printed_characters "${key}")
-
-    # Escape keys
-    # " -> \" It's a special character in bash syntax
-    # ` -> \` It's a special character in bash syntax
-    key=${key//\"/\\\"}
-    key=${key//\`/\\\`}
-    keys="${keys}${key}"
   done
 
   # Exit operator pending mode
@@ -480,13 +498,7 @@ function zvm_readkeys() {
     zvm_exit_oppend_mode
   fi
 
-  # Remove escape backslash character
-  key=${key//\\\"/\"}
-  key=${key//\\\`/\`}
-  keys=${keys//\\\"/\"}
-  keys=${keys//\\\`/\`}
-
-  if [[ -z $key ]]; then
+  if [[ -z "$key" ]]; then
     retval=(${keys} $widget)
   else
     retval=(${keys:0:-$#key} $widget $key)
@@ -952,7 +964,7 @@ function zvm_default_handler() {
   local extra_keys=$1
 
   # Exit vi mode if keys is the escape keys
-  case "$keys" in
+  case "$(zvm_escape_non_printed_characters $keys)" in
     '^['|$ZVM_VI_INSERT_ESCAPE_BINDKEY)
       zvm_exit_insert_mode
       ZVM_KEYS=${extra_keys}
@@ -979,24 +991,26 @@ function zvm_default_handler() {
           done
           ;;
       esac
-      ZVM_KEYS=
       ;;
     viins|main)
       if [[ "${keys:0:1}" =~ [a-zA-Z0-9\ ] ]]; then
         zvm_self_insert "${keys:0:1}"
         zle redisplay
         ZVM_KEYS="${keys:1}${extra_keys}"
+        return
       fi
       ;;
     visual)
       ;;
   esac
+
+  ZVM_KEYS=
 }
 
 # Read keys for retrieving and executing a widget
 function zvm_readkeys_handler() {
   local keymap=${1}
-  local keys=${2:-$(zvm_escape_non_printed_characters "$KEYS")}
+  local keys=${2:-$KEYS}
   local key=
   local widget=
 
@@ -1579,7 +1593,7 @@ function zvm_switch_keyword() {
   local word=${BUFFER:$bpos:$((epos-bpos))}
   local keys=$(zvm_keys)
 
-  if [[ $keys == '^A' ]]; then
+  if [[ $keys == '' ]]; then
     local increase=true
   else
     local increase=false
