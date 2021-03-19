@@ -2190,6 +2190,10 @@ function zvm_select_vi_mode() {
       ;;
   esac
 
+  # This aspect provides you a moment to do something, such as
+  # update the cursor, prompt and so on.
+  zvm_exec_commands 'after_select_vi_mode'
+
   # Enable reset-prompt
   ZVM_RESET_PROMPT_DISABLED=false
 
@@ -2211,8 +2215,6 @@ function zvm_select_vi_mode() {
 
     zvm_exec_commands 'after_lazy_keybindings'
   fi
-
-  zvm_exec_commands 'after_select_vi_mode'
 }
 
 # Reset prompt
