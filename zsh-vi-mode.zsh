@@ -1111,7 +1111,7 @@ function zvm_range_handler() {
   # If the keys is less than 2 keys, we should read more
   # keys (e.g. d, c, y, etc.)
   while (( ${#keys} < 2 )); do
-    zvm_enter_oppend_mode "$keys"
+    zvm_enter_oppend_mode
     read -k 1 key
     keys="${keys}${key}"
   done
@@ -1119,7 +1119,7 @@ function zvm_range_handler() {
   # If the keys ends in numbers, we should read more
   # keys (e.g. d2, c3, y10, etc.)
   while [[ ${keys: 1} =~ ^[1-9][0-9]*$ ]]; do
-    zvm_enter_oppend_mode "$keys"
+    zvm_enter_oppend_mode
     read -k 1 key
     keys="${keys}${key}"
   done
@@ -1127,14 +1127,14 @@ function zvm_range_handler() {
   # If the last character is `i` or `a`, we should, we
   # should read one more key
   if [[ ${keys: -1} =~ [ia] ]]; then
-    zvm_enter_oppend_mode "$keys"
+    zvm_enter_oppend_mode
     read -k 1 key
     keys="${keys}${key}"
   fi
 
-  # Exit the operator pending mode
-  if $ZVM_OPPEND_MODE; then
-    zvm_exit_oppend_mode
+  # Enter operator pending mode
+  if ((${#1} == ${#keys})); then
+    zvm_enter_oppend_mode
   fi
 
   # Enter visual mode or visual line mode
@@ -1253,6 +1253,9 @@ function zvm_range_handler() {
       ;;
     *) zvm_navigation_handler "${navkey}"
   esac
+
+  # Exit the operator pending mode
+  zvm_exit_oppend_mode
 
   # Check if there is no range selected
   if ((cursor == CURSOR)) && [[ $mode == $ZVM_MODE_VISUAL ]]; then
