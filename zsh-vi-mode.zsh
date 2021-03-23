@@ -1208,6 +1208,7 @@ function zvm_range_handler() {
   #  [cdy]Ff -> `foo.ba`
   #  [cdyv]tz -> `r.ba`
   #  [cdy]Tf -> `oo.ba`
+  #
 
   # Pre navigation handling
   local navkey="${keys:1}"
@@ -1252,6 +1253,12 @@ function zvm_range_handler() {
       ;;
     *) zvm_navigation_handler "${navkey}"
   esac
+
+  # Check if there is no range selected
+  if ((cursor == CURSOR)) && [[ $mode == $ZVM_MODE_VISUAL ]]; then
+      zvm_exit_visual_mode
+      return
+  fi
 
   # Post navigation handling
   case "${keys}" in
