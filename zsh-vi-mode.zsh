@@ -1196,17 +1196,27 @@ function zvm_range_handler() {
   #  [cdyv]2iW -> `.foo.  `
   #  [cdyv]2aW -> `.foo.  bar.  `
   #
+  # 4. SAMPLE: ` .foo.bar.baz.`, CURSOR: at `r`
+  #
+  #  [cdy]b -> `ba`
+  #  [cdy]B -> `.foo.ba`
+  #  vb -> `bar`
+  #  vB -> `.foo.bar`
+  #  vFf -> `foo.bar`
+  #  vTf -> `oo.bar`
+  #  [cdyv]fz -> `r.baz`
+  #  [cdy]Ff -> `foo.ba`
+  #  [cdyv]tz -> `r.ba`
+  #  [cdy]Tf -> `oo.ba`
 
   # Pre navigation handling
-  local navkey=
+  local navkey="${keys:1}"
   case "${keys}" in
-    [cdyvV]*i[wW]) navkey="${keys:1}";;
-    [cdyvV]*a[wW]) navkey="${keys:1}";;
     c*w) zle vi-backward-char; navkey="${keys:1:-1}e";;
     c*W) zle vi-backward-blank-char; navkey="${keys:1:-1}E";;
     c*e) navkey="${keys:1:-1}e";;
     c*E) navkey="${keys:1:-1}E";;
-    *) navkey="${keys:1}";;
+    [cdy][bBFT]) MARK=$((MARK-1));;
   esac
 
   # Handle navigation
@@ -1255,7 +1265,7 @@ function zvm_range_handler() {
         CURSOR=$((CURSOR-1))
       fi
       ;;
-    b|F|T) cursor=$CURSOR;;
+    [bftBFT]) cursor=$CURSOR;;
   esac
 
   # Handle operation
