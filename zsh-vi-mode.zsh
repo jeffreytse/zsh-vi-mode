@@ -1095,8 +1095,15 @@ function zvm_navigation_handler() {
   # Call the widget, we can not use variable `i`, since
   # some widgets will affect the variable `i`, and it
   # will cause an infinite loop.
+  local last_cursor=$CURSOR
   for ((c=0; c<count; c++)); do
     zle $widget
+
+    # If the cursor position is no change, we can break
+    # the loop and no need to loop so many times, thus
+    # when the count is quite large, it will not be
+    # stuck for a long time.
+    [[ $last_cursor == $CURSOR ]] || break
   done
 }
 
