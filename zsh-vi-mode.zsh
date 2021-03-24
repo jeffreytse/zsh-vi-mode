@@ -623,16 +623,43 @@ function zvm_exchange_point_and_mark() {
 
 # Open line below
 function zvm_open_line_below() {
-  ZVM_MODE=$ZVM_MODE_INSERT
-  zvm_update_cursor
-  zle vi-open-line-below
+  local i=$CURSOR
+
+  # If there is a completion suffix, we should break at the
+  # postion of suffix begin, otherwise, it should break when
+  # forward finding out the first newline character.
+  for ((; i<$#BUFFER; i++)); do
+    if ((SUFFIX_ACTIVE == 1)) && ((i >= SUFFIX_BEGIN)); then
+      break
+    fi
+    if [[ "${BUFFER[$i]}" == $'\n' ]]; then
+      i=$((i-1))
+      break
+    fi
+  done
+
+  CURSOR=$i
+  LBUFFER+=$'\n'
+
+  zvm_select_vi_mode $ZVM_MODE_INSERT
 }
 
 # Open line above
 function zvm_open_line_above() {
-  ZVM_MODE=$ZVM_MODE_INSERT
-  zvm_update_cursor
-  zle vi-open-line-above
+  local i=$CURSOR
+
+  # Break when backward finding out the first newline character.
+  for ((; i>0; i--)); do
+    if [[ "${BUFFER[$i]}" == $'\n' ]]; then
+      break
+    fi
+  done
+
+  CURSOR=$i
+  LBUFFER+=$'\n'
+  CURSOR=$((CURSOR-1))
+
+  zvm_select_vi_mode $ZVM_MODE_INSERT
 }
 
 # Substitute characters of selection
