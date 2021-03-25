@@ -2120,10 +2120,12 @@ function zvm_highlight() {
 function zvm_enter_visual_mode() {
   local mode=
   local last_mode=$ZVM_MODE
+  local last_region=
 
   # Exit the visual mode
   case $last_mode in
     $ZVM_MODE_VISUAL|$ZVM_MODE_VISUAL_LINE)
+      last_region=($MARK $CURSOR)
       zvm_exit_visual_mode
       ;;
   esac
@@ -2140,6 +2142,13 @@ function zvm_enter_visual_mode() {
   fi
 
   zvm_select_vi_mode $mode
+
+  # Recover the region when changing to another visual mode
+  if [[ -n $last_region ]]; then
+    MARK=$last_region[1]
+    CURSOR=$last_region[2]
+    zle redisplay
+  fi
 }
 
 # Exit the visual mode
