@@ -1361,7 +1361,9 @@ function zvm_range_handler() {
   zvm_exit_oppend_mode
 
   # Check if there is no range selected
-  if ((cursor == CURSOR)) && [[ $mode == $ZVM_MODE_VISUAL ]]; then
+  if ((cursor == CURSOR)) &&
+    ((CURSOR - MARK == 0)) &&
+    [[ $mode == $ZVM_MODE_VISUAL ]]; then
       zvm_exit_visual_mode
       return
   fi
