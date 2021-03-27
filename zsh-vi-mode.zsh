@@ -662,6 +662,69 @@ function zvm_open_line_above() {
   zvm_select_vi_mode $ZVM_MODE_INSERT
 }
 
+# Replace characters one by one (Repace mode)
+function zvm_vi_replace() {
+  if [[ $ZVM_MODE == $ZVM_MODE_NORMAL ]]; then
+    local key=
+
+    while :; do
+      # Read a character for replacing
+      zvm_enter_oppend_mode
+      read -k 1 key
+
+      # Escape key will break the replacing process, and enter key
+      # will repace with a newline character.
+      case $(zvm_escape_non_printed_characters $key) in
+        $ZVM_VI_OPPEND_ESCAPE_BINDKEY) break;;
+        '^M') key=$'\n'
+      esac
+
+      CURSOR=$CURSOR+1
+      BUFFER[$CURSOR]=$key
+
+      zle redisplay
+    done
+
+    zvm_exit_oppend_mode
+  elif [[ $ZVM_MODE == $ZVM_MODE_VISUAL ]]; then
+    zvm_enter_visual_mode V
+    zvm_vi_change
+  elif [[ $ZVM_MODE == $ZVM_MODE_VISUAL_LINE ]]; then
+    zvm_vi_change
+  fi
+}
+
+# Replace characters in one time
+function zvm_vi_replace_chars() {
+  local key=
+
+  # Read a character for replacing
+  zvm_enter_oppend_mode
+  read -k 1 key
+  zvm_exit_oppend_mode
+
+  # Escape key will break the replacing process
+  case $(zvm_escape_non_printed_characters $key) in
+    $ZVM_VI_OPPEND_ESCAPE_BINDKEY)
+      zvm_exit_visual_mode
+      return
+  esac
+
+  if [[ $ZVM_MODE == $ZVM_MODE_NORMAL ]]; then
+     BUFFER[$CURSOR+1]=$key
+  else
+    local ret=($(zvm_calc_selection))
+    local bpos=${ret[1]} epos=${ret[2]}
+    for ((bpos=bpos+1; bpos<=epos; bpos++)); do
+      # Newline character is no need to be replaced
+      [[ $BUFFER[$bpos] == $'\n' ]] && continue
+
+      BUFFER[$bpos]=$key
+    done
+    zvm_exit_visual_mode
+  fi
+}
+
 # Substitute characters of selection
 function zvm_vi_substitute() {
   # Substitute one character in normal mode
@@ -2130,7 +2193,7 @@ function zvm_enter_visual_mode() {
       ;;
   esac
 
-  case "$(zvm_keys)" in
+  case "${1:-$(zvm_keys)}" in
     v) mode=$ZVM_MODE_VISUAL;;
     V) mode=$ZVM_MODE_VISUAL_LINE;;
   esac
@@ -2476,6 +2539,8 @@ function zvm_init() {
   zvm_define_widget zvm_insert_bol
   zvm_define_widget zvm_append_eol
   zvm_define_widget zvm_self_insert
+  zvm_define_widget zvm_vi_replace
+  zvm_define_widget zvm_vi_replace_chars
   zvm_define_widget zvm_vi_substitute
   zvm_define_widget zvm_vi_substitute_whole_line
   zvm_define_widget zvm_vi_change
@@ -2532,6 +2597,8 @@ function zvm_init() {
   zvm_bindkey visual 'o' zvm_exchange_point_and_mark
   zvm_bindkey vicmd  'o' zvm_open_line_below
   zvm_bindkey vicmd  'O' zvm_open_line_above
+  zvm_bindkey vicmd  'r' zvm_vi_replace_chars
+  zvm_bindkey vicmd  'R' zvm_vi_replace
   zvm_bindkey vicmd  's' zvm_vi_substitute
   zvm_bindkey vicmd  'S' zvm_vi_substitute_whole_line
   zvm_bindkey vicmd  'C' zvm_vi_change_eol
