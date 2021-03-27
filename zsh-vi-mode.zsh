@@ -1146,6 +1146,10 @@ function zvm_readkeys_handler() {
 
 # Handle the navigation action
 function zvm_navigation_handler() {
+
+  # Return if no keys provided
+  [[ -z $1 ]] && return
+
   local keys=$1
   local count=${keys:0:-1}
   local widget=
@@ -1311,6 +1315,7 @@ function zvm_range_handler() {
   local navkey="${keys:1}"
   case "${keys}" in
     c*[ia][wW]) navkey="${keys:1}";;
+    c*[ia]?) navkey=;;
     c*w) zle vi-backward-char; navkey="${keys:1:-1}e";;
     c*W) zle vi-backward-blank-char; navkey="${keys:1:-1}E";;
     c*e) navkey="${keys:1:-1}e";;
