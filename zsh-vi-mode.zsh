@@ -1315,7 +1315,7 @@ function zvm_range_handler() {
   local navkey="${keys:1}"
   case "${keys}" in
     c*[ia][wW]) navkey="${keys:1}";;
-    c*[ia]?) navkey=;;
+    [cdy]*[ia][eE]) navkey=;;
     c*w) zle vi-backward-char; navkey="${keys:1:-1}e";;
     c*W) zle vi-backward-blank-char; navkey="${keys:1:-1}E";;
     c*e) navkey="${keys:1:-1}e";;
