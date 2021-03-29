@@ -662,9 +662,10 @@ function zvm_open_line_above() {
   zvm_select_vi_mode $ZVM_MODE_INSERT
 }
 
-# Replace characters one by one (Repace mode)
+# Replace characters one by one (Replacing mode)
 function zvm_vi_replace() {
   if [[ $ZVM_MODE == $ZVM_MODE_NORMAL ]]; then
+    local cursor=$CURSOR
     local key=
 
     while :; do
@@ -679,8 +680,17 @@ function zvm_vi_replace() {
         '^M') key=$'\n'
       esac
 
-      CURSOR=$CURSOR+1
-      BUFFER[$CURSOR]=$key
+      cursor=$((cursor+1))
+
+      # If the key or the character at cursor is a newline character,
+      # we should insert the key instead of replacing with the key.
+      if [[ $key == $'\n' || $BUFFER[$cursor] == $'\n' ]]; then
+        LBUFFER+=$key
+      else
+        BUFFER[$cursor]=$key
+      fi
+
+      CURSOR=$cursor
 
       zle redisplay
     done
