@@ -667,6 +667,7 @@ function zvm_vi_replace() {
   if [[ $ZVM_MODE == $ZVM_MODE_NORMAL ]]; then
     local cursor=$CURSOR
     local key=
+    local cache=()
 
     while :; do
       # Read a character for replacing
@@ -677,19 +678,44 @@ function zvm_vi_replace() {
       # will repace with a newline character.
       case $(zvm_escape_non_printed_characters $key) in
         $ZVM_VI_OPPEND_ESCAPE_BINDKEY) break;;
-        '^M') key=$'\n'
+        '^M') key=$'\n';;
       esac
 
-      cursor=$((cursor+1))
+      # If the key is backspace, we should move backward the cursor
+      if [[ $key == '' ]]; then
+        # Cursor position should not be less than zero
+        if ((cursor > 0)); then
+          cursor=$((cursor-1))
+        fi
 
-      # If the key or the character at cursor is a newline character,
-      # we should insert the key instead of replacing with the key.
-      if [[ $key == $'\n' || $BUFFER[$cursor] == $'\n' ]]; then
-        LBUFFER+=$key
+        # We should recover the character when cache size is not zero
+        if ((${#cache[@]} > 0)); then
+          key=${cache[-1]}
+          if [[ $key == '<I>' ]]; then
+            key=
+          fi
+          cache=(${cache[@]:0:-1})
+          BUFFER[$cursor+1]=$key
+        fi
       else
-        BUFFER[$cursor]=$key
+        # If the key or the character at cursor is a newline character,
+        # or the cursor is at the end of buffer, we should insert the
+        # key instead of replacing with the key.
+        if [[ $key == $'\n' ||
+          $BUFFER[$cursor+1] == $'\n' ||
+          $BUFFER[$cursor+1] == ''
+        ]]; then
+          cache+=('<I>')
+          LBUFFER+=$key
+        else
+          cache+=(${BUFFER[$cursor+1]})
+          BUFFER[$cursor+1]=$key
+        fi
+
+        cursor=$((cursor+1))
       fi
 
+      # Update next cursor position
       CURSOR=$cursor
 
       zle redisplay
