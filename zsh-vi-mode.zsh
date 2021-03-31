@@ -201,6 +201,7 @@ ZVM_MODE_NORMAL='n'
 ZVM_MODE_INSERT='i'
 ZVM_MODE_VISUAL='v'
 ZVM_MODE_VISUAL_LINE='vl'
+ZVM_MODE_REPLACE='r'
 
 # Default cursor styles
 ZVM_CURSOR_USER_DEFAULT='ud'
@@ -677,6 +678,8 @@ function zvm_vi_replace() {
     local cmds=()
     local key=
 
+    zvm_select_vi_mode $ZVM_MODE_REPLACE
+
     while :; do
       # Read a character for replacing
       zvm_enter_oppend_mode
@@ -737,7 +740,7 @@ function zvm_vi_replace() {
       zle redisplay
     done
 
-    zvm_exit_oppend_mode
+    zvm_select_vi_mode $ZVM_MODE_NORMAL
     zvm_reset_repeat_commands $ZVM_MODE R $cmds
   elif [[ $ZVM_MODE == $ZVM_MODE_VISUAL ]]; then
     zvm_enter_visual_mode V
@@ -2591,6 +2594,11 @@ function zvm_select_vi_mode() {
   # keymap, so here we disable the reset-prompt temporarily.
   ZVM_RESET_PROMPT_DISABLED=true
 
+  # Exit operator pending mode
+  if $ZVM_OPPEND_MODE; then
+    zvm_exit_oppend_mode
+  fi
+
   case $mode in
     $ZVM_MODE_NORMAL)
       ZVM_MODE=$ZVM_MODE_NORMAL
@@ -2611,6 +2619,10 @@ function zvm_select_vi_mode() {
       ZVM_MODE=$ZVM_MODE_VISUAL_LINE
       zvm_update_cursor
       zle visual-line-mode
+      ;;
+    $ZVM_MODE_REPLACE)
+      ZVM_MODE=$ZVM_MODE_REPLACE
+      zvm_enter_oppend_mode
       ;;
   esac
 
