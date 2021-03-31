@@ -494,7 +494,7 @@ function zvm_readkeys() {
       # Get current widget as final widget when reading key timeout
       read -t $timeout -k 1 key || break
     else
-      zvm_enter_oppend_mode $keys
+      zvm_enter_oppend_mode
       read -k 1 key
     fi
   done
@@ -682,7 +682,7 @@ function zvm_vi_replace() {
 
     while :; do
       # Read a character for replacing
-      zvm_enter_oppend_mode
+      zvm_update_cursor
       read -k 1 key
 
       # Escape key will break the replacing process, and enter key
@@ -1300,10 +1300,15 @@ function zvm_range_handler() {
   local mode=
   MARK=$CURSOR
 
+  # Enter operator pending mode
+  if (( ${#keys} < 2 )); then
+    zvm_enter_oppend_mode false
+  fi
+
   # If the keys is less than 2 keys, we should read more
   # keys (e.g. d, c, y, etc.)
   while (( ${#keys} < 2 )); do
-    zvm_enter_oppend_mode
+    zvm_update_cursor
     read -k 1 key
     keys="${keys}${key}"
   done
@@ -1311,7 +1316,7 @@ function zvm_range_handler() {
   # If the keys ends in numbers, we should read more
   # keys (e.g. d2, c3, y10, etc.)
   while [[ ${keys: 1} =~ ^[1-9][0-9]*$ ]]; do
-    zvm_enter_oppend_mode
+    zvm_update_cursor
     read -k 1 key
     keys="${keys}${key}"
   done
@@ -1319,14 +1324,9 @@ function zvm_range_handler() {
   # If the last character is `i` or `a`, we should, we
   # should read one more key
   if [[ ${keys: -1} =~ [ia] ]]; then
-    zvm_enter_oppend_mode
+    zvm_update_cursor
     read -k 1 key
     keys="${keys}${key}"
-  fi
-
-  # Enter operator pending mode
-  if ((${#1} == ${#keys})); then
-    zvm_enter_oppend_mode
   fi
 
   # Enter visual mode or visual line mode
@@ -1447,9 +1447,6 @@ function zvm_range_handler() {
       ;;
     *) zvm_navigation_handler "${navkey}"
   esac
-
-  # Exit the operator pending mode
-  zvm_exit_oppend_mode
 
   # Check if there is no range selected
   if ((cursor == CURSOR)) &&
@@ -2539,13 +2536,13 @@ function zvm_exit_insert_mode() {
 # Enter the vi operator pending mode
 function zvm_enter_oppend_mode() {
   ZVM_OPPEND_MODE=true
-  zvm_update_cursor
+  ${1:-true} && zvm_update_cursor
 }
 
 # Exit the vi operator pending mode
 function zvm_exit_oppend_mode() {
   ZVM_OPPEND_MODE=false
-  zvm_update_cursor
+  ${1:-true} && zvm_update_cursor
 }
 
 # Insert at the beginning of the line
@@ -2596,7 +2593,7 @@ function zvm_select_vi_mode() {
 
   # Exit operator pending mode
   if $ZVM_OPPEND_MODE; then
-    zvm_exit_oppend_mode
+    zvm_exit_oppend_mode false
   fi
 
   case $mode in
