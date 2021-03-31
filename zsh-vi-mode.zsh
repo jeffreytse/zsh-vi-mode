@@ -1292,7 +1292,9 @@ function zvm_navigation_handler() {
     # the loop and no need to loop so many times, thus
     # when the count is quite large, it will not be
     # stuck for a long time.
-    [[ $last_cursor == $CURSOR ]] || break
+    [[ $last_cursor == $CURSOR ]] && break
+
+    last_cursor=$CURSOR
   done
 }
 
