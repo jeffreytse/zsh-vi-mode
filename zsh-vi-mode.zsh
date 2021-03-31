@@ -211,6 +211,11 @@ ZVM_CURSOR_BLINKING_BLOCK='bbl'
 ZVM_CURSOR_BLINKING_UNDERLINE='bul'
 ZVM_CURSOR_BLINKING_BEAM='bbe'
 
+# The commands need to be repeated
+ZVM_REPEAT_MODE=false
+ZVM_REPEAT_RESET=false
+ZVM_REPEAT_COMMANDS=($ZVM_MODE_NORMAL i)
+
 ##########################################
 # Initial all default settings
 
@@ -641,6 +646,7 @@ function zvm_open_line_below() {
   CURSOR=$i
   LBUFFER+=$'\n'
 
+  zvm_reset_repeat_commands $ZVM_MODE_NORMAL o
   zvm_select_vi_mode $ZVM_MODE_INSERT
 }
 
@@ -659,6 +665,7 @@ function zvm_open_line_above() {
   LBUFFER+=$'\n'
   CURSOR=$((CURSOR-1))
 
+  zvm_reset_repeat_commands $ZVM_MODE_NORMAL O
   zvm_select_vi_mode $ZVM_MODE_INSERT
 }
 
@@ -666,8 +673,9 @@ function zvm_open_line_above() {
 function zvm_vi_replace() {
   if [[ $ZVM_MODE == $ZVM_MODE_NORMAL ]]; then
     local cursor=$CURSOR
-    local key=
     local cache=()
+    local cmds=()
+    local key=
 
     while :; do
       # Read a character for replacing
@@ -691,11 +699,16 @@ function zvm_vi_replace() {
         # We should recover the character when cache size is not zero
         if ((${#cache[@]} > 0)); then
           key=${cache[-1]}
+
           if [[ $key == '<I>' ]]; then
             key=
           fi
+
           cache=(${cache[@]:0:-1})
           BUFFER[$cursor+1]=$key
+
+          # Remove from commands
+          cmds=(${cmds[@]:0:-1})
         fi
       else
         # If the key or the character at cursor is a newline character,
@@ -713,6 +726,9 @@ function zvm_vi_replace() {
         fi
 
         cursor=$((cursor+1))
+
+        # Push to commands
+        cmds+=($key)
       fi
 
       # Update next cursor position
@@ -722,6 +738,7 @@ function zvm_vi_replace() {
     done
 
     zvm_exit_oppend_mode
+    zvm_reset_repeat_commands $ZVM_MODE R $cmds
   elif [[ $ZVM_MODE == $ZVM_MODE_VISUAL ]]; then
     zvm_enter_visual_mode V
     zvm_vi_change
@@ -732,6 +749,7 @@ function zvm_vi_replace() {
 
 # Replace characters in one time
 function zvm_vi_replace_chars() {
+  local cmds=()
   local key=
 
   # Read a character for replacing
@@ -747,18 +765,26 @@ function zvm_vi_replace_chars() {
   esac
 
   if [[ $ZVM_MODE == $ZVM_MODE_NORMAL ]]; then
-     BUFFER[$CURSOR+1]=$key
+    cmds+=($key)
+    BUFFER[$CURSOR+1]=$key
   else
     local ret=($(zvm_calc_selection))
     local bpos=${ret[1]} epos=${ret[2]}
     for ((bpos=bpos+1; bpos<=epos; bpos++)); do
       # Newline character is no need to be replaced
-      [[ $BUFFER[$bpos] == $'\n' ]] && continue
+      if [[ $BUFFER[$bpos] == $'\n' ]]; then
+        cmds+=($'\n')
+        continue
+      fi
 
+      cmds+=($key)
       BUFFER[$bpos]=$key
     done
     zvm_exit_visual_mode
   fi
+
+  # Reset the repeat commands
+  zvm_reset_repeat_commands $ZVM_MODE r $cmds
 }
 
 # Substitute characters of selection
@@ -766,6 +792,7 @@ function zvm_vi_substitute() {
   # Substitute one character in normal mode
   if [[ $ZVM_MODE == $ZVM_MODE_NORMAL ]]; then
     BUFFER="${BUFFER:0:$CURSOR}${BUFFER:$((CURSOR+1))}"
+    zvm_reset_repeat_commands $ZVM_MODE c 0 1
     zvm_select_vi_mode $ZVM_MODE_INSERT
   else
     zvm_vi_change
@@ -1063,6 +1090,30 @@ function zvm_vi_change() {
   BUFFER="${BUFFER:0:$bpos}${BUFFER:$epos}"
   CURSOR=$bpos
 
+  # Return when it's repeating mode
+  $ZVM_REPEAT_MODE && return
+
+  # Reset the repeat commands
+  if [[ $ZVM_MODE != $ZVM_MODE_NORMAL ]]; then
+    local npos=0 ncount=0 ccount=0
+    # Count the amount of newline character and the amount of
+    # characters after the last newline character.
+    while :; do
+      # Forward find the last newline character's position
+      npos=$(zvm_substr_pos $CUTBUFFER $'\n' $npos)
+      if [[ $npos == -1 ]]; then
+        if (($ncount == 0)); then
+          ccount=$#CUTBUFFER
+        fi
+        break
+      fi
+      npos=$((npos+1))
+      ncount=$(($ncount + 1))
+      ccount=$(($#CUTBUFFER - $npos))
+    done
+    zvm_reset_repeat_commands $ZVM_MODE c $ncount $ccount
+  fi
+
   zvm_exit_visual_mode false
   zvm_select_vi_mode $ZVM_MODE_INSERT
 }
@@ -1081,6 +1132,7 @@ function zvm_vi_change_eol() {
   CUTBUFFER=${BUFFER:$bpos:$((epos-bpos))}
   BUFFER="${BUFFER:0:$bpos}${BUFFER:$epos}"
 
+  zvm_reset_repeat_commands $ZVM_MODE c 0 $#CUTBUFFER
   zvm_select_vi_mode $ZVM_MODE_INSERT
 }
 
@@ -1427,6 +1479,13 @@ function zvm_range_handler() {
     [vV]*) cursor=;;
   esac
 
+  # Reset the repeat commands when it's changing or deleting
+  if $ZVM_REPEAT_MODE; then
+    zvm_exit_visual_mode false
+  elif [[ $keys =~ '^[cd].*' ]]; then
+    zvm_reset_repeat_commands $mode $keys
+  fi
+
   # Change the cursor position if the cursor is not null
   if [[ ! -z $cursor ]]; then
     CURSOR=$cursor
@@ -1675,6 +1734,192 @@ function zvm_change_surround_text_object() {
       CURSOR=$bpos
       ;;
   esac
+}
+
+# Repeat last change
+function zvm_repeat_change() {
+  ZVM_REPEAT_MODE=true
+
+  local cmd=${ZVM_REPEAT_COMMANDS[2]}
+
+  # Handle repeat command
+  case $cmd in
+    [aioAIO]) zvm_repeat_insert;;
+    c) zvm_repeat_vi_change;;
+    [cd]*) zvm_repeat_range_change;;
+    R) zvm_repeat_replace;;
+    r) zvm_repeat_replace_chars;;
+    *) zle vi-repeat-change;;
+  esac
+
+  zle redisplay
+
+  ZVM_REPEAT_MODE=false
+}
+
+# Repeat inserting characters
+function zvm_repeat_insert() {
+  local cmd=${ZVM_REPEAT_COMMANDS[2]}
+  local cmds=(${ZVM_REPEAT_COMMANDS[3,-1]})
+
+  # Pre-handle the command
+  case $cmd in
+    a) CURSOR+=1;;
+    o)
+      zle vi-backward-char
+      zle vi-end-of-line
+      LBUFFER+=$'\n'
+      ;;
+    A) zle vi-end-of-line;;
+    I) zle vi-first-non-blank;;
+    O)
+      zle vi-digit-or-beginning-of-line
+      LBUFFER+=$'\n'
+      CURSOR=$((CURSOR-1))
+      ;;
+  esac
+
+  # Insert characters
+  for ((i=0; i<=${#cmds[@]}; i++)); do
+    cmd="${cmds[$i]}"
+
+    # Hanlde the backspace command
+    if [[ $cmd == '' ]]; then
+      if (($#LBUFFER > 0)); then
+        LBUFFER=${LBUFFER:0:-1}
+      fi
+      continue
+    fi
+
+    # The length of character should be 1
+    if (($#cmd == 1)); then
+      LBUFFER+=$cmd
+    fi
+  done
+}
+
+# Repeat changing visual characters
+function zvm_repeat_vi_change() {
+  local mode=${ZVM_REPEAT_COMMANDS[1]}
+  local cmds=(${ZVM_REPEAT_COMMANDS[3,-1]})
+
+  # Backward move cursor to the beginning of line
+  if [[ $mode == $ZVM_MODE_VISUAL_LINE ]]; then
+    zle vi-digit-or-beginning-of-line
+  fi
+
+  local ncount=${cmds[1]}
+  local ccount=${cmds[2]}
+  local pos=$CURSOR epos=$CURSOR
+
+  # Forward expand the characters to the Nth newline character
+  for ((i=0; i<$ncount; i++)); do
+    pos=$(zvm_substr_pos $BUFFER $'\n' $pos)
+    if [[ $pos == -1 ]]; then
+      epos=$#BUFFER
+      break
+    fi
+    pos=$((pos+1))
+    epos=$pos
+  done
+
+  # Forward expand the remaining characters
+  for ((i=0; i<$ccount; i++)); do
+    local char=${BUFFER[$epos+i]}
+    if [[ $char == $'\n' || $char == '' ]]; then
+      ccount=$i
+      break
+    fi
+  done
+
+  epos=$((epos+ccount))
+  RBUFFER=${RBUFFER:$((epos-CURSOR))}
+}
+
+# Repeat changing a range of characters
+function zvm_repeat_range_change() {
+  local cmd=${ZVM_REPEAT_COMMANDS[2]}
+
+  # Remove characters
+  zvm_range_handler $cmd
+
+  # Insert characters
+  zvm_repeat_insert
+}
+
+# Repeat replacing
+function zvm_repeat_replace() {
+  local mode=${ZVM_REPEAT_COMMANDS[1]}
+  local cmds=(${ZVM_REPEAT_COMMANDS[3,-1]})
+  local cmd=
+
+  local cursor=$CURSOR
+
+  for ((i=0; i<=${#cmds[@]}; i++)); do
+    cmd="${cmds[$i]}"
+    # If the cmd or the character at cursor is a newline character,
+    # or the cursor is at the end of buffer, we should insert the
+    # cmd instead of replacing with the cmd.
+    if [[ $cmd == $'\n' ||
+      $BUFFER[$cursor+1] == $'\n' ||
+      $BUFFER[$cursor+1] == ''
+    ]]; then
+      LBUFFER+=$cmd
+    else
+      BUFFER[$cursor+1]=$cmd
+    fi
+    cursor=$((cursor+1))
+    CURSOR=$cursor
+  done
+}
+
+# Repeat replacing characters
+function zvm_repeat_replace_chars() {
+  local mode=${ZVM_REPEAT_COMMANDS[1]}
+  local cmds=(${ZVM_REPEAT_COMMANDS[3,-1]})
+  local cmd=
+
+  # Replacment of visual mode should move backward cursor to the
+  # begin of current line, and replacing to the end of last line.
+  if [[ $mode == $ZVM_MODE_VISUAL_LINE ]]; then
+    zle vi-digit-or-beginning-of-line
+    cmds+=($'\n')
+  fi
+
+  local cursor=$((CURSOR+1))
+
+  for ((i=0; i<=${#cmds[@]}; i++)); do
+    cmd="${cmds[$i]}"
+
+    # If we meet a newline character in the buffer, we should keep
+    # stop replacing, util we meet next newline character command.
+    if [[ ${BUFFER[$cursor]} == $'\n' ]]; then
+      if [[ $cmd == $'\n' ]]; then
+        cursor=$((cursor+1))
+      fi
+      continue
+    fi
+
+    # A newline character command should keep replacing with last
+    # character, until we meet a newline character in the buffer,
+    # then we use next command.
+    if [[ $cmd == $'\n' ]]; then
+      i=$((i-1))
+      cmd="${cmds[$i]}"
+    fi
+
+    # The length of character should be 1
+    if (($#cmd == 1)); then
+      BUFFER[$cursor]="${cmd}"
+    fi
+
+    cursor=$((cursor+1))
+
+    # Break when it reaches the end
+    if ((cursor > $#BUFFER)); then
+      break
+    fi
+  done
 }
 
 # Select a word under the cursor
@@ -2270,7 +2515,6 @@ function zvm_exit_visual_mode() {
 
 # Enter the vi insert mode
 function zvm_enter_insert_mode() {
-  zvm_select_vi_mode $ZVM_MODE_INSERT
   if [[ $(zvm_keys) == 'i' ]]; then
     ZVM_INSERT_MODE='i'
   else
@@ -2279,6 +2523,8 @@ function zvm_enter_insert_mode() {
       CURSOR=$((CURSOR+1))
     fi
   fi
+  zvm_reset_repeat_commands $ZVM_MODE_NORMAL $ZVM_INSERT_MODE
+  zvm_select_vi_mode $ZVM_MODE_INSERT
 }
 
 # Exit the vi insert mode
@@ -2304,6 +2550,7 @@ function zvm_insert_bol() {
   ZVM_INSERT_MODE='I'
   zle vi-first-non-blank
   zvm_select_vi_mode $ZVM_MODE_INSERT
+  zvm_reset_repeat_commands $ZVM_MODE_NORMAL $ZVM_INSERT_MODE
 }
 
 # Append at the end of the line
@@ -2311,6 +2558,7 @@ function zvm_append_eol() {
   ZVM_INSERT_MODE='A'
   zle vi-end-of-line
   zvm_select_vi_mode $ZVM_MODE_INSERT
+  zvm_reset_repeat_commands $ZVM_MODE_NORMAL $ZVM_INSERT_MODE
 }
 
 # Self insert content to cursor position
@@ -2318,6 +2566,12 @@ function zvm_self_insert() {
   local keys=${1:-$KEYS}
   RBUFFER="${keys}${RBUFFER}"
   CURSOR=$((CURSOR+1))
+}
+
+# Reset the repeat commands
+function zvm_reset_repeat_commands() {
+  ZVM_REPEAT_RESET=true
+  ZVM_REPEAT_COMMANDS=($@)
 }
 
 # Select vi mode
@@ -2500,6 +2754,53 @@ function zvm_update_highlight() {
   esac
 }
 
+# Updates repeat commands
+function zvm_update_repeat_commands() {
+  # We don't need to update the repeat commands if current
+  # mode is already the repeat mode.
+  $ZVM_REPEAT_MODE && return
+
+  # We don't need to update the repeat commands if it is
+  # reseting the repeat commands.
+  if $ZVM_REPEAT_RESET; then
+    ZVM_REPEAT_RESET=false
+    return
+  fi
+
+  # We update the repeat commands when it's the insert mode
+  [[ $ZVM_MODE == $ZVM_MODE_INSERT ]] || return
+
+  local char=$KEYS
+
+  # If current key is an arrow key, we should do something
+  if [[ "$KEYS" =~ '\[[ABCD]' ]]; then
+    # If last key is also an arrow key, we just replace it
+    if [[ ${ZVM_REPEAT_COMMANDS[-1]} =~ '\[[ABCD]' ]]; then
+      ZVM_REPEAT_COMMANDS=(${ZVM_REPEAT_COMMANDS[@]:0:-1})
+    fi
+  else
+    # If last command is arrow key movement, we should reset
+    # the repeat commands with i(nsert) command
+    if [[ ${ZVM_REPEAT_COMMANDS[-1]} =~ '\[[ABCD]' ]]; then
+      zvm_reset_repeat_commands $ZVM_MODE_NORMAL i
+    fi
+    char=${BUFFER[$CURSOR]}
+  fi
+
+  # If current key is backspace key, we should remove last
+  # one, until it has only the mode and inital command
+  if [[ "$KEYS" == '' ]]; then
+    if ((${#ZVM_REPEAT_COMMANDS[@]} > 2)) &&
+      [[ ${ZVM_REPEAT_COMMANDS[-1]} != '' ]]; then
+      ZVM_REPEAT_COMMANDS=(${ZVM_REPEAT_COMMANDS[@]:0:-1})
+    elif (($#LBUFFER > 0)); then
+      ZVM_REPEAT_COMMANDS+=($KEYS)
+    fi
+  else
+    ZVM_REPEAT_COMMANDS+=($char)
+  fi
+}
+
 # Updates editor information when line pre redraw
 function zvm_zle-line-pre-redraw() {
   # Fix cursor style is not updated in tmux environment, when
@@ -2508,6 +2809,7 @@ function zvm_zle-line-pre-redraw() {
   # update cursor style when line is redrawing.
   zvm_update_cursor
   zvm_update_highlight
+  zvm_update_repeat_commands
 }
 
 # Start every prompt in the correct vi mode
@@ -2598,6 +2900,7 @@ function zvm_init() {
   zvm_define_widget zvm_vi_down_case
   zvm_define_widget zvm_vi_opp_case
   zvm_define_widget zvm_vi_edit_command_line
+  zvm_define_widget zvm_repeat_change
   zvm_define_widget zvm_switch_keyword
 
   # Override standard widgets
@@ -2656,6 +2959,7 @@ function zvm_init() {
   zvm_bindkey visual 'u' zvm_vi_down_case
   zvm_bindkey visual '~' zvm_vi_opp_case
   zvm_bindkey visual 'v' zvm_vi_edit_command_line
+  zvm_bindkey vicmd  '.' zvm_repeat_change
 
   zvm_bindkey vicmd '^A' zvm_switch_keyword
   zvm_bindkey vicmd '^X' zvm_switch_keyword
