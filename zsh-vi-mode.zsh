@@ -1780,7 +1780,7 @@ function zvm_repeat_insert() {
   esac
 
   # Insert characters
-  for ((i=0; i<=${#cmds[@]}; i++)); do
+  for ((i=1; i<=${#cmds[@]}; i++)); do
     cmd="${cmds[$i]}"
 
     # Hanlde the backspace command
@@ -1849,13 +1849,11 @@ function zvm_repeat_range_change() {
 
 # Repeat replacing
 function zvm_repeat_replace() {
-  local mode=${ZVM_REPEAT_COMMANDS[1]}
   local cmds=(${ZVM_REPEAT_COMMANDS[3,-1]})
   local cmd=
-
   local cursor=$CURSOR
 
-  for ((i=0; i<=${#cmds[@]}; i++)); do
+  for ((i=1; i<=${#cmds[@]}; i++)); do
     cmd="${cmds[$i]}"
     # If the cmd or the character at cursor is a newline character,
     # or the cursor is at the end of buffer, we should insert the
@@ -1888,7 +1886,7 @@ function zvm_repeat_replace_chars() {
 
   local cursor=$((CURSOR+1))
 
-  for ((i=0; i<=${#cmds[@]}; i++)); do
+  for ((i=1; i<=${#cmds[@]}; i++)); do
     cmd="${cmds[$i]}"
 
     # If we meet a newline character in the buffer, we should keep
