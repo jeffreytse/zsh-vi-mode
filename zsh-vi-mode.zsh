@@ -740,6 +740,10 @@ function zvm_vi_replace() {
       zle redisplay
     done
 
+    # The cursor position should go back one character after
+    # exiting the replace mode
+    zle vi-backward-char
+
     zvm_select_vi_mode $ZVM_MODE_NORMAL
     zvm_reset_repeat_commands $ZVM_MODE R $cmds
   elif [[ $ZVM_MODE == $ZVM_MODE_VISUAL ]]; then
@@ -1855,6 +1859,7 @@ function zvm_repeat_replace() {
 
   for ((i=1; i<=${#cmds[@]}; i++)); do
     cmd="${cmds[$i]}"
+
     # If the cmd or the character at cursor is a newline character,
     # or the cursor is at the end of buffer, we should insert the
     # cmd instead of replacing with the cmd.
@@ -1866,9 +1871,14 @@ function zvm_repeat_replace() {
     else
       BUFFER[$cursor+1]=$cmd
     fi
+
     cursor=$((cursor+1))
     CURSOR=$cursor
   done
+
+  # The cursor position should go back one character after
+  # exiting the replace mode
+  zle vi-backward-char
 }
 
 # Repeat replacing characters
