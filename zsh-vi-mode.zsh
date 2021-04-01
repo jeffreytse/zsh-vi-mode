@@ -1339,7 +1339,7 @@ function zvm_navigation_handler() {
   fi
 
   # Check if keys includes the count
-  if [[ ! $count =~ ^[1-9][0-9]*$ ]]; then
+  if [[ ! $count =~ ^[0-9]+$ ]]; then
     count=1
   fi
 
@@ -1351,9 +1351,14 @@ function zvm_navigation_handler() {
   local exit_code=0
   for ((c=0; c<count; c++)); do
     $cmd
+
     exit_code=$?
 
-    [[ $exit_code != 0 ]] && break
+    if [[ ${cmd[1]} == 'zle' ]]; then
+      exit_code=0
+    elif [[ $exit_code != 0 ]]; then
+      break
+    fi
 
     # If the cursor position is no change, we can break
     # the loop and no need to loop so many times, thus
@@ -1499,12 +1504,25 @@ function zvm_range_handler() {
     navkey="${keys:1:-1}e"
   elif [[ $keys =~ '^c([1-9][0-9]*)?E$' ]]; then
     navkey="${keys:1:-1}E"
-  elif [[ $keys =~ '^[cdy]([1-9][0-9]*)?[hbB]$' ]]; then
+  elif [[ $keys =~ '^[cdy]([1-9][0-9]*)?[bB]$' ]]; then
     MARK=$((MARK-1))
     navkey="${keys:1}"
   elif [[ $keys =~ '^[cdy]([1-9][0-9]*)?[FT].?$' ]]; then
     MARK=$((MARK-1))
     navkey="${keys:1}"
+  elif [[ $keys =~ '^[cdy]([1-9][0-9]*)?h$' ]]; then
+    MARK=$((MARK-1))
+    # Exit when the cursor is at the beginning of a line
+    if ((MARK < 0)); then
+      exit_code=1
+    elif [[ ${BUFFER[$MARK+1]} == $'\n' ]]; then
+      exit_code=1
+    fi
+    navkey="${keys:1}"
+  elif [[ $keys =~ '^[cdy]([1-9][0-9]*)?l$' ]]; then
+    local count=${match[1]:-1}
+    count=$((count-1))
+    navkey="${count}l"
   else
     navkey="${keys:1}"
   fi
@@ -1566,8 +1584,6 @@ function zvm_range_handler() {
     if [[ "${BUFFER:$CURSOR:1}" == $'\n' ]]; then
       CURSOR=$((CURSOR-1))
     fi
-  elif [[ $keys =~ '^[cdy]([1-9][0-9]*)?l$' ]]; then
-    CURSOR=$((CURSOR-1))
   else
     cursor=$CURSOR
   fi
