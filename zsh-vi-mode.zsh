@@ -1239,41 +1239,103 @@ function zvm_readkeys_handler() {
   fi
 }
 
+# Find and move cursor to next character
+function zvm_find_and_move_cursor() {
+  local char=$1
+  local count=${2:-1}
+  local forward=${3:-true}
+  local skip=${4:-false}
+  local cursor=$CURSOR
+
+  [[ -z $char ]] && return 1
+
+  # Find the specific character
+  while :; do
+    if $forward; then
+      cursor=$((cursor+1))
+      ((cursor > $#BUFFER)) && break
+    else
+      cursor=$((cursor-1))
+      ((cursor < 0)) && break
+    fi
+    if [[ ${BUFFER[$cursor+1]} == $char ]]; then
+      count=$((count-1))
+    fi
+    ((count == 0)) && break
+  done
+
+  [[ $count > 0 ]] && return 1
+
+  # Skip the character
+  if $skip; then
+    if $forward; then
+      cursor=$((cursor-1))
+    else
+      cursor=$((cursor+1))
+    fi
+  fi
+
+  CURSOR=$cursor
+}
+
 # Handle the navigation action
 function zvm_navigation_handler() {
-
   # Return if no keys provided
-  [[ -z $1 ]] && return
+  [[ -z $1 ]] && return 1
 
   local keys=$1
-  local count=${keys:0:-1}
-  local widget=
+  local count=
+  local cmd=
 
-  # Retrieve the calling widget
-  case "${keys: -1}" in
-    '^') widget=vi-first-non-blank;;
-    '$') widget=vi-end-of-line;;
-    '0') widget=vi-digit-or-beginning-of-line;;
-    ' ') widget=vi-forward-char;;
-    'h') widget=vi-backward-char;;
-    'j') widget=down-line-or-history;;
-    'k') widget=up-line-or-history;;
-    'l') widget=vi-forward-char;;
-    'w') widget=vi-forward-word;;
-    'W') widget=vi-forward-blank-word;;
-    'e') widget=vi-forward-word-end;;
-    'E') widget=vi-forward-blank-word-end;;
-    'b') widget=vi-backward-word;;
-    'B') widget=vi-backward-blank-word;;
-    'f') widget=vi-find-next-char;;
-    'F') widget=vi-find-prev-char;;
-    't') widget=vi-find-next-char-skip;;
-    'T') widget=vi-find-prev-char-skip;;
-  esac
+  # Retrieve the calling command
+  if [[ $keys =~ '^([1-9][0-9]*)?([fFtT].?)$' ]]; then
+    count=${match[1]:-1}
+
+    # The length of keys must be 2
+    if (( ${#match[2]} < 2)); then
+      zvm_enter_oppend_mode
+
+      read -k 1 cmd
+      keys+=$cmd
+
+      case "$(zvm_escape_non_printed_characters ${keys[-1]})" in
+        $ZVM_VI_OPPEND_ESCAPE_BINDKEY) return 1;;
+      esac
+
+      zvm_exit_oppend_mode
+    fi
+
+    local forward=true
+    local skip=false
+
+    [[ ${keys[-2]} =~ '[FT]' ]] && forward=false
+    [[ ${keys[-2]} =~ '[tT]' ]] && skip=true
+
+    cmd=(zvm_find_and_move_cursor ${keys[-1]} $count $forward $skip)
+    count=1
+  else
+    count=${keys:0:-1}
+    case ${keys: -1} in
+      '^') cmd=(zle vi-first-non-blank);;
+      '$') cmd=(zle vi-end-of-line);;
+      ' ') cmd=(zle vi-forward-char);;
+      '0') cmd=(zle vi-digit-or-beginning-of-line);;
+      'h') cmd=(zle vi-backward-char);;
+      'j') cmd=(zle down-line-or-history);;
+      'k') cmd=(zle up-line-or-history);;
+      'l') cmd=(zle vi-forward-char);;
+      'w') cmd=(zle vi-forward-word);;
+      'W') cmd=(zle vi-forward-blank-word);;
+      'e') cmd=(zle vi-forward-word-end);;
+      'E') cmd=(zle vi-forward-blank-word-end);;
+      'b') cmd=(zle vi-backward-word);;
+      'B') cmd=(zle vi-backward-blank-word);;
+    esac
+  fi
 
   # Check widget if the widget is empty
-  if [[ -z $widget ]]; then
-    return
+  if [[ -z $cmd ]]; then
+    return 1
   fi
 
   # Check if keys includes the count
@@ -1284,9 +1346,14 @@ function zvm_navigation_handler() {
   # Call the widget, we can not use variable `i`, since
   # some widgets will affect the variable `i`, and it
   # will cause an infinite loop.
+  local init_cursor=$CURSOR
   local last_cursor=$CURSOR
+  local exit_code=0
   for ((c=0; c<count; c++)); do
-    zle $widget
+    $cmd
+    exit_code=$?
+
+    [[ $exit_code != 0 ]] && break
 
     # If the cursor position is no change, we can break
     # the loop and no need to loop so many times, thus
@@ -1296,6 +1363,14 @@ function zvm_navigation_handler() {
 
     last_cursor=$CURSOR
   done
+
+  if [[ $exit_code == 0 ]]; then
+    retval=$keys
+  else
+    CURSOR=$init_cursor
+  fi
+
+  return $exit_code
 }
 
 # Handle a range of characters
@@ -1304,12 +1379,11 @@ function zvm_range_handler() {
   local cursor=$CURSOR
   local key=
   local mode=
-  MARK=$CURSOR
+  local cmds=($ZVM_MODE)
+  local exit_code=0
 
   # Enter operator pending mode
-  if (( ${#keys} < 2 )); then
-    zvm_enter_oppend_mode false
-  fi
+  zvm_enter_oppend_mode false
 
   # If the keys is less than 2 keys, we should read more
   # keys (e.g. d, c, y, etc.)
@@ -1409,16 +1483,31 @@ function zvm_range_handler() {
   #
 
   # Pre navigation handling
-  local navkey="${keys:1}"
-  case "${keys}" in
-    c*[ia][wW]) navkey="${keys:1}";;
-    [cdy]*[ia][eE]) navkey=;;
-    c*w) zle vi-backward-char; navkey="${keys:1:-1}e";;
-    c*W) zle vi-backward-blank-char; navkey="${keys:1:-1}E";;
-    c*e) navkey="${keys:1:-1}e";;
-    c*E) navkey="${keys:1:-1}E";;
-    [cdy][bBFT]) MARK=$((MARK-1));;
-  esac
+  local navkey=
+
+  if [[ $keys =~ '^c([1-9][0-9]*)?[ia][wW]$' ]]; then
+    navkey="${keys:1}"
+  elif [[ $keys =~ '^[cdy]([1-9][0-9]*)?[ia][eE]$' ]]; then
+    navkey=
+  elif [[ $keys =~ '^c([1-9][0-9]*)?w$' ]]; then
+    zle vi-backward-char
+    navkey="${keys:1:-1}e"
+  elif [[ $keys =~ '^c([1-9][0-9]*)?W$' ]]; then
+    zle vi-backward-blank-char
+    navkey="${keys:1:-1}E"
+  elif [[ $keys =~ '^c([1-9][0-9]*)?e$' ]]; then
+    navkey="${keys:1:-1}e"
+  elif [[ $keys =~ '^c([1-9][0-9]*)?E$' ]]; then
+    navkey="${keys:1:-1}E"
+  elif [[ $keys =~ '^[cdy]([1-9][0-9]*)?[bB]$' ]]; then
+    MARK=$((MARK-1))
+    navkey="${keys:1}"
+  elif [[ $keys =~ '^[cdy]([1-9][0-9]*)?[FT].?$' ]]; then
+    MARK=$((MARK-1))
+    navkey="${keys:1}"
+  else
+    navkey="${keys:1}"
+  fi
 
   # Handle navigation
   case "${navkey}" in
@@ -1451,15 +1540,20 @@ function zvm_range_handler() {
 
       MARK=$mark
       ;;
-    *) zvm_navigation_handler "${navkey}"
+    *)
+      local retval=
+      if zvm_navigation_handler "${navkey}"; then
+        keys="${keys[1]}$retval"
+      else
+        exit_code=1
+      fi
+      ;;
   esac
 
   # Check if there is no range selected
-  if ((cursor == CURSOR)) &&
-    ((CURSOR - MARK == 0)) &&
-    [[ $mode == $ZVM_MODE_VISUAL ]]; then
-      zvm_exit_visual_mode
-      return
+  if [[ $exit_code != 0 ]] && [[ $mode == $ZVM_MODE_VISUAL ]]; then
+    zvm_exit_visual_mode
+    return
   fi
 
   # Post navigation handling
@@ -1489,7 +1583,8 @@ function zvm_range_handler() {
   if $ZVM_REPEAT_MODE; then
     zvm_exit_visual_mode false
   elif [[ $keys =~ '^[cd].*' ]]; then
-    zvm_reset_repeat_commands $mode $keys
+    cmds+=($keys)
+    zvm_reset_repeat_commands $cmds
   fi
 
   # Change the cursor position if the cursor is not null
