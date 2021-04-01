@@ -1499,7 +1499,7 @@ function zvm_range_handler() {
     navkey="${keys:1:-1}e"
   elif [[ $keys =~ '^c([1-9][0-9]*)?E$' ]]; then
     navkey="${keys:1:-1}E"
-  elif [[ $keys =~ '^[cdy]([1-9][0-9]*)?[bB]$' ]]; then
+  elif [[ $keys =~ '^[cdy]([1-9][0-9]*)?[hbB]$' ]]; then
     MARK=$((MARK-1))
     navkey="${keys:1}"
   elif [[ $keys =~ '^[cdy]([1-9][0-9]*)?[FT].?$' ]]; then
@@ -1557,19 +1557,20 @@ function zvm_range_handler() {
   fi
 
   # Post navigation handling
-  case "${keys}" in
-    [cdy]*i[wW]) cursor=$MARK;;
-    [cdy]*a[wW]) cursor=$MARK;;
-    [dy]*[wW])
+  if [[ $keys =~ '^[cdy]([1-9][0-9]*)?[ia][wW]$' ]]; then
+    cursor=$MARK
+  elif [[ $keys =~ '[dy]([1-9][0-9]*)?[wW]' ]]; then
+    CURSOR=$((CURSOR-1))
+    # If the CURSOR is at the newline character, we should
+    # move backward a character
+    if [[ "${BUFFER:$CURSOR:1}" == $'\n' ]]; then
       CURSOR=$((CURSOR-1))
-      # If the CURSOR is at the newline character, we should
-      # move backward a character
-      if [[ "${BUFFER:$CURSOR:1}" == $'\n' ]]; then
-        CURSOR=$((CURSOR-1))
-      fi
-      ;;
-    [bftBFT]) cursor=$CURSOR;;
-  esac
+    fi
+  elif [[ $keys =~ '^[cdy]([1-9][0-9]*)?l$' ]]; then
+    CURSOR=$((CURSOR-1))
+  else
+    cursor=$CURSOR
+  fi
 
   # Handle operation
   case "${keys}" in
