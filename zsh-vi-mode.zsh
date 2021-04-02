@@ -22,7 +22,7 @@
 # SOFTWARE.
 #
 # All Settings
-# Set these variables before sourcing this file.
+# Some of these variables should be set before sourcing this file.
 #
 # ZVM_VI_ESCAPE_BINDKEY
 # the vi escape key for all modes (default is ^[ => <ESC>), you can set it
@@ -145,6 +145,10 @@
 # ZVM_TMPDIR
 # the temporary directory (default is $TMPDIR, otherwise it's /tmp/)
 #
+# ZVM_TERM
+# the term for handling terminal sequences, it's important for some
+# terminal emulators to show cursor properly (default is $TERM)
+#
 # ZVM_CURSOR_STYLE_ENABLED
 # enable the cursor style feature (default is true)
 #
@@ -265,6 +269,10 @@ ZVM_VI_SURROUND_BINDKEY=${ZVM_VI_SURROUND_BINDKEY:-classic}
 ZVM_VI_HIGHLIGHT_BACKGROUND=${ZVM_VI_HIGHLIGHT_BACKGROUND:-#cc0000}
 ZVM_VI_EDITOR=${ZVM_VI_EDITOR:-${EDITOR:-vim}}
 ZVM_TMPDIR=${ZVM_TMPDIR:-${TMPDIR:-/tmp/}}
+
+# Set the term for handling terminal sequences, it's important for some
+# terminal emulators to show cursor properly (default is $TERM)
+ZVM_TERM=${ZVM_TERM:-${TERM:-/xterm-256color/}}
 
 # Enable the cursor style feature
 ZVM_CURSOR_STYLE_ENABLED=${ZVM_CURSOR_STYLE_ENABLED:-true}
@@ -2815,7 +2823,7 @@ function zvm_set_cursor() {
 # Get the escape sequence of cursor style
 function zvm_cursor_style() {
   local style=${(L)1}
-  local term=${2:-$TERM}
+  local term=${2:-$ZVM_TERM}
 
   case $term in
     # For xterm and rxvt and their derivatives use the same escape
