@@ -2818,12 +2818,11 @@ function zvm_cursor_style() {
   local term=${2:-$TERM}
 
   case $term in
-    # For xterm and rxvt and their derivatives use the same
-    # sequences as the VT520 terminal. And screen, konsole
-    # and alacritty implement a superset of VT100 and VT100
-    # is universal, they support 256 colors the same way
-    # xterm does.
-    xterm*|rxvt*|screen*|tmux*|konsole*|alacritty*)
+    # For xterm and rxvt and their derivatives use the same escape
+    # sequences as the VT520 terminal. And screen, konsole, alacritty
+    # and st implement a superset of VT100 and VT100, they support
+    # 256 colors the same way xterm does.
+    xterm*|rxvt*|screen*|tmux*|konsole*|alacritty*|st*)
       case $style in
         $ZVM_CURSOR_USER_DEFAULT) style='\e[0 q';;
         $ZVM_CURSOR_BLOCK) style='\e[2 q';;
