@@ -225,18 +225,18 @@ ZVM_REPEAT_COMMANDS=($ZVM_MODE_NORMAL i)
 # Initial all default settings
 
 # Set the readkey engine (default is NEX engine)
-ZVM_READKEY_ENGINE=${ZVM_READKEY_ENGINE:-$ZVM_READKEY_ENGINE_DEFAULT}
+: ${ZVM_READKEY_ENGINE:=$ZVM_READKEY_ENGINE_DEFAULT}
 
 # Set key input timeout (default is 0.4 seconds)
-ZVM_KEYTIMEOUT=${ZVM_KEYTIMEOUT:-0.4}
+: ${ZVM_KEYTIMEOUT:=0.4}
 
 # Set the escape key timeout (default is 0.03 seconds)
-ZVM_ESCAPE_KEYTIMEOUT=${ZVM_ESCAPE_KEYTIMEOUT:-0.03}
+: ${ZVM_ESCAPE_KEYTIMEOUT:=0.03}
 
 # Set keybindings mode (default is true)
 # The lazy keybindings will post the keybindings of vicmd and visual
 # keymaps to the first time entering the normal mode
-ZVM_LAZY_KEYBINDINGS=${ZVM_LAZY_KEYBINDINGS:-true}
+: ${ZVM_LAZY_KEYBINDINGS:=true}
 
 # All keybindings for lazy loading
 if $ZVM_LAZY_KEYBINDINGS; then
@@ -246,36 +246,36 @@ fi
 # Set the cursor stlye in defferent vi modes, the value you could use
 # the predefined value, such as $ZVM_CURSOR_BLOCK, $ZVM_CURSOR_BEAM,
 # $ZVM_CURSOR_BLINKING_BLOCK and so on.
-ZVM_INSERT_MODE_CURSOR=${ZVM_INSERT_MODE_CURSOR:-$ZVM_CURSOR_BEAM}
-ZVM_NORMAL_MODE_CURSOR=${ZVM_NORMAL_MODE_CURSOR:-$ZVM_CURSOR_BLOCK}
-ZVM_VISUAL_MODE_CURSOR=${ZVM_VISUAL_MODE_CURSOR:-$ZVM_CURSOR_BLOCK}
-ZVM_VISUAL_LINE_MODE_CURSOR=${ZVM_VISUAL_LINE_MODE_CURSOR:-$ZVM_CURSOR_BLOCK}
+: ${ZVM_INSERT_MODE_CURSOR:=$ZVM_CURSOR_BEAM}
+: ${ZVM_NORMAL_MODE_CURSOR:=$ZVM_CURSOR_BLOCK}
+: ${ZVM_VISUAL_MODE_CURSOR:=$ZVM_CURSOR_BLOCK}
+: ${ZVM_VISUAL_LINE_MODE_CURSOR:=$ZVM_CURSOR_BLOCK}
 
 # Operator pending mode cursor style (default is underscore)
-ZVM_OPPEND_MODE_CURSOR=${ZVM_OPPEND_MODE_CURSOR:-$ZVM_CURSOR_UNDERLINE}
+: ${ZVM_OPPEND_MODE_CURSOR:=$ZVM_CURSOR_UNDERLINE}
 
 # Set the vi escape key (default is ^[ => <ESC>)
-ZVM_VI_ESCAPE_BINDKEY=${ZVM_VI_ESCAPE_BINDKEY:-^[}
-ZVM_VI_INSERT_ESCAPE_BINDKEY=${ZVM_VI_INSERT_ESCAPE_BINDKEY:-$ZVM_VI_ESCAPE_BINDKEY}
-ZVM_VI_VISUAL_ESCAPE_BINDKEY=${ZVM_VI_VISUAL_ESCAPE_BINDKEY:-$ZVM_VI_ESCAPE_BINDKEY}
-ZVM_VI_OPPEND_ESCAPE_BINDKEY=${ZVM_VI_OPPEND_ESCAPE_BINDKEY:-$ZVM_VI_ESCAPE_BINDKEY}
+: ${ZVM_VI_ESCAPE_BINDKEY:=^[}
+: ${ZVM_VI_INSERT_ESCAPE_BINDKEY:=$ZVM_VI_ESCAPE_BINDKEY}
+: ${ZVM_VI_VISUAL_ESCAPE_BINDKEY:=$ZVM_VI_ESCAPE_BINDKEY}
+: ${ZVM_VI_OPPEND_ESCAPE_BINDKEY:=$ZVM_VI_ESCAPE_BINDKEY}
 
 # Set the line init mode (empty will keep the last mode)
 # you can also set it to others, such as $ZVM_MODE_INSERT.
-ZVM_LINE_INIT_MODE=${ZVM_LINE_INIT_MODE:-$ZVM_MODE_LAST}
+: ${ZVM_LINE_INIT_MODE:=$ZVM_MODE_LAST}
 
-ZVM_VI_INSERT_MODE_LEGACY_UNDO=${ZVM_VI_INSERT_MODE_LEGACY_UNDO:-false}
-ZVM_VI_SURROUND_BINDKEY=${ZVM_VI_SURROUND_BINDKEY:-classic}
-ZVM_VI_HIGHLIGHT_BACKGROUND=${ZVM_VI_HIGHLIGHT_BACKGROUND:-#cc0000}
-ZVM_VI_EDITOR=${ZVM_VI_EDITOR:-${EDITOR:-vim}}
-ZVM_TMPDIR=${ZVM_TMPDIR:-${TMPDIR:-/tmp/}}
+: ${ZVM_VI_INSERT_MODE_LEGACY_UNDO:=false}
+: ${ZVM_VI_SURROUND_BINDKEY:=classic}
+: ${ZVM_VI_HIGHLIGHT_BACKGROUND:=#cc0000}
+: ${ZVM_VI_EDITOR:=${EDITOR:-vim}}
+: ${ZVM_TMPDIR:=${TMPDIR:-/tmp/}}
 
 # Set the term for handling terminal sequences, it's important for some
 # terminal emulators to show cursor properly (default is $TERM)
-ZVM_TERM=${ZVM_TERM:-${TERM:-/xterm-256color/}}
+: ${ZVM_TERM:=${TERM:-/xterm-256color/}}
 
 # Enable the cursor style feature
-ZVM_CURSOR_STYLE_ENABLED=${ZVM_CURSOR_STYLE_ENABLED:-true}
+: ${ZVM_CURSOR_STYLE_ENABLED:=true}
 
 # All the extra commands
 zvm_before_init_commands=()
