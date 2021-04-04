@@ -160,7 +160,7 @@ command -v 'zvm_version' >/dev/null && return
 typeset -gr ZVM_NAME='zsh-vi-mode'
 typeset -gr ZVM_DESCRIPTION='💻 A better and friendly vi(vim) mode plugin for ZSH.'
 typeset -gr ZVM_REPOSITORY='https://github.com/jeffreytse/zsh-vi-mode'
-typeset -gr ZVM_VERSION='0.8.1'
+typeset -gr ZVM_VERSION='0.8.2'
 
 # Plugin initial status
 ZVM_INIT_DONE=false
