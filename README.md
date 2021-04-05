@@ -88,7 +88,7 @@ smile suddenly appeared on your face like regaining a good life.
 
 ## ✨ Features
 
-- 🪙 Pure Zsh's script without any third-party dependencies.
+- 🌟 Pure Zsh's script without any third-party dependencies.
 - 🎉 Better experience with the near-native vi(vim) mode.
 - ⌛ Lower delay and better response (Mode switching speed, etc.).
 - ✏️  Mode indication with different cursor styles.
@@ -366,8 +366,8 @@ For example:
 Custom Escape Key
 --------
 
-Also, you can use the below options to custom the escape key which could
-better match your flavor, such as `jj` or `jk` and so on.
+You can use below options to custom the escape key which could better match
+your flavor, such as `jj` or `jk` and so on.
 
 - `ZVM_VI_ESCAPE_BINDKEY`: The vi escape key in all modes (default is `^[`
   => `ESC`)
@@ -386,9 +386,6 @@ For example:
 ZVM_VI_INSERT_ESCAPE_BINDKEY=jk
 ```
 
-And you can use the `ZVM_KEYTIMEOUT` option to adjust the key input timeout
-for waiting for next key, default is `0.4` seconds.
-
 Readkey Engine
 --------
 
@@ -403,7 +400,7 @@ currently the below engines are supported:
 
 The NEX is a better engine for reading and handling the key events than the
 Zsh's ZLE engine, currently the NEX engine is still at beta stage, you can
-change to Zsh's ZLE engine if you want.
+change back to Zsh's ZLE engine if you want.
 
 For example:
 
@@ -411,6 +408,18 @@ For example:
 # Change to Zsh's default readkey engine
 ZVM_READKEY_ENGINE=$ZVM_READKEY_ENGINE_ZLE
 ```
+
+You can use `ZVM_KEYTIMEOUT` option to adjust the key input timeout for
+waiting for next key, default is `0.4` seconds.
+
+The escape key is a special case, it can be used standalone. NEX engine
+waits for a period after receiving the escape character, to determine
+whether it is standalone or part of an escape sequence. While waiting,
+additional key presses make the escape key behave as a meta key. If no
+other key presses come in, it is handled as a standalone escape.
+
+We use `ZVM_ESCAPE_KEYTIMEOUT` option to adjust the waiting timeout,
+default is `0.03` seconds.
 
 Execute Extra Commands
 --------
@@ -527,6 +536,7 @@ ZVM_MODE_NORMAL
 ZVM_MODE_INSERT
 ZVM_MODE_VISUAL
 ZVM_MODE_VISUAL_LINE
+ZVM_MODE_REPLACE
 ```
 
 For updating the vi mode indicator, we should add our commands to 
@@ -546,6 +556,9 @@ function zvm_after_select_vi_mode() {
       # Something you want to do...
     ;;
     $ZVM_MODE_VISUAL_LINE)
+      # Something you want to do...
+    ;;
+    $ZVM_MODE_REPLACE)
       # Something you want to do...
     ;;
   esac
@@ -605,6 +618,25 @@ ZVM_NORMAL_MODE_CURSOR=$ZVM_CURSOR_BLOCK
 ZVM_OPPEND_MODE_CURSOR=$ZVM_CURSOR_UNDERLINE
 ```
 
+We can use `ZVM_TERM` option to set the term type for plugin to handle
+terminal escape sequences, default is `$TERM`. It could be `xterm-256color`,
+`alacritty-256color`, `st-256color`, etc. It's important for some
+terminal emulators to show cursor properly.
+
+Highlight Behavior
+--------
+
+You can use the option `ZVM_VI_HIGHLIGHT_BACKGROUND` to change the
+background color of highlight (surrounds, visual-line, etc.), the value
+could be _a color name_ or _a hex color value_.
+
+For example:
+
+```zsh
+ZVM_VI_HIGHLIGHT_BACKGROUND=red      # Color name
+ZVM_VI_HIGHLIGHT_BACKGROUND=#ff0000  # Hex value
+```
+
 Command Line Initial Mode
 --------
 
@@ -630,7 +662,7 @@ Lazy Keybindings
 This plugin has supported the lazy keybindings feature, and it is enabled
 by default. To disable it, you can set the option `ZVM_LAZY_KEYBINDINGS`
 to `false` before this plugin is loaded. This feature will postpone all
-the keybindings of `normal` and `visual` mode) to the first time you enter
+the keybindings of `normal` and `visual` mode to the first time you enter
 the normal mode.
 
 It can greatly improve the startup speed, especially you open the terminal
