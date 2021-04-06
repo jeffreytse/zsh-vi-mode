@@ -1343,7 +1343,7 @@ function zvm_navigation_handler() {
 
   # Check widget if the widget is empty
   if [[ -z $cmd ]]; then
-    return 1
+    return 0
   fi
 
   # Check if keys includes the count
@@ -1393,6 +1393,7 @@ function zvm_range_handler() {
   local key=
   local mode=
   local cmds=($ZVM_MODE)
+  local count=1
   local exit_code=0
 
   # Enter operator pending mode
@@ -1499,48 +1500,72 @@ function zvm_range_handler() {
   local navkey=
 
   if [[ $keys =~ '^c([1-9][0-9]*)?[ia][wW]$' ]]; then
-    navkey="${keys:1}"
+    count=${match[1]:-1}
+    navkey=${keys: -2}
   elif [[ $keys =~ '^[cdy]([1-9][0-9]*)?[ia][eE]$' ]]; then
     navkey=
   elif [[ $keys =~ '^c([1-9][0-9]*)?w$' ]]; then
     zle vi-backward-char
-    navkey="${keys:1:-1}e"
+    count=${match[1]:-1}
+    navkey='e'
   elif [[ $keys =~ '^c([1-9][0-9]*)?W$' ]]; then
     zle vi-backward-blank-char
-    navkey="${keys:1:-1}E"
+    count=${match[1]:-1}
+    navkey='E'
   elif [[ $keys =~ '^c([1-9][0-9]*)?e$' ]]; then
-    navkey="${keys:1:-1}e"
+    count=${match[1]:-1}
+    navkey='e'
   elif [[ $keys =~ '^c([1-9][0-9]*)?E$' ]]; then
-    navkey="${keys:1:-1}E"
+    count=${match[1]:-1}
+    navkey='E'
   elif [[ $keys =~ '^[cdy]([1-9][0-9]*)?[bB]$' ]]; then
     MARK=$((MARK-1))
-    navkey="${keys:1}"
-  elif [[ $keys =~ '^[cdy]([1-9][0-9]*)?[FT].?$' ]]; then
+    count=${match[1]:-1}
+    navkey=${keys: -1}
+  elif [[ $keys =~ '^[cdy]([1-9][0-9]*)?([FT].?)$' ]]; then
     MARK=$((MARK-1))
-    navkey="${keys:1}"
+    count=${match[1]:-1}
+    navkey=${match[2]}
+  elif [[ $keys =~ '^[cdy]([1-9][0-9]*)?j$' ]]; then
+    # Exit if there is no line below
+    count=${match[1]:-1}
+    for ((i=$((CURSOR+1)); i<=$#BUFFER; i++)); do
+      [[ ${BUFFER[$i]} == $'\n' ]] && navkey='j'
+    done
+  elif [[ $keys =~ '^[cdy]([1-9][0-9]*)?k$' ]]; then
+    # Exit if there is no line above
+    count=${match[1]:-1}
+    for ((i=$((CURSOR+1)); i>0; i--)); do
+      [[ ${BUFFER[$i]} == $'\n' ]] && navkey='k'
+    done
   elif [[ $keys =~ '^[cdy]([1-9][0-9]*)?h$' ]]; then
     MARK=$((MARK-1))
-    # Exit when the cursor is at the beginning of a line
+    count=${match[1]:-1}
+    navkey='h'
+
+    # Exit if the cursor is at the beginning of a line
     if ((MARK < 0)); then
-      exit_code=1
+      navkey=
     elif [[ ${BUFFER[$MARK+1]} == $'\n' ]]; then
-      exit_code=1
+      navkey=
     fi
-    navkey="${keys:1}"
   elif [[ $keys =~ '^[cdy]([1-9][0-9]*)?l$' ]]; then
-    local count=${match[1]:-1}
+    count=${match[1]:-1}
     count=$((count-1))
-    navkey="${count}l"
+    navkey=${count}l
+  elif [[ $keys =~ '^.([1-9][0-9]*)?([^0-9]+)$' ]]; then
+    count=${match[1]:-1}
+    navkey=${match[2]}
   else
-    navkey="${keys:1}"
+    navkey=
   fi
 
   # Handle navigation
-  case "${navkey}" in
+  case $navkey in
+    '') exit_code=1;;
     *[ia][wW])
       local widget=
       local mark=
-      local count=${navkey:0:-2}
 
       # At least 1 time
       if [[ -z $count ]]; then
@@ -1568,16 +1593,23 @@ function zvm_range_handler() {
       ;;
     *)
       local retval=
-      if zvm_navigation_handler "${navkey}"; then
-        keys="${keys[1]}$retval"
+
+      # Prevent some actions(e.g. w, e) from affecting the auto
+      # suggestion suffix
+      BUFFER+=$'\0'
+
+      if zvm_navigation_handler "${count}${navkey}"; then
+        keys="${keys[1]}${retval}"
       else
         exit_code=1
       fi
+
+      BUFFER[-1]=''
       ;;
   esac
 
   # Check if there is no range selected
-  if [[ $exit_code != 0 ]] && [[ $mode == $ZVM_MODE_VISUAL ]]; then
+  if [[ $exit_code != 0 ]]; then
     zvm_exit_visual_mode
     return
   fi
