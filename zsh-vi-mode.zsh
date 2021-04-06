@@ -1587,9 +1587,14 @@ function zvm_range_handler() {
         if (( c == 0 )); then
           mark=$MARK
         fi
+        CURSOR=$((CURSOR+1))
+        if (($CURSOR >= $#BUFFER)); then
+          break
+        fi
       done
 
       MARK=$mark
+      CURSOR=$((CURSOR-1))
       ;;
     *)
       local retval=
