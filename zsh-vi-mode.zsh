@@ -1928,7 +1928,10 @@ function zvm_repeat_insert() {
       zle vi-end-of-line
       LBUFFER+=$'\n'
       ;;
-    A) zle vi-end-of-line;;
+    A)
+      zle vi-end-of-line
+      CURSOR=$((CURSOR+1))
+      ;;
     I) zle vi-first-non-blank;;
     O)
       zle vi-digit-or-beginning-of-line
@@ -2719,6 +2722,7 @@ function zvm_insert_bol() {
 function zvm_append_eol() {
   ZVM_INSERT_MODE='A'
   zle vi-end-of-line
+  CURSOR=$((CURSOR+1))
   zvm_select_vi_mode $ZVM_MODE_INSERT
   zvm_reset_repeat_commands $ZVM_MODE_NORMAL $ZVM_INSERT_MODE
 }
