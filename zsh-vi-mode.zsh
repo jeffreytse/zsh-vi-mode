@@ -2683,17 +2683,18 @@ function zvm_exit_visual_mode() {
   zvm_select_vi_mode $ZVM_MODE_NORMAL ${1:-true}
 }
 
-# Enter the vi insert mode
-function zvm_enter_insert_mode() {
-  if [[ $(zvm_keys) == 'i' ]]; then
-    ZVM_INSERT_MODE='i'
-  else
-    ZVM_INSERT_MODE='a'
-    if ! zvm_is_empty_line; then
-      CURSOR=$((CURSOR+1))
-    fi
+# Enter the vi insert mode before the cursor
+function zvm_enter_insert_mode_before() {
+  zvm_reset_repeat_commands $ZVM_MODE_NORMAL 'i'
+  zvm_select_vi_mode $ZVM_MODE_INSERT
+}
+
+# Enter the vi insert mode after the cursor
+function zvm_enter_insert_mode_after() {
+  if ! zvm_is_empty_line; then
+    CURSOR=$((CURSOR+1))
   fi
-  zvm_reset_repeat_commands $ZVM_MODE_NORMAL $ZVM_INSERT_MODE
+  zvm_reset_repeat_commands $ZVM_MODE_NORMAL 'a'
   zvm_select_vi_mode $ZVM_MODE_INSERT
 }
 
@@ -3053,7 +3054,8 @@ function zvm_init() {
   zvm_define_widget zvm_change_surround
   zvm_define_widget zvm_move_around_surround
   zvm_define_widget zvm_change_surround_text_object
-  zvm_define_widget zvm_enter_insert_mode
+  zvm_define_widget zvm_enter_insert_mode_before
+  zvm_define_widget zvm_enter_insert_mode_after
   zvm_define_widget zvm_exit_insert_mode
   zvm_define_widget zvm_enter_visual_mode
   zvm_define_widget zvm_exit_visual_mode
@@ -3113,8 +3115,8 @@ function zvm_init() {
   zvm_bindkey viins '^N' down-line-or-history
 
   # Insert mode
-  zvm_bindkey vicmd 'i'  zvm_enter_insert_mode
-  zvm_bindkey vicmd 'a'  zvm_enter_insert_mode
+  zvm_bindkey vicmd 'i'  zvm_enter_insert_mode_before
+  zvm_bindkey vicmd 'a'  zvm_enter_insert_mode_after
   zvm_bindkey vicmd 'I'  zvm_insert_bol
   zvm_bindkey vicmd 'A'  zvm_append_eol
 
