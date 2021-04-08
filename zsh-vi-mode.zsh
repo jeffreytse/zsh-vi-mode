@@ -524,6 +524,7 @@ function zvm_bindkey() {
   local keymap=$1
   local keys=$2
   local widget=$3
+  local params=$4
   local key=
 
   # We should bind keys with an existing widget
@@ -533,7 +534,9 @@ function zvm_bindkey() {
   if [[ ${ZVM_LAZY_KEYBINDINGS_LIST+x} && ${keymap} != viins ]]; then
     keys=${keys//\"/\\\"}
     keys=${keys//\`/\\\`}
-    ZVM_LAZY_KEYBINDINGS_LIST+=("${keymap} \"${keys}\" ${widget}")
+    ZVM_LAZY_KEYBINDINGS_LIST+=(
+      "${keymap} \"${keys}\" ${widget} \"${params}\""
+    )
     return
   fi
 
@@ -548,8 +551,25 @@ function zvm_bindkey() {
     bindkey -M $keymap "${key}" zvm_readkeys_handler
   fi
 
+  # Wrap params to a new widget
+  if [[ -n $params ]]; then
+    local suffix=$(zvm_string_to_hex $params)
+    eval "$widget:$suffix() { $widget $params }"
+    widget="$widget:$suffix"
+    zvm_define_widget $widget
+  fi
+
   # Bind keys with with a widget
   bindkey -M $keymap "${keys}" $widget
+}
+
+# Convert string to hexadecimal
+function zvm_string_to_hex() {
+  local str=
+  for ((i=1;i<=$#1;i++)); do
+    str+=$(printf '%x' "'${1[$i]}")
+  done
+  echo "$str"
 }
 
 # Escape non-printed characters
@@ -2683,18 +2703,22 @@ function zvm_exit_visual_mode() {
   zvm_select_vi_mode $ZVM_MODE_NORMAL ${1:-true}
 }
 
-# Enter the vi insert mode before the cursor
-function zvm_enter_insert_mode_before() {
-  zvm_reset_repeat_commands $ZVM_MODE_NORMAL 'i'
-  zvm_select_vi_mode $ZVM_MODE_INSERT
-}
+# Enter the vi insert mode
+function zvm_enter_insert_mode() {
+  local keys=${1:-$(zvm_keys)}
 
-# Enter the vi insert mode after the cursor
-function zvm_enter_insert_mode_after() {
-  if ! zvm_is_empty_line; then
-    CURSOR=$((CURSOR+1))
+  if [[ $keys == 'i' ]]; then
+    ZVM_INSERT_MODE='i'
+  elif [[  $keys == 'a' ]]; then
+    ZVM_INSERT_MODE='a'
+    if ! zvm_is_empty_line; then
+      CURSOR=$((CURSOR+1))
+    fi
+  else
+    return
   fi
-  zvm_reset_repeat_commands $ZVM_MODE_NORMAL 'a'
+
+  zvm_reset_repeat_commands $ZVM_MODE_NORMAL $ZVM_INSERT_MODE
   zvm_select_vi_mode $ZVM_MODE_INSERT
 }
 
