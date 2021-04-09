@@ -2828,8 +2828,10 @@ function zvm_select_vi_mode() {
 
   $reset_prompt && zle reset-prompt
 
-  # Start the lazy keybindings when the first time entering the normal mode
-  if [[ $mode != $ZVM_MODE_INSERT ]] &&
+  # Start the lazy keybindings when the first time entering the
+  # normal mode, when the mode is the same as last mode, we get
+  # empty value for $mode.
+  if [[ $mode == $ZVM_MODE_NORMAL ]] &&
     (( $#ZVM_LAZY_KEYBINDINGS_LIST > 0 )); then
 
     zvm_exec_commands 'before_lazy_keybindings'
