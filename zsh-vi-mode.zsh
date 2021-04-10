@@ -272,7 +272,7 @@ fi
 
 # Set the term for handling terminal sequences, it's important for some
 # terminal emulators to show cursor properly (default is $TERM)
-: ${ZVM_TERM:=${TERM:-/xterm-256color/}}
+: ${ZVM_TERM:=${TERM:-xterm-256color}}
 
 # Enable the cursor style feature
 : ${ZVM_CURSOR_STYLE_ENABLED:=true}
