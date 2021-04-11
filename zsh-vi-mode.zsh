@@ -709,6 +709,10 @@ function zvm_vi_replace() {
     zvm_select_vi_mode $ZVM_MODE_REPLACE
 
     while :; do
+      # Redisplay the command line, this is to be called from within
+      # a user-defined widget to allow changes to become visible
+      zle -R
+
       # Read a character for replacing
       zvm_update_cursor
       read -k 1 key
