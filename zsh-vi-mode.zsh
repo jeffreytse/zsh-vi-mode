@@ -196,8 +196,9 @@ ZVM_READKEY_ENGINE_NEX='nex'
 ZVM_READKEY_ENGINE_ZLE='zle'
 ZVM_READKEY_ENGINE_DEFAULT=$ZVM_READKEY_ENGINE_NEX
 
-# Default alternative character for escape space character
+# Default alternative character for escape characters
 ZVM_ESCAPE_SPACE='\s'
+ZVM_ESCAPE_NEWLINE='^J'
 
 # Default vi modes
 ZVM_MODE_LAST=''
@@ -345,7 +346,12 @@ function zvm_keys() {
       ;;
   esac
 
-  echo "${keys// /$ZVM_ESCAPE_SPACE}"
+  # Escape the newline and space characters, otherwise, we can't
+  # get the output from subshell correctly.
+  keys=${keys//$'\n'/$ZVM_ESCAPE_NEWLINE}
+  keys=${keys// /$ZVM_ESCAPE_SPACE}
+
+  echo $keys
 }
 
 # Find the widget on a specified bindkey
@@ -589,7 +595,13 @@ function zvm_escape_non_printed_characters() {
       str="${str}${c}"
     fi
   done
-  echo ${str// /$ZVM_ESCAPE_SPACE}
+
+  # Escape the newline and space characters, otherwise, we can't
+  # get the output from subshell correctly.
+  str=${str// /$ZVM_ESCAPE_SPACE}
+  str=${str//$'\n'/$ZVM_ESCAPE_NEWLINE}
+
+  echo -n $str
 }
 
 # Backward remove characters of an emacs region in the line
@@ -1181,7 +1193,7 @@ function zvm_default_handler() {
   local extra_keys=$1
 
   # Exit vi mode if keys is the escape keys
-  case "$(zvm_escape_non_printed_characters $keys)" in
+  case $(zvm_escape_non_printed_characters "$keys") in
     '^['|$ZVM_VI_INSERT_ESCAPE_BINDKEY)
       zvm_exit_insert_mode
       ZVM_KEYS=${extra_keys}
