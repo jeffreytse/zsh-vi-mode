@@ -732,7 +732,7 @@ function zvm_vi_replace() {
       # Escape key will break the replacing process, and enter key
       # will repace with a newline character.
       case $(zvm_escape_non_printed_characters $key) in
-        $ZVM_VI_OPPEND_ESCAPE_BINDKEY) break;;
+        '^['|$ZVM_VI_OPPEND_ESCAPE_BINDKEY) break;;
         '^M') key=$'\n';;
       esac
 
