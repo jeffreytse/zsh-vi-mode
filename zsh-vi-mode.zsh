@@ -442,10 +442,6 @@ function zvm_readkeys() {
   local pattern=
   local timeout=
 
-  # Escape the non-printed characters
-  pattern=$(zvm_escape_non_printed_characters "${keys}")
-  pattern=${pattern//$ZVM_ESCAPE_SPACE/ }
-
   while :; do
     # Keep reading key for escape character
     if [[ "$key" == '' ]]; then
