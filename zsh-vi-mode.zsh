@@ -2772,8 +2772,15 @@ function zvm_append_eol() {
 # Self insert content to cursor position
 function zvm_self_insert() {
   local keys=${1:-$KEYS}
-  RBUFFER="${keys}${RBUFFER}"
-  CURSOR=$((CURSOR+1))
+
+  # Update the autosuggestion
+  if [[ ${POSTDISPLAY:0:$#keys} == $keys ]]; then
+    POSTDISPLAY=${POSTDISPLAY:$#keys}
+  else
+    POSTDISPLAY=
+  fi
+
+  LBUFFER+=${keys}
 }
 
 # Reset the repeat commands
