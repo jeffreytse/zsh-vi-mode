@@ -2726,8 +2726,6 @@ function zvm_enter_insert_mode() {
     if ! zvm_is_empty_line; then
       CURSOR=$((CURSOR+1))
     fi
-  else
-    return
   fi
 
   zvm_reset_repeat_commands $ZVM_MODE_NORMAL $ZVM_INSERT_MODE
