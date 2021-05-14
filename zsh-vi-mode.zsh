@@ -1275,8 +1275,9 @@ function zvm_readkeys_handler() {
     fi
   else
     zle $widget
-    ZVM_KEYS=
   fi
+
+  ZVM_KEYS=
 }
 
 # Find and move cursor to next character
@@ -2687,6 +2688,7 @@ function zvm_enter_visual_mode() {
   case "${1:-$(zvm_keys)}" in
     v) mode=$ZVM_MODE_VISUAL;;
     V) mode=$ZVM_MODE_VISUAL_LINE;;
+    *) mode=$last_mode;;
   esac
 
   # We should just exit the visual mdoe if current mode
