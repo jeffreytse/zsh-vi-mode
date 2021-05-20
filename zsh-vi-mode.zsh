@@ -1208,6 +1208,7 @@ function zvm_default_handler() {
         [vV]c) zvm_vi_change;;
         [vV]d) zvm_vi_delete;;
         [vV]y) zvm_vi_yank;;
+        [vV]S) zvm_change_surround S;;
         [cdyvV]*) zvm_range_handler "${keys}${extra_keys}";;
         *)
           for ((i=0;i<$#keys;i++)) do
@@ -1873,7 +1874,18 @@ function zvm_change_surround() {
       read -k 1 key
       zvm_exit_oppend_mode
       ;;
-    S|y|a) key=$surround; [[ -z $@ ]] && zle visual-mode;;
+    S|y|a)
+      if [[ -z $surround ]]; then
+        zvm_enter_oppend_mode
+        read -k 1 key
+        zvm_exit_oppend_mode
+      else
+        key=$surround
+      fi
+      if [[ $ZVM_MODE == $ZVM_MODE_VISUAL ]]; then
+        zle visual-mode
+      fi
+      ;;
   esac
 
   # Check if it is ESCAPE key (<ESC> or ZVM_VI_ESCAPE_BINDKEY)
