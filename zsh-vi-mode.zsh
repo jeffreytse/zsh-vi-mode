@@ -44,12 +44,21 @@
 # ZVM_VI_INSERT_MODE_LEGACY_UNDO:
 # using legacy undo behavior in vi insert mode
 #
+# ZVM_VI_HIGHLIGHT_FOREGROUND:
+# the behavior of highlight foreground (surrounds, visual-line, etc) in vi mode
+#
 # ZVM_VI_HIGHLIGHT_BACKGROUND:
-# the behavior of highlight (surrounds, visual-line, etc) in vi mode
+# the behavior of highlight background (surrounds, visual-line, etc) in vi mode
+#
+# ZVM_VI_HIGHLIGHT_EXTRASTYLE:
+# the behavior of highlight extra style (i.e. bold, underline) in vi mode
 #
 # For example:
-#   ZVM_VI_HIGHLIGHT_BACKGROUND=red      # Color name
-#   ZVM_VI_HIGHLIGHT_BACKGROUND=#ff0000  # Hex value
+#   ZVM_VI_HIGHLIGHT_FOREGROUND=green           # Color name
+#   ZVM_VI_HIGHLIGHT_FOREGROUND=#008800         # Hex value
+#   ZVM_VI_HIGHLIGHT_BACKGROUND=red             # Color name
+#   ZVM_VI_HIGHLIGHT_BACKGROUND=#ff0000         # Hex value
+#   ZVM_VI_HIGHLIGHT_EXTRASTYLE=bold,underline  # bold and underline
 #
 # ZVM_VI_SURROUND_BINDKEY
 # the key binding mode for surround operating (default is 'classic')
@@ -268,6 +277,8 @@ fi
 : ${ZVM_VI_INSERT_MODE_LEGACY_UNDO:=false}
 : ${ZVM_VI_SURROUND_BINDKEY:=classic}
 : ${ZVM_VI_HIGHLIGHT_BACKGROUND:=#cc0000}
+: ${ZVM_VI_HIGHLIGHT_FOREGROUND:=#eeeeee}
+: ${ZVM_VI_HIGHLIGHT_EXTRASTYLE:=default}
 : ${ZVM_VI_EDITOR:=${EDITOR:-vim}}
 : ${ZVM_TMPDIR:=${TMPDIR:-/tmp/}}
 
@@ -2636,15 +2647,22 @@ function zvm_highlight() {
       case "$ZVM_MODE" in
         $ZVM_MODE_VISUAL|$ZVM_MODE_VISUAL_LINE)
           local ret=($(zvm_calc_selection))
-          local bpos=$ret[1] epos=$ret[2]
-          region=("$((bpos)) $((epos)) bg=$ZVM_VI_HIGHLIGHT_BACKGROUND")
+          local bpos=$((ret[1])) epos=$((ret[2]))
+          local bg=$ZVM_VI_HIGHLIGHT_BACKGROUND
+          local fg=$ZVM_VI_HIGHLIGHT_FOREGROUND
+          local es=$ZVM_VI_HIGHLIGHT_EXTRASTYLE
+          region=("$bpos $epos fg=$fg,bg=$bg,$es")
           ;;
       esac
       redraw=true
       ;;
     custom)
+      local bpos=$2 epos=$3
+      local bg=${4:-$ZVM_VI_HIGHLIGHT_BACKGROUND}
+      local fg=${5:-$ZVM_VI_HIGHLIGHT_FOREGROUND}
+      local es=${6:-$ZVM_VI_HIGHLIGHT_EXTRASTYLE}
       region=("${ZVM_REGION_HIGHLIGHT[@]}")
-      region+=("$2 $3 bg=${4:-$ZVM_VI_HIGHLIGHT_BACKGROUND}")
+      region+=("$bpos $epos fg=$fg,bg=$bg,$es")
       redraw=true
       ;;
     clear)
@@ -2661,8 +2679,10 @@ function zvm_highlight() {
     local rawhighlight=()
     for ((i=1; i<=${#region_highlight[@]}; i++)); do
       local raw=true
+      local spl=(${(@s/ /)region_highlight[i]})
+      local pat="${spl[1]} ${spl[2]}"
       for ((j=1; j<=${#ZVM_REGION_HIGHLIGHT[@]}; j++)); do
-        if [[ "${region_highlight[i]}" == "${ZVM_REGION_HIGHLIGHT[j]}" ]]; then
+        if [[ "$pat" == "${ZVM_REGION_HIGHLIGHT[j]:0:$#pat}" ]]; then
           raw=false
           break
         fi
