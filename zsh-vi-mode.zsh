@@ -596,7 +596,7 @@ function zvm_escape_non_printed_characters() {
       str="${str}^${c}"
     elif [[ "$c" == '' ]]; then
       str="${str}^?"
-    elif [[ "$c" == ' ' ]]; then
+    elif [[ "$c" == '' ]]; then
       str="${str}^@"
     else
       str="${str}${c}"
@@ -1703,7 +1703,7 @@ function zvm_range_handler() {
 # Edit command line in EDITOR
 function zvm_vi_edit_command_line() {
   # Create a temporary file and save the BUFFER to it
-  local tmp_file="${ZVM_TMPDIR}zvm.$$.zsh"
+  local tmp_file=$(mktemp ${ZVM_TMPDIR}zshXXXXXX)
   echo "$BUFFER" > "$tmp_file"
 
   # Edit the file with the specific editor, in case of
