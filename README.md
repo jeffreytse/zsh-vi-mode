@@ -164,6 +164,14 @@ Add `zsh-vi-mode` to your plugins file (e.g. `~/.zsh_plugins.txt`)
 jeffreytse/zsh-vi-mode
 ```
 
+#### Using [Homebrew](https://brew.sh/)
+
+For Homebrew users, you can install it through the following command
+
+```shell
+brew install zsh-vi-mode
+```
+
 #### Arch Linux (AUR)
 
 For Arch Linux users, you can install it through the following command
@@ -418,8 +426,8 @@ whether it is standalone or part of an escape sequence. While waiting,
 additional key presses make the escape key behave as a meta key. If no
 other key presses come in, it is handled as a standalone escape.
 
-We use `ZVM_ESCAPE_KEYTIMEOUT` option to adjust the waiting timeout,
-default is `0.03` seconds.
+For the NEX engine, we can use `ZVM_ESCAPE_KEYTIMEOUT` option to adjust
+the waiting timeout for the escape key, default is `0.03` seconds.
 
 Execute Extra Commands
 --------
@@ -436,8 +444,8 @@ zvm_before_lazy_keybindings_commands=()
 zvm_after_lazy_keybindings_commands=()
 ```
 
-Since this plugin will overwrite the previous key bindings, this causes the
-key bindings of other plugins ( such as `fzf` ) to fail.
+Since this plugin will overwrite the previous key bindings, this causes
+the key bindings of other plugins ( such as `fzf` ) to fail.
 
 You can solve the compatibility issue as below:
 
@@ -626,15 +634,19 @@ terminal emulators to show cursor properly.
 Highlight Behavior
 --------
 
-You can use the option `ZVM_VI_HIGHLIGHT_BACKGROUND` to change the
-background color of highlight (surrounds, visual-line, etc.), the value
-could be _a color name_ or _a hex color value_.
+You can use `ZVM_VI_HIGHLIGHT_BACKGROUND`, `ZVM_VI_HIGHLIGHT_FOREGROUND`
+and `ZVM_VI_HIGHLIGHT_EXTRASTYLE` to change the highlight behaviors (
+surrounds, visual-line, etc.), the color value could be _a color name_ or
+_a hex color value_.
 
 For example:
 
 ```zsh
-ZVM_VI_HIGHLIGHT_BACKGROUND=red      # Color name
-ZVM_VI_HIGHLIGHT_BACKGROUND=#ff0000  # Hex value
+ZVM_VI_HIGHLIGHT_FOREGROUND=green             # Color name
+ZVM_VI_HIGHLIGHT_FOREGROUND=#008800           # Hex value
+ZVM_VI_HIGHLIGHT_BACKGROUND=red               # Color name
+ZVM_VI_HIGHLIGHT_BACKGROUND=#ff0000           # Hex value
+ZVM_VI_HIGHLIGHT_EXTRASTYLE=bold,underline    # bold and underline
 ```
 
 Command Line Initial Mode
