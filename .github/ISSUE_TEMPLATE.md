@@ -2,7 +2,7 @@
 
 <!-- TIP: Hit 'Preview' for a more readable version of this template -->
 
-## General infomation
+## General information
 
 <!--
 Please report the following information as possible as you can:
