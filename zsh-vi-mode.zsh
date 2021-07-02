@@ -24,6 +24,11 @@
 # All Settings
 # Some of these variables should be set before sourcing this file.
 #
+# ZVM_INIT_MODE
+# the pugin initial mode (default is doing the initialization when the first
+# new command line is starting. For doing the initialization instantly, you
+# can set it to `sourcing`.
+#
 # ZVM_VI_ESCAPE_BINDKEY
 # the vi escape key for all modes (default is ^[ => <ESC>), you can set it
 # to whatever you like, such as `jj`, `jk` and so on.
@@ -3100,6 +3105,14 @@ function zvm_zle-line-finish() {
 
 # Initialize vi-mode for widgets, keybindings, etc.
 function zvm_init() {
+  # Check if it has been initalized
+  if $ZVM_INIT_DONE; then
+    return;
+  fi
+
+  # Mark plugin initial status
+  ZVM_INIT_DONE=true
+
   zvm_exec_commands 'before_init'
 
   # Correct the readkey engine
@@ -3321,15 +3334,6 @@ function zvm_init() {
   zvm_exec_commands 'after_init'
 }
 
-# Precmd function
-function zvm_precmd_function() {
-  # Init zsh vi mode  when starting new command line at first time
-  if ! $ZVM_INIT_DONE; then
-    ZVM_INIT_DONE=true
-    zvm_init
-  fi
-}
-
 # Check if a command is existed
 function zvm_exist_command() {
   command -v "$1" >/dev/null
@@ -3354,6 +3358,9 @@ function zvm_exec_commands() {
   done
 }
 
-# Initialize the plugin when starting new command line
-precmd_functions+=(zvm_precmd_function)
+# Initialize this plugin according to the mode
+case $ZVM_INIT_MODE in
+  sourcing) zvm_init;;
+  *) precmd_functions+=(zvm_init);;
+esac
 
