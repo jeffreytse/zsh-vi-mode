@@ -1240,6 +1240,10 @@ function zvm_default_handler() {
         zle redisplay
         ZVM_KEYS="${keys:1}${extra_keys}"
         return
+      elif [[ "${keys:0:1}" == '' ]]; then
+        zvm_exit_insert_mode
+        ZVM_KEYS="${keys:1}${extra_keys}"
+        return
       fi
       ;;
     visual)
