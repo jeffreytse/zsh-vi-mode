@@ -460,7 +460,7 @@ function zvm_readkeys() {
 
   while :; do
     # Keep reading key for escape character
-    if [[ "$key" == '' ]]; then
+    if [[ "$key" == $'\e' ]]; then
       while :; do
         local k=
         read -t $ZVM_ESCAPE_KEYTIMEOUT -k 1 k || break
@@ -499,7 +499,7 @@ function zvm_readkeys() {
 
     # Evaluate the readkey timeout
     # Special timeout for the escape sequence
-    if [[ "${keys}" ==  ]]; then
+    if [[ "${keys}" == $'\e' ]]; then
       timeout=$ZVM_ESCAPE_KEYTIMEOUT
       # Check if there is any one custom escape sequence
       for ((i=1; i<=${#result[@]}; i=i+2)); do
@@ -1240,7 +1240,7 @@ function zvm_default_handler() {
         zle redisplay
         ZVM_KEYS="${keys:1}${extra_keys}"
         return
-      elif [[ "${keys:0:1}" == '' ]]; then
+      elif [[ "${keys:0:1}" == $'\e' ]]; then
         zvm_exit_insert_mode
         ZVM_KEYS="${keys:1}${extra_keys}"
         return
@@ -1910,7 +1910,7 @@ function zvm_change_surround() {
 
   # Check if it is ESCAPE key (<ESC> or ZVM_VI_ESCAPE_BINDKEY)
   case "$key" in
-    ''|"${ZVM_VI_ESCAPE_BINDKEY//\^\[/}")
+    $'\e'|"${ZVM_VI_ESCAPE_BINDKEY//\^\[/$'\e'}")
       zvm_highlight clear
       return
   esac
