@@ -680,6 +680,25 @@ the normal mode.
 It can greatly improve the startup speed, especially you open the terminal
 and just want to execute a simple command.
 
+Initialization Mode
+--------
+
+In order to prevent various problems related to keybindings caused by the
+plugin sourcing sequence, and also keep the same functionality for this
+plugin, the initialization of this plugin was postponed to the first
+command line starting.
+
+However, almost all plugins are initialized when the script is sourced.
+Therefore, this plugin provides an option `ZVM_INIT_MODE` to change the
+initialization mode.
+
+For example:
+
+```zsh
+# Do the initialization when the script is sourced (i.e. Initialize instantly)
+ZVM_INIT_MODE=sourcing
+```
+
 ## 💎 Credits
 
 - [Zsh](https://www.zsh.org/) - A powerful shell that operates as both an interactive shell and as a scripting language interpreter.
