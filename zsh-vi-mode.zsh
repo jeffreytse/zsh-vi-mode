@@ -24,6 +24,22 @@
 # All Settings
 # Some of these variables should be set before sourcing this file.
 #
+# ZVM_CONFIG_FUNC
+# the config function (default is `zvm_config`), if this config function
+# exists, it will be called automatically, you can do some configurations
+# in this aspect before you source this plugin.
+#
+# For example:
+#
+# ```zsh
+# function zvm_config() {
+#   ZVM_LINE_INIT_MODE=$ZVM_MODE_INSERT
+#   ZVM_VI_INSERT_ESCAPE_BINDKEY=jk
+# }
+#
+# source ~/zsh-vi-mode.zsh
+# ```
+#
 # ZVM_INIT_MODE
 # the pugin initial mode (default is doing the initialization when the first
 # new command line is starting. For doing the initialization instantly, you
@@ -238,6 +254,14 @@ ZVM_REPEAT_COMMANDS=($ZVM_MODE_NORMAL i)
 
 ##########################################
 # Initial all default settings
+
+# Default config function
+: ${ZVM_CONFIG_FUNC:='zvm_config'}
+
+# Load config by calling the config function
+if command -v "$ZVM_CONFIG_FUNC" >/dev/null; then
+  $ZVM_CONFIG_FUNC
+fi
 
 # Set the readkey engine (default is NEX engine)
 : ${ZVM_READKEY_ENGINE:=$ZVM_READKEY_ENGINE_DEFAULT}
