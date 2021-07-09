@@ -429,6 +429,28 @@ other key presses come in, it is handled as a standalone escape.
 For the NEX engine, we can use `ZVM_ESCAPE_KEYTIMEOUT` option to adjust
 the waiting timeout for the escape key, default is `0.03` seconds.
 
+Configuration Function
+--------
+
+Since there are some config options relied to some variables defined in
+the plugin, however, some not. We need to provide an unified config entry
+function. The name of entry function is stored in an option called
+`ZVM_CONFIG_FUNC` and default value is `zvm_config`, you can change to
+others for fitting your flavor.
+
+If this config function exists, it will be called automatically, you can
+do some configurations in this aspect before you source this plugin. For
+example:
+
+```zsh
+function zvm_config() {
+  ZVM_LINE_INIT_MODE=$ZVM_MODE_INSERT
+  ZVM_VI_INSERT_ESCAPE_BINDKEY=jk
+}
+
+source ~/zsh-vi-mode.zsh
+```
+
 Execute Extra Commands
 --------
 
