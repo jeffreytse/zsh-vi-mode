@@ -103,6 +103,10 @@ smile suddenly appeared on your face like regaining a good life.
 - 🪀 Repeating command such as `10p` and `4fa` (**In progress**).
 - 📒 System clipboard (**In progress**).
 
+## 💼 Requirements
+
+ZSH: >= 5.1.0
+
 ## 🛠️ Installation
 
 #### Using [Antigen](https://github.com/zsh-users/antigen)
