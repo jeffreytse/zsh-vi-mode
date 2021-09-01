@@ -2996,6 +2996,21 @@ function zvm_cursor_style() {
     *) style='\e[0 q';;
   esac
 
+  # Restore default cursor color
+  if [[ $style == '\e[0 q' ]]; then
+    local old_style=
+
+    case $ZVM_MODE in
+      $ZVM_MODE_INSERT) old_style=$ZVM_INSERT_MODE_CURSOR;;
+      $ZVM_MODE_NORMAL) old_style=$ZVM_NORMAL_MODE_CURSOR;;
+      $ZVM_MODE_OPPEND) old_style=$ZVM_OPPEND_MODE_CURSOR;;
+    esac
+
+    if [[ $old_style =~ '\e\][0-9]+;.+\a' ]]; then
+      style=$style'\e\e]112\a'
+    fi
+  fi
+
   echo $style
 }
 
