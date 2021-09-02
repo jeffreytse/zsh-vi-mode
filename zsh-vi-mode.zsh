@@ -3136,7 +3136,7 @@ function zvm_zle-line-pre-redraw() {
   # there are one more panel in the same window, the program
   # in other panel could change the cursor shape, we need to
   # update cursor style when line is redrawing.
-  zvm_update_cursor
+  [[ -n $TMUX ]] && zvm_update_cursor
   zvm_update_highlight
   zvm_update_repeat_commands
 }
