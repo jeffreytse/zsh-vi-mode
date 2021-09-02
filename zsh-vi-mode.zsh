@@ -760,12 +760,14 @@ function zvm_vi_replace() {
     zvm_select_vi_mode $ZVM_MODE_REPLACE
 
     while :; do
+      # Read a character for replacing
+      zvm_update_cursor
+
       # Redisplay the command line, this is to be called from within
       # a user-defined widget to allow changes to become visible
       zle -R
+      zle redisplay
 
-      # Read a character for replacing
-      zvm_update_cursor
       read -k 1 key
 
       # Escape key will break the replacing process, and enter key
@@ -844,7 +846,14 @@ function zvm_vi_replace_chars() {
 
   # Read a character for replacing
   zvm_enter_oppend_mode
+
+  # Redisplay the command line, this is to be called from within
+  # a user-defined widget to allow changes to become visible
+  zle -R
+  zle redisplay
+
   read -k 1 key
+
   zvm_exit_oppend_mode
 
   # Escape key will break the replacing process
