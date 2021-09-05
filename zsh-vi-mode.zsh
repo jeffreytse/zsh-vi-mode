@@ -3145,7 +3145,11 @@ function zvm_zle-line-pre-redraw() {
   # there are one more panel in the same window, the program
   # in other panel could change the cursor shape, we need to
   # update cursor style when line is redrawing.
-  [[ -n $TMUX ]] && zvm_update_cursor
+  if [[ -n $TMUX ]]; then
+    zvm_update_cursor
+    # Fix display is not updated in the terminal of InteliJ IDE
+    zle redisplay
+  fi
   zvm_update_highlight
   zvm_update_repeat_commands
 }
