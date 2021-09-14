@@ -652,6 +652,21 @@ ZVM_NORMAL_MODE_CURSOR=$ZVM_CURSOR_BLOCK
 ZVM_OPPEND_MODE_CURSOR=$ZVM_CURSOR_UNDERLINE
 ```
 
+- Also, custom your colorful cursor style as below:
+
+```zsh
+# The plugin will auto execute this zvm_config function
+zvm_config() {
+  # Retrieve default cursor styles
+  local ncur=$(zvm_cursor_style $ZVM_NORMAL_MODE_CURSOR)
+  local icur=$(zvm_cursor_style $ZVM_INSERT_MODE_CURSOR)
+
+  # Append your custom color for your cursor
+  ZVM_INSERT_MODE_CURSOR=$icur'\e\e]12;red\a'
+  ZVM_NORMAL_MODE_CURSOR=$ncur'\e\e]12;#008800\a'
+}
+```
+
 We can use `ZVM_TERM` option to set the term type for plugin to handle
 terminal escape sequences, default is `$TERM`. It could be `xterm-256color`,
 `alacritty-256color`, `st-256color`, etc. It's important for some
