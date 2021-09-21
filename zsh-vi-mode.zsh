@@ -766,7 +766,6 @@ function zvm_vi_replace() {
       # Redisplay the command line, this is to be called from within
       # a user-defined widget to allow changes to become visible
       zle -R
-      zle redisplay
 
       read -k 1 key
 
@@ -849,8 +848,8 @@ function zvm_vi_replace_chars() {
 
   # Redisplay the command line, this is to be called from within
   # a user-defined widget to allow changes to become visible
-  zle -R
   zle redisplay
+  zle -R
 
   read -k 1 key
 
@@ -900,7 +899,7 @@ function zvm_vi_substitute() {
 
 # Substitute all characters of a line
 function zvm_vi_substitute_whole_line() {
-  zvm_select_vi_mode $ZVM_MODE_VISUAL_LINE;
+  zvm_select_vi_mode $ZVM_MODE_VISUAL_LINE false
   zvm_vi_substitute
 }
 
@@ -2920,7 +2919,7 @@ function zvm_select_vi_mode() {
   zvm_exec_commands 'after_select_vi_mode'
 
   # Stop and trigger reset-prompt
-  zvm_postpone_reset_prompt false true
+  $reset_prompt && zvm_postpone_reset_prompt false true
 
   # Start the lazy keybindings when the first time entering the
   # normal mode, when the mode is the same as last mode, we get
@@ -2952,7 +2951,7 @@ function zvm_postpone_reset_prompt() {
   else
     if [[ $ZVM_POSTPONE_RESET_PROMPT == false || $force ]]; then
       ZVM_POSTPONE_RESET_PROMPT=
-      $reset_prompt && zle reset-prompt
+      zle reset-prompt
     else
       ZVM_POSTPONE_RESET_PROMPT=
     fi
