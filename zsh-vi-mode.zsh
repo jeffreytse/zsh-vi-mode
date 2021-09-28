@@ -3146,7 +3146,7 @@ function zvm_zle-line-pre-redraw() {
   # update cursor style when line is redrawing.
   if [[ -n $TMUX ]]; then
     zvm_update_cursor
-    # Fix display is not updated in the terminal of InteliJ IDE
+    # Fix display is not updated in the terminal of IntelliJ IDE
     zle redisplay
   fi
   zvm_update_highlight
