@@ -1748,7 +1748,11 @@ function zvm_range_handler() {
 function zvm_vi_edit_command_line() {
   # Create a temporary file and save the BUFFER to it
   local tmp_file=$(mktemp ${ZVM_TMPDIR}zshXXXXXX)
-  echo "$BUFFER" > "$tmp_file"
+
+  # Some users may config the noclobber option to prevent from
+  # overwriting existing files with the > operator, we should
+  # use >! operator to ignore the noclobber.
+  echo "$BUFFER" >! "$tmp_file"
 
   # Edit the file with the specific editor, in case of
   # the warning about input not from a terminal (e.g.
