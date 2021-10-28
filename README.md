@@ -470,8 +470,9 @@ zvm_before_lazy_keybindings_commands=()
 zvm_after_lazy_keybindings_commands=()
 ```
 
-Since this plugin will overwrite the previous key bindings, this causes
-the key bindings of other plugins ( such as `fzf` ) to fail.
+Since the default [initialization mode](#initialization-mode), this plugin
+will overwrite the previous key bindings, this causes the key bindings of
+other plugins (i.e. `fzf`, `zsh-autocomplete`, etc.) to fail.
 
 You can solve the compatibility issue as below:
 
