@@ -3282,6 +3282,14 @@ function zvm_init() {
   zvm_bindkey viins '^Y' yank
   zvm_bindkey viins '^_' undo
 
+  # Mode agnostic editing
+  zvm_bindkey viins '^[[H'  beginning-of-line
+  zvm_bindkey vicmd '^[[H'  beginning-of-line
+  zvm_bindkey viins '^[[F'  end-of-line
+  zvm_bindkey vicmd '^[[F'  end-of-line
+  zvm_bindkey viins '^[[3~' delete-char
+  zvm_bindkey vicmd '^[[3~' delete-char
+
   # History search
   zvm_bindkey viins '^R' history-incremental-search-backward
   zvm_bindkey viins '^S' history-incremental-search-forward
