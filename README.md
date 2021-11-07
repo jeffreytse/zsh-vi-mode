@@ -132,7 +132,7 @@ Include the load command in your `.zshrc`
 zgen load jeffreytse/zsh-vi-mode
 ```
 
-#### Using [zinit](https://github.com/zdharma/zinit)
+#### Using [zinit](https://github.com/zdharma-continuum/zinit)
 
 Include the load command in your `.zshrc`
 
