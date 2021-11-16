@@ -289,6 +289,8 @@ option.
 - `sd"`   : Delete `"`
 - `sr"'`  : Change `"` to `'`
 
+Note that key sequences must be pressed in fairly quick succession to avoid a timeout. You may extend this timeout with the [`ZVM_KEYTIMEOUT` option](#readkey-engine).
+  
 #### How to select surround text object?
 
 - `vi"`   : Select the text object inside the quotes
