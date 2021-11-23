@@ -1758,7 +1758,7 @@ function zvm_vi_edit_command_line() {
   # the warning about input not from a terminal (e.g.
   # vim), we should tell the editor input is from the
   # terminal and not from standard input.
-  $ZVM_VI_EDITOR $tmp_file </dev/tty
+  "${(@Q)${(z)${ZVM_VI_EDITOR}}}" $tmp_file </dev/tty
 
   # Reload the content to the BUFFER from the temporary
   # file after editing, and delete the temporary file.
