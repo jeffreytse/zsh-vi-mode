@@ -173,7 +173,7 @@
 # the editor to edit your command line (default is $EDITOR)
 #
 # ZVM_TMPDIR
-# the temporary directory (default is $TMPDIR, otherwise it's /tmp/)
+# the temporary directory (default is $TMPDIR, otherwise it's /tmp)
 #
 # ZVM_TERM
 # the term for handling terminal sequences, it's important for some
@@ -312,7 +312,7 @@ fi
 : ${ZVM_VI_HIGHLIGHT_FOREGROUND:=#eeeeee}
 : ${ZVM_VI_HIGHLIGHT_EXTRASTYLE:=default}
 : ${ZVM_VI_EDITOR:=${EDITOR:-vim}}
-: ${ZVM_TMPDIR:=${TMPDIR:-/tmp/}}
+: ${ZVM_TMPDIR:=${TMPDIR:-/tmp}}
 
 # Set the term for handling terminal sequences, it's important for some
 # terminal emulators to show cursor properly (default is $TERM)
@@ -1747,7 +1747,7 @@ function zvm_range_handler() {
 # Edit command line in EDITOR
 function zvm_vi_edit_command_line() {
   # Create a temporary file and save the BUFFER to it
-  local tmp_file=$(mktemp ${ZVM_TMPDIR}zshXXXXXX)
+  local tmp_file=$(mktemp ${ZVM_TMPDIR}/zshXXXXXX)
 
   # Some users may config the noclobber option to prevent from
   # overwriting existing files with the > operator, we should
