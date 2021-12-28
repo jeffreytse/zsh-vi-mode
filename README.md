@@ -196,6 +196,20 @@ Then source it in your `.zshrc` (or `.bashrc`)
 source /usr/share/zsh/plugins/zsh-vi-mode/zsh-vi-mode.plugin.zsh
 ```
 
+#### Nix
+
+For users of Nix, as of [e7e3480530b34a9fe8cb52963ec2cf66e6707e15](https://github.com/NixOS/nixpkgs/commit/e7e3480530b34a9fe8cb52963ec2cf66e6707e15) you can source the plugin through the following configuration
+
+```shell
+programs = {
+  zsh = {
+    initExtra = ''
+      source ${pkgs.zsh-vi-mode}/share/zsh-vi-mode/zsh-vi-mode.plugin.zsh
+    '';
+  };
+};
+```
+
 #### Manually
 
 Clone this repository somewhere (`$HOME/.zsh-vi-mode` for example)
