@@ -41,7 +41,7 @@
 # ```
 #
 # ZVM_INIT_MODE
-# the pugin initial mode (default is doing the initialization when the first
+# the plugin initial mode (default is doing the initialization when the first
 # new command line is starting. For doing the initialization instantly, you
 # can set it to `sourcing`.
 #
@@ -628,7 +628,7 @@ function zvm_escape_non_printed_characters() {
       str="${str}^${c}"
     elif [[ "$c" == '' ]]; then
       str="${str}^?"
-    elif [[ "$c" == ' ' ]]; then
+    elif [[ "$c" == '' ]]; then
       str="${str}^@"
     else
       str="${str}${c}"
