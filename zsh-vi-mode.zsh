@@ -2993,19 +2993,13 @@ function zvm_viins_undo() {
   fi
 }
 
-# Change cursor to support for inside/outside tmux
 function zvm_set_cursor() {
   # Term of vim isn't supported
   if [[ -n $VIMRUNTIME ]]; then
     return
   fi
 
-  # Tmux sequence
-  if [[ -z $TMUX ]]; then
-    echo -ne "$1"
-  else
-    echo -ne "\ePtmux;\e\e$1\e\\"
-  fi
+  echo -ne "$1"
 }
 
 # Get the escape sequence of cursor style
