@@ -285,7 +285,7 @@ if $ZVM_LAZY_KEYBINDINGS; then
   ZVM_LAZY_KEYBINDINGS_LIST=()
 fi
 
-# Set the cursor stlye in defferent vi modes, the value you could use
+# Set the cursor style in defferent vi modes, the value you could use
 # the predefined value, such as $ZVM_CURSOR_BLOCK, $ZVM_CURSOR_BEAM,
 # $ZVM_CURSOR_BLINKING_BLOCK and so on.
 : ${ZVM_INSERT_MODE_CURSOR:=$ZVM_CURSOR_BEAM}
