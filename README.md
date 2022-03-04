@@ -203,9 +203,23 @@ For users of Nix, as of [e7e3480530b34a9fe8cb52963ec2cf66e6707e15](https://githu
 ```shell
 programs = {
   zsh = {
-    initExtra = ''
+    interactiveShellInit = ''
       source ${pkgs.zsh-vi-mode}/share/zsh-vi-mode/zsh-vi-mode.plugin.zsh
     '';
+  };
+};
+```
+  
+Or if you prefer `home-manager`:
+
+```shell
+home-manager.users.[your username] = { pkgs, ... }: {
+  programs = {
+    zsh = {
+      initExtra = ''
+        source ${pkgs.zsh-vi-mode}/share/zsh-vi-mode/zsh-vi-mode.plugin.zsh
+      '';
+    };
   };
 };
 ```
