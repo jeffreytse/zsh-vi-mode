@@ -209,6 +209,20 @@ programs = {
   };
 };
 ```
+  
+Or if you prefer `home-manager`:
+
+```shell
+home-manager.users.[your username] = { pkgs, ... }: {
+  programs = {
+    zsh = {
+      initExtra = ''
+        source ${pkgs.zsh-vi-mode}/share/zsh-vi-mode/zsh-vi-mode.plugin.zsh
+      '';
+    };
+  };
+};
+```
 
 #### Manually
 
