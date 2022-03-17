@@ -402,7 +402,7 @@ function zvm_find_bindkey_widget() {
   local keymap=$1
   local keys=$2
   local prefix_mode=${3:-false}
-  retval=()
+  local retval=()
 
   if $prefix_mode; then
     local pos=0
@@ -422,6 +422,7 @@ function zvm_find_bindkey_widget() {
 
     local result=$(bindkey -M ${keymap} -p "$prefix_keys")$'\n'
 
+    local i=
     # Split string to array by newline
     for ((i=$spos;i<$#result;i++)); do
 
@@ -529,6 +530,7 @@ function zvm_readkeys() {
     if [[ "${keys}" == $'\e' ]]; then
       timeout=$ZVM_ESCAPE_KEYTIMEOUT
       # Check if there is any one custom escape sequence
+      local i=
       for ((i=1; i<=${#result[@]}; i=i+2)); do
         if [[ "${result[$i]}" =~ '^\^\[\[?[A-Z0-9]*~?\^\[' ]]; then
           timeout=$ZVM_KEYTIMEOUT
@@ -557,6 +559,7 @@ function zvm_readkeys() {
     zvm_exit_oppend_mode
   fi
 
+  local retval=()
   if [[ -z "$key" ]]; then
     retval=(${keys} $widget)
   else
@@ -619,7 +622,7 @@ function zvm_string_to_hex() {
 
 # Escape non-printed characters
 function zvm_escape_non_printed_characters() {
-  local str=
+  local i= str=
   for ((i=0;i<$#1;i++)); do
     local c=${1:$i:1}
     if [[ "$c" < ' ' ]]; then
@@ -2729,6 +2732,7 @@ function zvm_highlight() {
       local raw=true
       local spl=(${(@s/ /)region_highlight[i]})
       local pat="${spl[1]} ${spl[2]}"
+      local j=
       for ((j=1; j<=${#ZVM_REGION_HIGHLIGHT[@]}; j++)); do
         if [[ "$pat" == "${ZVM_REGION_HIGHLIGHT[j]:0:$#pat}" ]]; then
           raw=false
@@ -2937,6 +2941,7 @@ function zvm_select_vi_mode() {
     local list=("${ZVM_LAZY_KEYBINDINGS_LIST[@]}")
     unset ZVM_LAZY_KEYBINDINGS_LIST
 
+    local r=
     for r in "${list[@]}"; do
       eval "zvm_bindkey ${r}"
     done
@@ -3360,6 +3365,7 @@ function zvm_init() {
   esac
 
   # Bind and overwrite original y/d/c of vicmd
+  local c=
   for c in {y,d,c}; do
     zvm_bindkey vicmd "$c" $default_handler_widget
   done
@@ -3369,6 +3375,7 @@ function zvm_init() {
   local surrounds=()
 
   # Append brackets
+  local s=
   for s in ${(s..)^:-'()[]{}<>'}; do
     surrounds+=($s)
   done
