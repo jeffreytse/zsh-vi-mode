@@ -628,7 +628,7 @@ function zvm_escape_non_printed_characters() {
       str="${str}^${c}"
     elif [[ "$c" == '' ]]; then
       str="${str}^?"
-    elif [[ "$c" == ' ' ]]; then
+    elif [[ "$c" == '�' ]]; then
       str="${str}^@"
     else
       str="${str}${c}"
@@ -673,6 +673,16 @@ function zvm_backward_kill_line() {
 # end of the line.
 function zvm_forward_kill_line() {
   BUFFER=${BUFFER:0:$CURSOR}
+}
+
+function zvm_multi_line_up() {
+  COUNT="$((${CURSOR}-${COLUMNS}))"
+  CURSOR="$(($COUNT))"
+}
+
+function zvm_multi_line_down() {
+  COUNT="$((${CURSOR}+${COLUMNS}))"
+  CURSOR="$(($COUNT))"
 }
 
 # Remove all characters of the line.
@@ -3217,6 +3227,8 @@ function zvm_init() {
   zvm_define_widget zvm_backward_kill_region
   zvm_define_widget zvm_backward_kill_line
   zvm_define_widget zvm_forward_kill_line
+  zvm_define_widget zvm_multi_line_up
+  zvm_define_widget zvm_multi_line_down
   zvm_define_widget zvm_kill_line
   zvm_define_widget zvm_viins_undo
   zvm_define_widget zvm_select_surround
@@ -3304,6 +3316,8 @@ function zvm_init() {
   zvm_bindkey vicmd  'O' zvm_open_line_above
   zvm_bindkey vicmd  'r' zvm_vi_replace_chars
   zvm_bindkey vicmd  'R' zvm_vi_replace
+  zvm_bindkey vicmd  'gj' zvm_multi_line_down
+  zvm_bindkey vicmd  'gk' zvm_multi_line_up
   zvm_bindkey vicmd  's' zvm_vi_substitute
   zvm_bindkey vicmd  'S' zvm_vi_substitute_whole_line
   zvm_bindkey vicmd  'C' zvm_vi_change_eol
@@ -3450,4 +3464,3 @@ case $ZVM_INIT_MODE in
   sourcing) zvm_init;;
   *) precmd_functions+=(zvm_init);;
 esac
-
