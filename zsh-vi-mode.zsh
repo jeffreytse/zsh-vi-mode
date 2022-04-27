@@ -628,7 +628,7 @@ function zvm_escape_non_printed_characters() {
       str="${str}^${c}"
     elif [[ "$c" == '' ]]; then
       str="${str}^?"
-    elif [[ "$c" == ' ' ]]; then
+    elif [[ "$c" == '�' ]]; then
       str="${str}^@"
     else
       str="${str}${c}"
@@ -3316,8 +3316,8 @@ function zvm_init() {
   zvm_bindkey vicmd  'O' zvm_open_line_above
   zvm_bindkey vicmd  'r' zvm_vi_replace_chars
   zvm_bindkey vicmd  'R' zvm_vi_replace
-  zvm_bindkey vicmd  'gk' zvm_multi_line_down
-  zvm_bindkey vicmd  'gj' zvm_multi_line_up
+  zvm_bindkey vicmd  'gj' zvm_multi_line_down
+  zvm_bindkey vicmd  'gk' zvm_multi_line_up
   zvm_bindkey vicmd  's' zvm_vi_substitute
   zvm_bindkey vicmd  'S' zvm_vi_substitute_whole_line
   zvm_bindkey vicmd  'C' zvm_vi_change_eol
