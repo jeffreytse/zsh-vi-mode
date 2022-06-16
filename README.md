@@ -117,6 +117,15 @@ Bundle `zsh-vi-mode` in your `.zshrc`
 antigen bundle jeffreytse/zsh-vi-mode
 ```
 
+#### Using [Fig](https://fig.io)
+
+Fig adds apps, shortcuts, and autocomplete to your existing terminal.
+
+Install `zsh-vi-mode` in just one click.
+
+<a href="https://fig.io/plugins/other/zsh-vi-mode" target="_blank"><img src="https://fig.io/badges/install-with-fig.svg" /></a>
+
+
 #### Using [zplug](https://github.com/b4b4r07/zplug)
 Load `zsh-vi-mode` as a plugin in your `.zshrc`
 
