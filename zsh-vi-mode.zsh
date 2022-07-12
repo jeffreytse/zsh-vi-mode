@@ -322,12 +322,20 @@ fi
 : ${ZVM_CURSOR_STYLE_ENABLED:=true}
 
 # All the extra commands
-zvm_before_init_commands=()
-zvm_after_init_commands=()
-zvm_before_select_vi_mode_commands=()
-zvm_after_select_vi_mode_commands=()
-zvm_before_lazy_keybindings_commands=()
-zvm_after_lazy_keybindings_commands=()
+commands_array_names=(
+  zvm_before_init_commands
+  zvm_after_init_commands
+  zvm_before_select_vi_mode_commands
+  zvm_after_select_vi_mode_commands
+  zvm_before_lazy_keybindings_commands
+  zvm_after_lazy_keybindings_commands
+)
+for commands_array_name in $commands_array_names; do
+  # Ensure commands set to an empty array, if not already set.
+  if [[ -z "${(P)commands_array_name}" ]]; then
+    typeset -g -a $commands_array_name
+  fi
+done
 
 # All the handlers for switching keyword
 zvm_switch_keyword_handlers=(
