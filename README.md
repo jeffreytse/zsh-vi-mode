@@ -176,6 +176,12 @@ For Homebrew users, you can install it through the following command
 brew install zsh-vi-mode
 ```
 
+Then source it in your `.zshrc` (or `.bashrc`)
+
+```shell
+source $(brew --prefix)/opt/zsh-vi-mode/share/zsh-vi-mode/zsh-vi-mode.plugin.zsh
+```
+
 #### Arch Linux (AUR)
 
 For Arch Linux users, you can install it through the following command
