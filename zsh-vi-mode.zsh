@@ -3261,7 +3261,8 @@ function zvm_init() {
   zvm_define_widget zvm_switch_keyword
 
   # Override standard widgets
-  zvm_define_widget zle-line-pre-redraw zvm_zle-line-pre-redraw
+  autoload add-zle-hook-widget
+  add-zle-hook-widget zle-line-pre-redraw zvm_zle-line-pre-redraw
 
   # Ensure the correct cursor style when an interactive program
   # (e.g. vim, bash, etc.) starts and exits
