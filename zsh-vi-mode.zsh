@@ -3153,9 +3153,7 @@ function zvm_zle-line-pre-redraw() {
   if [[ -n $TMUX ]]; then
     zvm_update_cursor
     # Fix display is not updated in the terminal of IntelliJ IDE.
-    # We should update display only when the last widget isn't a
-    # completion widget
-    [[ $LASTWIDGET =~ 'complet' ]] || zle redisplay
+    [[ "$TERMINAL_EMULATOR" == "JetBrains-JediTerm" ]] && zle redisplay
   fi
   zvm_update_highlight
   zvm_update_repeat_commands
