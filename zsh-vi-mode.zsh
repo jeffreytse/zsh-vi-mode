@@ -337,6 +337,83 @@ for commands_array_name in $commands_array_names; do
   fi
 done
 
+function _zsh_system_clipboard_command_exists() {
+	type "$1" &> /dev/null;
+}
+
+function _zsh_system_clipboard_error() {
+	echo -e "\n\n  \033[41;37m ERROR \033[0m \033[01mzsh-system-clipboard:\033[0m $@\n" >&2
+}
+
+function _zsh_system_clipboard_suggest_to_install() {
+	_zsh_system_clipboard_error "Could not find any available clipboard manager. Make sure you have \033[01m${@}\033[0m installed."
+	return 1
+}
+
+if [[ "$ZSH_SYSTEM_CLIPBOARD_METHOD" == "" ]]; then
+	case "$OSTYPE" {
+		darwin*)
+			if _zsh_system_clipboard_command_exists pbcopy && _zsh_system_clipboard_command_exists pbpaste; then
+				ZSH_SYSTEM_CLIPBOARD_METHOD="pb"
+			else
+				_zsh_system_clipboard_suggest_to_install 'pbcopy, pbpaste'
+			fi
+			;;
+		linux-android*)
+			if _zsh_system_clipboard_command_exists termux-clipboard-set && _zsh_system_clipboard_command_exists termux-clipboard-get; then
+				ZSH_SYSTEM_CLIPBOARD_METHOD="termux"
+			else
+				_zsh_system_clipboard_suggest_to_install 'Termux:API (from Play Store), termux-api (from apt package)'
+			fi
+			;;
+		linux*|freebsd*)
+			if [[ "$DISPLAY" == "" ]]; then
+				ZSH_SYSTEM_CLIPBOARD_METHOD="wlc"
+			elif _zsh_system_clipboard_command_exists xclip; then
+				ZSH_SYSTEM_CLIPBOARD_METHOD="xcc"
+			elif _zsh_system_clipboard_command_exists xsel; then
+				ZSH_SYSTEM_CLIPBOARD_METHOD="xsc"
+			else
+				_zsh_system_clipboard_suggest_to_install 'wl-clipboard / xclip / xsel'
+			fi
+			;;
+		*)
+			_zsh_system_clipboard_error 'Unsupported system.'
+			return 1
+			;;
+	esac
+fi
+
+unfunction _zsh_system_clipboard_error
+unfunction _zsh_system_clipboard_suggest_to_install
+unfunction _zsh_system_clipboard_command_exists
+
+function zsh-system-clipboard-set-tmux(){ tmux load-buffer -; }
+function zsh-system-clipboard-get-tmux(){ tmux show-buffer; }
+# wl{c,p} stands for 'wayland with {CLIPBOARD,PRIMARY} selection'
+function zsh-system-clipboard-set-wlc(){ wl-copy; }
+function zsh-system-clipboard-get-wlc(){ wl-paste -n; }
+function zsh-system-clipboard-set-wlp(){ wl-copy -p; }
+function zsh-system-clipboard-get-wlp(){ wl-paste -p -n; }
+# xs{c,p} stands for 'xsel with {CLIPBOARD,PRIMARY} selection'
+function zsh-system-clipboard-set-xsc(){ xsel -b -i; }
+function zsh-system-clipboard-get-xsc(){ xsel -b -o; }
+function zsh-system-clipboard-set-xsp(){ xsel -p -i; }
+function zsh-system-clipboard-get-xsp(){ xsel -p -o; }
+# xc{c,p} stands for 'xclip with {CLIPBOARD,PRIMARY} selection'
+function zsh-system-clipboard-set-xcc(){ xclip -sel CLIPBOARD -in; }
+function zsh-system-clipboard-get-xcc(){ xclip -sel CLIPBOARD -out; }
+function zsh-system-clipboard-set-xcp(){ xclip -sel PRIMARY -in; }
+function zsh-system-clipboard-get-xcp(){ xclip -sel PRIMARY -out; }
+# pb stands for pbcopy and pbpaste
+function zsh-system-clipboard-set-pb(){ pbcopy; }
+function zsh-system-clipboard-get-pb(){ pbpaste; }
+function zsh-system-clipboard-set-termux(){ termux-clipboard-set; }
+function zsh-system-clipboard-get-termux(){ termux-clipboard-get; }
+
+function zsh-system-clipboard-set(){ zsh-system-clipboard-set-${ZSH_SYSTEM_CLIPBOARD_METHOD}; }
+function zsh-system-clipboard-get(){ zsh-system-clipboard-get-${ZSH_SYSTEM_CLIPBOARD_METHOD}; }
+
 # All the handlers for switching keyword
 zvm_switch_keyword_handlers=(
   zvm_switch_number
@@ -666,6 +743,7 @@ function zvm_backward_kill_region() {
 
   bpos=$bpos+1
   CUTBUFFER=${BUFFER:$bpos:$((epos-bpos))}
+  printf '%s' "$CUTBUFFER" | zsh-system-clipboard-set
   BUFFER="${BUFFER:0:$bpos}${BUFFER:$epos}"
   CURSOR=$bpos
 }
@@ -688,6 +766,7 @@ function zvm_kill_line() {
   local ret=($(zvm_calc_selection $ZVM_MODE_VISUAL_LINE))
   local bpos=${ret[1]} epos=${ret[2]}
   CUTBUFFER=${BUFFER:$bpos:$((epos-bpos))}$'\n'
+  printf '%s' "$CUTBUFFER" | zsh-system-clipboard-set
   BUFFER="${BUFFER:0:$bpos}${BUFFER:$epos}"
   CURSOR=$bpos
 }
@@ -697,6 +776,7 @@ function zvm_kill_whole_line() {
   local ret=($(zvm_calc_selection $ZVM_MODE_VISUAL_LINE))
   local bpos=$ret[1] epos=$ret[2] cpos=$ret[3]
   CUTBUFFER=${BUFFER:$bpos:$((epos-bpos))}$'\n'
+  printf '%s' "$CUTBUFFER" | zsh-system-clipboard-set
 
   # Adjust region range of deletion
   if (( $epos < $#BUFFER )); then
@@ -1022,6 +1102,7 @@ function zvm_yank() {
   if [[ ${1:-$ZVM_MODE} == $ZVM_MODE_VISUAL_LINE ]]; then
     CUTBUFFER=${CUTBUFFER}$'\n'
   fi
+  printf '%s' "$CUTBUFFER" | zsh-system-clipboard-set
   CURSOR=$bpos MARK=$epos
 }
 
@@ -1174,6 +1255,7 @@ function zvm_vi_delete() {
     fi
     CUTBUFFER=${CUTBUFFER}$'\n'
   fi
+  printf '%s' "$CUTBUFFER" | zsh-system-clipboard-set
 
   BUFFER="${BUFFER:0:$bpos}${BUFFER:$epos}"
   CURSOR=$cpos
@@ -1192,6 +1274,7 @@ function zvm_vi_change() {
   if [[ $ZVM_MODE == $ZVM_MODE_VISUAL_LINE ]]; then
     CUTBUFFER=${CUTBUFFER}$'\n'
   fi
+  printf '%s' "$CUTBUFFER" | zsh-system-clipboard-set
 
   BUFFER="${BUFFER:0:$bpos}${BUFFER:$epos}"
   CURSOR=$bpos
@@ -1998,6 +2081,7 @@ function zvm_change_surround_text_object() {
     ((epos++))
   fi
   CUTBUFFER=${BUFFER:$bpos:$(($epos-$bpos))}
+  printf '%s' "$CUTBUFFER" | zsh-system-clipboard-set
   case ${action:0:1} in
     c)
       BUFFER="${BUFFER:0:$bpos}${BUFFER:$epos}"
