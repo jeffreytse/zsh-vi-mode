@@ -238,6 +238,22 @@ Install `zsh-vi-mode` in just one click.
 
 <a href="https://fig.io/plugins/other/zsh-vi-mode" target="_blank"><img src="https://fig.io/badges/install-with-fig.svg" /></a>
 
+#### Gentoo Linux
+
+Available in [dm9pZCAq overlay](https://github.com/gentoo-mirror/dm9pZCAq)
+
+```shell
+eselect repository enable dm9pZCAq
+emerge --sync dm9pZCAq
+emerge app-shells/zsh-vi-mode
+```
+
+Then source it in your `.zshrc` (or `.bashrc`)
+
+```shell
+source /usr/share/zsh/site-contrib/zsh-vi-mode/zsh-vi-mode.plugin.zsh
+```
+
 #### Manually
 
 Clone this repository somewhere (`$HOME/.zsh-vi-mode` for example)
