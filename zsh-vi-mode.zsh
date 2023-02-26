@@ -636,7 +636,7 @@ function zvm_escape_non_printed_characters() {
       str="${str}^${c}"
     elif [[ "$c" == '' ]]; then
       str="${str}^?"
-    elif [[ "$c" == ' ' ]]; then
+    elif [[ "$c" == '' ]]; then
       str="${str}^@"
     else
       str="${str}${c}"
@@ -1771,7 +1771,7 @@ function zvm_vi_edit_command_line() {
   # Reload the content to the BUFFER from the temporary
   # file after editing, and delete the temporary file.
   BUFFER=$(cat $tmp_file)
-  rm "$tmp_file"
+  /bin/rm "$tmp_file"
 
   # Exit the visual mode
   case $ZVM_MODE in
