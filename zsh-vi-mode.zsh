@@ -261,11 +261,6 @@ ZVM_REPEAT_COMMANDS=($ZVM_MODE_NORMAL i)
 # Default config function
 : ${ZVM_CONFIG_FUNC:='zvm_config'}
 
-# Load config by calling the config function
-if command -v "$ZVM_CONFIG_FUNC" >/dev/null; then
-  $ZVM_CONFIG_FUNC
-fi
-
 # Set the readkey engine (default is NEX engine)
 : ${ZVM_READKEY_ENGINE:=$ZVM_READKEY_ENGINE_DEFAULT}
 
@@ -3450,6 +3445,11 @@ function zvm_exec_commands() {
     eval $cmd
   done
 }
+
+# Load config by calling the config function
+if zvm_exist_command "$ZVM_CONFIG_FUNC"; then
+  $ZVM_CONFIG_FUNC
+fi
 
 # Initialize this plugin according to the mode
 case $ZVM_INIT_MODE in
