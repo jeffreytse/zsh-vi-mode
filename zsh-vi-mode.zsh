@@ -1515,6 +1515,9 @@ function zvm_range_handler() {
     keys="${keys}${key}"
   fi
 
+  # Exit operator pending mode
+  zvm_exit_oppend_mode
+
   # Enter visual mode or visual line mode
   if [[ $ZVM_MODE != $ZVM_MODE_VISUAL &&
     $ZVM_MODE != $ZVM_MODE_VISUAL_LINE ]]; then
@@ -1655,7 +1658,7 @@ function zvm_range_handler() {
   # Handle navigation
   case $navkey in
     '') exit_code=1;;
-    *[ia][wW])
+    *[ia]?)
       local widget=
       local mark=
 
