@@ -1633,10 +1633,10 @@ function zvm_range_handler() {
     for ((i=$((CURSOR+1)); i>0; i--)); do
       [[ ${BUFFER[$i]} == $'\n' ]] && navkey='k'
     done
-  elif [[ $keys =~ '^[cdy]([1-9][0-9]*)?h$' ]]; then
+  elif [[ $keys =~ '^[cdy]([1-9][0-9]*)?[\^h0]$' ]]; then
     MARK=$((MARK-1))
     count=${match[1]:-1}
-    navkey='h'
+    navkey=${keys: -1}
 
     # Exit if the cursor is at the beginning of a line
     if ((MARK < 0)); then
