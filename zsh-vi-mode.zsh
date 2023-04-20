@@ -1180,8 +1180,8 @@ function zvm_replace_selection() {
   CURSOR=$cpos
 }
 
-# Put and replace a selection
-function zvm_put_replace_selection() {
+# Replace characters of the visual selection
+function zvm_vi_replace_selection() {
   zvm_replace_selection $CUTBUFFER
   zvm_exit_visual_mode ${1:-true}
 }
@@ -3265,7 +3265,7 @@ function zvm_init() {
   zvm_define_widget zvm_vi_yank
   zvm_define_widget zvm_vi_put_after
   zvm_define_widget zvm_vi_put_before
-  zvm_define_widget zvm_put_replace_selection
+  zvm_define_widget zvm_vi_replace_selection
   zvm_define_widget zvm_vi_up_case
   zvm_define_widget zvm_vi_down_case
   zvm_define_widget zvm_vi_opp_case
@@ -3334,8 +3334,8 @@ function zvm_init() {
   zvm_bindkey visual 'y' zvm_vi_yank
   zvm_bindkey vicmd  'p' zvm_vi_put_after
   zvm_bindkey vicmd  'P' zvm_vi_put_before
-  zvm_bindkey visual 'p' zvm_put_replace_selection
-  zvm_bindkey visual 'P' zvm_put_replace_selection
+  zvm_bindkey visual 'p' zvm_vi_replace_selection
+  zvm_bindkey visual 'P' zvm_vi_replace_selection
   zvm_bindkey visual 'U' zvm_vi_up_case
   zvm_bindkey visual 'u' zvm_vi_down_case
   zvm_bindkey visual '~' zvm_vi_opp_case
