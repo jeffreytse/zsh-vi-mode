@@ -1459,33 +1459,9 @@ function zvm_navigation_handler() {
     count=1
   fi
 
-  # Call the widget, we can not use variable `i`, since
-  # some widgets will affect the variable `i`, and it
-  # will cause an infinite loop.
-  local init_cursor=$CURSOR
-  local last_cursor=$CURSOR
-  local exit_code=0
-  for ((c=0; c<count; c++)); do
-    $cmd
+  zvm_repeat_command "$cmd" $count
 
-    exit_code=$?
-
-    if [[ ${cmd[1]} == 'zle' ]]; then
-      exit_code=0
-    elif [[ $exit_code != 0 ]]; then
-      break
-    fi
-
-    # If the cursor position is no change, we can break
-    # the loop and no need to loop so many times, thus
-    # when the count is quite large, it will not be
-    # stuck for a long time.
-    [[ $last_cursor == $CURSOR ]] && break
-
-    last_cursor=$CURSOR
-  done
-
-  if [[ $exit_code == 0 ]]; then
+  if [[ $? == 0 ]]; then
     retval=$keys
   else
     CURSOR=$init_cursor
@@ -1615,20 +1591,9 @@ function zvm_range_handler() {
     navkey=${keys: -2}
   elif [[ $keys =~ '^[cdy]([1-9][0-9]*)?[ia][eE]$' ]]; then
     navkey=
-  elif [[ $keys =~ '^c([1-9][0-9]*)?w$' ]]; then
-    zle vi-backward-char
+  elif [[ $keys =~ '^c([1-9][0-9]*)?[eEwW]$' ]]; then
     count=${match[1]:-1}
-    navkey='e'
-  elif [[ $keys =~ '^c([1-9][0-9]*)?W$' ]]; then
-    zle vi-backward-blank-char
-    count=${match[1]:-1}
-    navkey='E'
-  elif [[ $keys =~ '^c([1-9][0-9]*)?e$' ]]; then
-    count=${match[1]:-1}
-    navkey='e'
-  elif [[ $keys =~ '^c([1-9][0-9]*)?E$' ]]; then
-    count=${match[1]:-1}
-    navkey='E'
+    navkey=c${keys: -1}
   elif [[ $keys =~ '^[cdy]([1-9][0-9]*)?[bB]$' ]]; then
     MARK=$((MARK-1))
     count=${match[1]:-1}
@@ -1675,9 +1640,6 @@ function zvm_range_handler() {
   case $navkey in
     '') exit_code=1;;
     *[ia]?)
-      local widget=
-      local mark=
-
       # At least 1 time
       if [[ -z $count ]]; then
         count=1
@@ -1685,27 +1647,56 @@ function zvm_range_handler() {
 
       # Retrieve the widget
       case ${navkey: -2} in
-        iw) widget=select-in-word;;
-        aw) widget=select-a-word;;
-        iW) widget=select-in-blank-word;;
-        aW) widget=select-a-blank-word;;
+        iw) cmd=(zle select-in-word);;
+        aw) cmd=(zle select-a-word);;
+        iW) cmd=(zle select-in-blank-word);;
+        aW) cmd=(zle select-a-blank-word);;
       esac
 
-      # Execute the widget for `count` times, and
-      # save the `mark` position of the first time
-      for ((c=0; c<count; c++)); do
-        zle $widget
-        if (( c == 0 )); then
-          mark=$MARK
-        fi
-        CURSOR=$((CURSOR+1))
-        if (($CURSOR >= $#BUFFER)); then
-          break
-        fi
-      done
+      zvm_repeat_command "$cmd" $count
+      ;;
+    c[eEwW])
+      #######################################
+      # Selection Cases:
+      #
+      # 1. SAMPLE: `word1  word2  w`, CURSOR: at `1` of `word1`
+      #
+      #  c[weWE] -> `1`
+      #  c2[weWE] -> `1  word2`
+      #
+      # 2. SAMPLE: `word1  word2  w`, CURSOR: at ` ` after `word1`
+      #
+      #  cw -> `  `
+      #  c2w -> `  word2  `
+      #  ce -> `  word2`
+      #  c2e -> `  word2  w`
+      #
 
-      MARK=$mark
-      CURSOR=$((CURSOR-1))
+      if [[ "${BUFFER[$((CURSOR + 1))]}" == ' ' ]]; then
+        case ${navkey: -1} in
+          w) cmd=(zle vi-forward-word);;
+          W) cmd=(zle vi-forward-blank-word);;
+          e) cmd=(zle vi-forward-word-end);;
+          E) cmd=(zle vi-forward-blank-word-end);;
+        esac
+
+        zvm_repeat_command "$cmd" $count
+
+        case ${navkey: -1} in
+          w|W) CURSOR=$((CURSOR-1));;
+        esac
+      else
+        if [[ "${BUFFER[$((CURSOR + 2))]}" == ' ' ]]; then
+          count=$((count - 1))
+        fi
+
+        case ${navkey: -1} in
+          e|w) cmd=(zle vi-forward-word-end);;
+          E|W) cmd=(zle vi-forward-blank-word-end);;
+        esac
+
+        zvm_repeat_command "$cmd" $count
+      fi
       ;;
     *)
       local retval=
@@ -1764,6 +1755,46 @@ function zvm_range_handler() {
   if [[ ! -z $cursor ]]; then
     CURSOR=$cursor
   fi
+}
+
+# Repeat executing command
+function zvm_repeat_command {
+  local cmd=$1
+  local count=${2:-1}
+
+  # check if it's a zle command
+  local is_zle_cmd=false
+  if [[ ${cmd} =~ '^zle .*' ]]; then
+    is_zle_cmd=true
+  fi
+
+  # Execute the command for `count` times. We can not use
+  # variable `i`, since some widgets will affect the variable
+  # `i`, and it will cause an infinite loop.
+  local init_cursor=$CURSOR
+  local last_cursor=$CURSOR
+  local exit_code=0
+  for ((c=0; c<count; c++)); do
+    eval $cmd
+
+    exit_code=$?
+
+    if $is_zle_cmd; then
+      exit_code=0
+    elif [[ $exit_code != 0 ]]; then
+      break
+    fi
+
+    # If the cursor position is no change, we can break
+    # the loop and no need to loop so many times, thus
+    # when the count is quite large, it will not be
+    # stuck for a long time.
+    [[ $last_cursor == $CURSOR ]] && break
+
+    last_cursor=$CURSOR
+  done
+
+  return $exit_code
 }
 
 # Edit command line in EDITOR
