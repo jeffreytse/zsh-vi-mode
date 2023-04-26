@@ -1510,6 +1510,14 @@ function zvm_range_handler() {
   # Exit operator pending mode
   zvm_exit_oppend_mode
 
+  # Escape non-printed characters (e.g. ^[)
+  keys=$(zvm_escape_non_printed_characters "$keys")
+
+  # Handle escape in operator pending mode
+  if [[ "$keys" =~ ${ZVM_VI_OPPEND_ESCAPE_BINDKEY/\^\[/\\^\\[} ]]; then
+    return 1
+  fi
+
   # Enter visual mode or visual line mode
   if [[ $ZVM_MODE != $ZVM_MODE_VISUAL &&
     $ZVM_MODE != $ZVM_MODE_VISUAL_LINE ]]; then
