@@ -801,6 +801,25 @@ For example:
 ZVM_INIT_MODE=sourcing
 ```
 
+Clipboard Integration
+--------
+
+You can now integrate your clipboard with this plugin by defining the
+`ZVM_CLIP_COPY` and `ZVM_CLIP_PASTE`. These variables determine the
+commands used for clipboard integration.
+
+For example:
+
+```zsh
+# Set the commands for macOS clipboard
+ZVM_CLIP_COPY="pbcopy"
+ZVM_CLIP_PASTE="pbpaste"
+
+# https://github.com/ohmyzsh/ohmyzsh/blob/master/lib/clipboard.zsh
+ZVM_CLIP_COPY="clipcopy"
+ZVM_CLIP_PASTE="clippaste"
+```
+
 ## 💎 Credits
 
 - [Zsh](https://www.zsh.org/) - A powerful shell that operates as both an interactive shell and as a scripting language interpreter.
