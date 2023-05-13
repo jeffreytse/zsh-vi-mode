@@ -2915,8 +2915,6 @@ function zvm_select_vi_mode() {
   # Enable reset-prompt
   ZVM_RESET_PROMPT_DISABLED=false
 
-  # $reset_prompt && zle reset-prompt
-
   # Start the lazy keybindings when the first time entering the
   # normal mode, when the mode is the same as last mode, we get
   # empty value for $mode.
@@ -2937,26 +2935,10 @@ function zvm_select_vi_mode() {
   fi
 }
 
-# Postpone reset prompt
-function zvm_postpone_reset_prompt() {
-  local toggle=$1
-  local force=$2
-
-  if $toggle; then
-    ZVM_POSTPONE_RESET_PROMPT=true
-  else
-    if [[ $ZVM_POSTPONE_RESET_PROMPT == false || $force ]]; then
-      ZVM_POSTPONE_RESET_PROMPT=
-      zle reset-prompt
-    else
-      ZVM_POSTPONE_RESET_PROMPT=
-    fi
-  fi
-}
-
 # Reset prompt
 function zvm_reset_prompt() {
   $ZVM_RESET_PROMPT_DISABLED && return
+  
   local -i retval
   if [[ -z "$rawfunc" ]]; then
     zle .reset-prompt -- "$@"
