@@ -1417,7 +1417,13 @@ function zvm_navigation_handler() {
     [[ ${keys[-2]} =~ '[FT]' ]] && forward=false
     [[ ${keys[-2]} =~ '[tT]' ]] && skip=true
 
-    cmd=(zvm_find_and_move_cursor ${keys[-1]} $count $forward $skip)
+    # Escape special characters (e.g. ', ", `, ~, ^, |, &, <space>)
+    local key=${keys[-1]}
+    if [[ $key =~ "['\\\"\`\~\^\|\#\&\*\;\}\(\)\<\>\ ]" ]]; then
+      key=\\${key}
+    fi
+
+    cmd=(zvm_find_and_move_cursor $key $count $forward $skip)
     count=1
   else
     count=${keys:0:-1}
@@ -1450,11 +1456,10 @@ function zvm_navigation_handler() {
   fi
 
   zvm_repeat_command "$cmd" $count
+  exit_code=$?
 
-  if [[ $? == 0 ]]; then
+  if [[ $exit_code == 0 ]]; then
     retval=$keys
-  else
-    CURSOR=$init_cursor
   fi
 
   return $exit_code
@@ -1780,6 +1785,7 @@ function zvm_repeat_command {
     if $is_zle_cmd; then
       exit_code=0
     elif [[ $exit_code != 0 ]]; then
+      CURSOR=$init_cursor
       break
     fi
 
