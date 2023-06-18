@@ -3002,10 +3002,31 @@ function zvm_select_vi_mode() {
   fi
 }
 
+# Postpone reset prompt
+function zvm_postpone_reset_prompt() {
+  local toggle=$1
+  local force=$2
+
+  if $toggle; then
+    ZVM_POSTPONE_RESET_PROMPT=true
+  else
+    if [[ $ZVM_POSTPONE_RESET_PROMPT == false || $force ]]; then
+      ZVM_POSTPONE_RESET_PROMPT=
+      zle reset-prompt
+    else
+      ZVM_POSTPONE_RESET_PROMPT=
+    fi
+  fi
+}
+
 # Reset prompt
 function zvm_reset_prompt() {
-  $ZVM_RESET_PROMPT_DISABLED && return
-  
+  # Return if postponing is enabled
+  if [[ -n $ZVM_POSTPONE_RESET_PROMPT ]]; then
+    ZVM_POSTPONE_RESET_PROMPT=false
+    return
+  fi
+
   local -i retval
   if [[ -z "$rawfunc" ]]; then
     zle .reset-prompt -- "$@"
