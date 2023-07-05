@@ -195,8 +195,10 @@ typeset -gr ZVM_VERSION='0.8.5'
 # Plugin initial status
 ZVM_INIT_DONE=false
 
-# Disable reset prompt (i.e. disable the widget `reset-prompt`)
-ZVM_RESET_PROMPT_DISABLED=false
+# Disable reset prompt (i.e. postpone the widget `reset-prompt`)
+# empty (No postponing)
+# >=0 (Postponing, the decimal value stands for calling times of `reset-prompt`)
+ZVM_POSTPONE_RESET_PROMPT=
 
 # Operator pending mode
 ZVM_OPPEND_MODE=false
@@ -760,12 +762,13 @@ function zvm_vi_replace() {
     zvm_select_vi_mode $ZVM_MODE_REPLACE
 
     while :; do
+      # Read a character for replacing
+      zvm_update_cursor
+
       # Redisplay the command line, this is to be called from within
       # a user-defined widget to allow changes to become visible
       zle -R
 
-      # Read a character for replacing
-      zvm_update_cursor
       read -k 1 key
 
       # Escape key will break the replacing process, and enter key
@@ -844,6 +847,12 @@ function zvm_vi_replace_chars() {
 
   # Read a character for replacing
   zvm_enter_oppend_mode
+
+  # Redisplay the command line, this is to be called from within
+  # a user-defined widget to allow changes to become visible
+  zle redisplay
+  zle -R
+
   read -k 1 key
 
   zvm_exit_oppend_mode
@@ -2940,8 +2949,8 @@ function zvm_select_vi_mode() {
   zvm_exec_commands 'before_select_vi_mode'
 
   # Some plugins would reset the prompt when we select the
-  # keymap, so here we disable the reset-prompt temporarily.
-  ZVM_RESET_PROMPT_DISABLED=true
+  # keymap, so here we postpone executing reset-prompt.
+  zvm_postpone_reset_prompt true false
 
   # Exit operator pending mode
   if $ZVM_OPPEND_MODE; then
@@ -2979,8 +2988,8 @@ function zvm_select_vi_mode() {
   # update the cursor, prompt and so on.
   zvm_exec_commands 'after_select_vi_mode'
 
-  # Enable reset-prompt
-  ZVM_RESET_PROMPT_DISABLED=false
+  # Stop and trigger reset-prompt
+  $reset_prompt && zvm_postpone_reset_prompt false true
 
   # Start the lazy keybindings when the first time entering the
   # normal mode, when the mode is the same as last mode, we get
@@ -3002,10 +3011,35 @@ function zvm_select_vi_mode() {
   fi
 }
 
+# Postpone reset prompt
+function zvm_postpone_reset_prompt() {
+  local toggle=$1
+  local force=$2
+
+  if $force; then
+    ZVM_POSTPONE_RESET_PROMPT=1
+  fi
+
+  if $toggle; then
+    ZVM_POSTPONE_RESET_PROMPT=0
+  else
+    if (($ZVM_POSTPONE_RESET_PROMPT > 0)); then
+      ZVM_POSTPONE_RESET_PROMPT=
+      zle reset-prompt
+    else
+      ZVM_POSTPONE_RESET_PROMPT=
+    fi
+  fi
+}
+
 # Reset prompt
 function zvm_reset_prompt() {
-  $ZVM_RESET_PROMPT_DISABLED && return
-  
+  # Return if postponing is enabled
+  if [[ -n $ZVM_POSTPONE_RESET_PROMPT ]]; then
+    ZVM_POSTPONE_RESET_PROMPT=$(($ZVM_POSTPONE_RESET_PROMPT + 1))
+    return
+  fi
+
   local -i retval
   if [[ -z "$rawfunc" ]]; then
     zle .reset-prompt -- "$@"
