@@ -1514,11 +1514,10 @@ function zvm_range_handler() {
   # Exit operator pending mode
   zvm_exit_oppend_mode
 
-  # Escape non-printed characters (e.g. ^[)
-  keys=$(zvm_escape_non_printed_characters "$keys")
-
   # Handle escape in operator pending mode
-  if [[ "$keys" =~ ${ZVM_VI_OPPEND_ESCAPE_BINDKEY/\^\[/\\^\\[} ]]; then
+  # escape non-printed characters (e.g. ^[)
+  if [[ $(zvm_escape_non_printed_characters "$keys") =~
+    ${ZVM_VI_OPPEND_ESCAPE_BINDKEY/\^\[/\\^\\[} ]]; then
     return 1
   fi
 
