@@ -343,6 +343,9 @@ zvm_switch_keyword_handlers=(
   zvm_switch_month
 )
 
+# History for switching keyword
+zvm_switch_keyword_history=()
+
 # Display version information
 function zvm_version() {
   echo -e "$ZVM_NAME $ZVM_VERSION"
@@ -2379,6 +2382,10 @@ function zvm_switch_keyword() {
       continue
     fi
 
+    # Save to history and only keep some recent records
+    zvm_switch_keyword_history+=("${handler}:${word}")
+    zvm_switch_keyword_history=("${zvm_switch_keyword_history[@]: -10}")
+
     BUFFER="${BUFFER:0:$bpos}${result[1]}${BUFFER:$epos}"
     CURSOR=$((bpos + ${#result[1]} - 1))
 
@@ -2747,13 +2754,38 @@ function zvm_switch_month() {
     fi
   fi
 
+  #####################
   # Abbreviation
-  if (( $#result == $#word )); then
-    result=${months[i]}
-  else
-    result=${months[i]:0:$#word}
+  local lastlen=0
+  local last="${zvm_switch_keyword_history[-1]}"
+  local funcmark="${funcstack[1]}:"
+  if [[ "$last" =~ "^${funcmark}" ]]; then
+    lastlen=$(($#last - $#funcmark))
   fi
 
+  # Use cases:
+  #
+  #  May -> June
+  #  Apr -> May -> Jun
+  #  April -> May -> June
+  #  January -> Feb(Munual changing) -> Mar
+  #  Jan -> February(Munual changing) -> March
+  #
+  if [[ "$result" == "may" ]]; then
+    if (($lastlen == 3)); then
+      result=${months[i]:0:3}
+    else
+      result=${months[i]}
+    fi
+  else
+    if (($#word == 3)); then
+      result=${months[i]:0:3}
+    else
+      result=${months[i]}
+    fi
+  fi
+
+  #####################
   # Transform the case
   if [[ $word =~ ^[A-Z]+$ ]]; then
     result=${(U)result}
@@ -3268,6 +3300,7 @@ function zvm_zle-line-finish() {
   # by it.
   local shape=$(zvm_cursor_style $ZVM_CURSOR_USER_DEFAULT)
   zvm_set_cursor $shape
+  zvm_switch_keyword_history=()
 }
 
 # Initialize vi-mode for widgets, keybindings, etc.
