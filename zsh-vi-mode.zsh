@@ -1358,7 +1358,9 @@ function zvm_readkeys_handler() {
 
     # Push back to the key input stack, and postpone reset prompt
     if [[ -n "$ZVM_KEYS" ]]; then
-      zle -U "$ZVM_KEYS"
+      # To prevent ZLE from error "not enough arguments for -U", the
+      # parameter should be put after `--` symbols.
+      zle -U -- "${ZVM_KEYS}"
     else
       # If there is any reset prompt, we need to execute for
       # prompt resetting.
