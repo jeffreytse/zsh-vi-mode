@@ -1056,7 +1056,7 @@ function zvm_vi_opp_case() {
 # Yank characters of the visual selection
 function zvm_vi_yank() {
   zvm_yank
-  zvm_exit_visual_mode
+  zvm_exit_visual_mode ${1:-true}
 }
 
 # Put cutbuffer after the cursor
@@ -1231,7 +1231,7 @@ function zvm_vi_change() {
   fi
 
   zvm_exit_visual_mode false
-  zvm_select_vi_mode $ZVM_MODE_INSERT
+  zvm_select_vi_mode $ZVM_MODE_INSERT ${1:-true}
 }
 
 # Change characters from cursor to the end of current line
@@ -1249,7 +1249,7 @@ function zvm_vi_change_eol() {
   BUFFER="${BUFFER:0:$bpos}${BUFFER:$epos}"
 
   zvm_reset_repeat_commands $ZVM_MODE c 0 $#CUTBUFFER
-  zvm_select_vi_mode $ZVM_MODE_INSERT
+  zvm_select_vi_mode $ZVM_MODE_INSERT ${1:-true}
 }
 
 # Default handler for unhandled key events
@@ -1750,7 +1750,7 @@ function zvm_range_handler() {
   case "${keys}" in
     c*) zvm_vi_change; cursor=;;
     d*) zvm_vi_delete; cursor=;;
-    y*) zvm_vi_yank;;
+    y*) zvm_vi_yank; cursor=;;
     [vV]*) cursor=;;
   esac
 
@@ -2071,6 +2071,7 @@ function zvm_change_surround_text_object() {
 # Repeat last change
 function zvm_repeat_change() {
   ZVM_REPEAT_MODE=true
+  ZVM_RESET_PROMPT_DISABLED=true
 
   local cmd=${ZVM_REPEAT_COMMANDS[2]}
 
@@ -2086,6 +2087,7 @@ function zvm_repeat_change() {
 
   zle redisplay
 
+  ZVM_RESET_PROMPT_DISABLED=false
   ZVM_REPEAT_MODE=false
 }
 
@@ -3036,6 +3038,11 @@ function zvm_reset_prompt() {
   # Return if postponing is enabled
   if [[ -n $ZVM_POSTPONE_RESET_PROMPT ]]; then
     ZVM_POSTPONE_RESET_PROMPT=$(($ZVM_POSTPONE_RESET_PROMPT + 1))
+    return
+  fi
+
+  # Return if reset prompt is disabled
+  if [[ $ZVM_RESET_PROMPT_DISABLED == true ]]; then
     return
   fi
 
