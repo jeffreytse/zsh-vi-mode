@@ -355,6 +355,7 @@ function zvm_widget_wrapper() {
   local rawfunc=$1;
   local func=$2;
   local -i retval
+  $rawfunc "${@:3}"
   $func "${@:3}"
   return retval
 }
