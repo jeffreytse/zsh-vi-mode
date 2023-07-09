@@ -195,10 +195,13 @@ typeset -gr ZVM_VERSION='0.8.5'
 # Plugin initial status
 ZVM_INIT_DONE=false
 
-# Disable reset prompt (i.e. postpone the widget `reset-prompt`)
-# empty (No postponing)
+# Postpone reset prompt (i.e. postpone the widget `reset-prompt`)
+# -1 (No postponing)
 # >=0 (Postponing, the decimal value stands for calling times of `reset-prompt`)
-ZVM_POSTPONE_RESET_PROMPT=
+ZVM_POSTPONE_RESET_PROMPT=-1
+
+# Disable reset prompt (i.e. postpone the widget `reset-prompt`)
+ZVM_RESET_PROMPT_DISABLED=false
 
 # Operator pending mode
 ZVM_OPPEND_MODE=false
@@ -1249,7 +1252,7 @@ function zvm_vi_change_eol() {
   BUFFER="${BUFFER:0:$bpos}${BUFFER:$epos}"
 
   zvm_reset_repeat_commands $ZVM_MODE c 0 $#CUTBUFFER
-  zvm_select_vi_mode $ZVM_MODE_INSERT ${1:-true}
+  zvm_select_vi_mode $ZVM_MODE_INSERT
 }
 
 # Default handler for unhandled key events
@@ -1341,11 +1344,21 @@ function zvm_readkeys_handler() {
 
   # If the widget isn't matched, we should call the default handler
   if [[ -z ${widget} ]]; then
+    # Disable reset prompt action, as multiple calling this function
+    # will cause potential line eaten issue.
+    ZVM_RESET_PROMPT_DISABLED=true
+
     zle zvm_default_handler "$key"
 
-    # Push back to the key input stack
+    ZVM_RESET_PROMPT_DISABLED=false
+
+    # Push back to the key input stack, and postpone reset prompt
     if [[ -n "$ZVM_KEYS" ]]; then
       zle -U "$ZVM_KEYS"
+    else
+      # If there is any reset prompt, we need to execute for
+      # prompt resetting.
+      zvm_postpone_reset_prompt false
     fi
   else
     zle $widget
@@ -2884,7 +2897,7 @@ function zvm_enter_insert_mode() {
 # Exit the vi insert mode
 function zvm_exit_insert_mode() {
   ZVM_INSERT_MODE=
-  zvm_select_vi_mode $ZVM_MODE_NORMAL
+  zvm_select_vi_mode $ZVM_MODE_NORMAL ${1:-true}
 }
 
 # Enter the vi operator pending mode
@@ -2944,14 +2957,14 @@ function zvm_select_vi_mode() {
   # Check if current mode is the same with the new mode
   if [[ $mode == "$ZVM_MODE" ]]; then
     zvm_update_cursor
-    mode=
+    return
   fi
 
   zvm_exec_commands 'before_select_vi_mode'
 
   # Some plugins would reset the prompt when we select the
   # keymap, so here we postpone executing reset-prompt.
-  zvm_postpone_reset_prompt true false
+  zvm_postpone_reset_prompt true
 
   # Exit operator pending mode
   if $ZVM_OPPEND_MODE; then
@@ -2990,7 +3003,7 @@ function zvm_select_vi_mode() {
   zvm_exec_commands 'after_select_vi_mode'
 
   # Stop and trigger reset-prompt
-  $reset_prompt && zvm_postpone_reset_prompt false true
+  $reset_prompt && zvm_postpone_reset_prompt false
 
   # Start the lazy keybindings when the first time entering the
   # normal mode, when the mode is the same as last mode, we get
@@ -3017,7 +3030,7 @@ function zvm_postpone_reset_prompt() {
   local toggle=$1
   local force=$2
 
-  if $force; then
+  if [[ $force == true ]]; then
     ZVM_POSTPONE_RESET_PROMPT=1
   fi
 
@@ -3025,10 +3038,10 @@ function zvm_postpone_reset_prompt() {
     ZVM_POSTPONE_RESET_PROMPT=0
   else
     if (($ZVM_POSTPONE_RESET_PROMPT > 0)); then
-      ZVM_POSTPONE_RESET_PROMPT=
+      ZVM_POSTPONE_RESET_PROMPT=-1
       zle reset-prompt
     else
-      ZVM_POSTPONE_RESET_PROMPT=
+      ZVM_POSTPONE_RESET_PROMPT=-1
     fi
   fi
 }
@@ -3036,7 +3049,7 @@ function zvm_postpone_reset_prompt() {
 # Reset prompt
 function zvm_reset_prompt() {
   # Return if postponing is enabled
-  if [[ -n $ZVM_POSTPONE_RESET_PROMPT ]]; then
+  if (($ZVM_POSTPONE_RESET_PROMPT >= 0)); then
     ZVM_POSTPONE_RESET_PROMPT=$(($ZVM_POSTPONE_RESET_PROMPT + 1))
     return
   fi
