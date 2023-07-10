@@ -1264,12 +1264,12 @@ function zvm_default_handler() {
   # Exit vi mode if keys is the escape keys
   case $(zvm_escape_non_printed_characters "$keys") in
     '^['|$ZVM_VI_INSERT_ESCAPE_BINDKEY)
-      zvm_exit_insert_mode
+      zvm_exit_insert_mode false
       ZVM_KEYS=${extra_keys}
       return
       ;;
     [vV]'^['|[vV]$ZVM_VI_VISUAL_ESCAPE_BINDKEY)
-      zvm_exit_visual_mode
+      zvm_exit_visual_mode false
       ZVM_KEYS=${extra_keys}
       return
       ;;
@@ -1278,9 +1278,9 @@ function zvm_default_handler() {
   case "$KEYMAP" in
     vicmd)
       case "$keys" in
-        [vV]c) zvm_vi_change;;
-        [vV]d) zvm_vi_delete;;
-        [vV]y) zvm_vi_yank;;
+        [vV]c) zvm_vi_change false;;
+        [vV]d) zvm_vi_delete false;;
+        [vV]y) zvm_vi_yank false;;
         [vV]S) zvm_change_surround S;;
         [cdyvV]*) zvm_range_handler "${keys}${extra_keys}";;
         *)
@@ -1298,7 +1298,7 @@ function zvm_default_handler() {
         ZVM_KEYS="${keys:1}${extra_keys}"
         return
       elif [[ "${keys:0:1}" == $'\e' ]]; then
-        zvm_exit_insert_mode
+        zvm_exit_insert_mode false
         ZVM_KEYS="${keys:1}${extra_keys}"
         return
       fi
@@ -1762,9 +1762,9 @@ function zvm_range_handler() {
 
   # Handle operation
   case "${keys}" in
-    c*) zvm_vi_change; cursor=;;
-    d*) zvm_vi_delete; cursor=;;
-    y*) zvm_vi_yank; cursor=;;
+    c*) zvm_vi_change false; cursor=;;
+    d*) zvm_vi_delete false; cursor=;;
+    y*) zvm_vi_yank false; cursor=;;
     [vV]*) cursor=;;
   esac
 
