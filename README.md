@@ -16,6 +16,11 @@
 
 <p align="center">
 
+  <a href="https://github.com/sponsors/jeffreytse">
+    <img src="https://img.shields.io/static/v1?label=sponsor&message=%E2%9D%A4&logo=GitHub&link=&color=greygreen"
+      alt="Donate (GitHub Sponsor)" />
+  </a>
+
   <a href="https://github.com/jeffreytse/zsh-vi-mode/releases">
     <img src="https://img.shields.io/github/v/release/jeffreytse/zsh-vi-mode?color=brightgreen"
       alt="Release Version" />
@@ -24,11 +29,6 @@
   <a href="https://opensource.org/licenses/MIT">
     <img src="https://img.shields.io/badge/License-MIT-brightgreen.svg"
       alt="License: MIT" />
-  </a>
-
-  <a href="">
-    <img src=""
-      alt="" />
   </a>
 
   <a href="https://liberapay.com/jeffreytse">
@@ -266,6 +266,10 @@ Then source it in your `.zshrc` (or `.bashrc`)
 ```shell
 source $HOME/.zsh-vi-mode/zsh-vi-mode.plugin.zsh
 ```
+
+## Packaging Status
+
+[![Packaging status](https://repology.org/badge/vertical-allrepos/zsh-vi-mode.svg)](https://repology.org/project/zsh-vi-mode/versions)
 
 ## 📚 Usage
 
