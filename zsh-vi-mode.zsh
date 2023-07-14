@@ -3572,6 +3572,71 @@ function zvm_exec_commands() {
   done
 }
 
+# Generate system report
+function zvm_system_report() {
+  # OS
+  local os_info=
+  case "$(uname -s)" in
+    Darwin)
+      local product="$(sw_vers -productName)"
+      local version="$(sw_vers -productVersion) ($(sw_vers -buildVersion))"
+      os_info="${product} ${version}"
+      ;;
+    *) os_info="$(uname -s) ($(uname -r) $(uname -v) $(uname -m) $(uname -o))";;
+  esac
+
+  # Terminal Program
+  local term_info="${TERM_PROGRAM:-unknown} ${TERM_PROGRAM_VERSION:-unknown}"
+  term_info="${term_info} (${TERM})"
+
+  # ZSH Frameworks
+  local zsh_frameworks=()
+
+  if zvm_exist_command "omz"; then
+    zsh_framworks+=("oh-my-zsh $(omz version)")
+  fi
+
+  if zvm_exist_command "starship"; then
+    zsh_framworks+=("$(starship --version | head -n 1)")
+  fi
+
+  if zvm_exist_command "antigen"; then
+    zsh_framworks+=("$(antigen version | head -n 1)")
+  fi
+
+  if zvm_exist_command "zplug"; then
+    zsh_framworks+=("zplug $(zplug --version | head -n 1)")
+  fi
+
+  if zvm_exist_command "zinit"; then
+    # As `zinit version` information includes term style, in order
+    # to acquire the pure text, we need to elimindate all the escape
+    # sequences.
+    local version=$(zinit version \
+      | head -n 1 \
+      | sed -E $'s/(\033\[[a-zA-Z0-9;]+ ?m)//g')
+    zsh_framworks+=("${version}")
+  fi
+
+  # Shell
+  local shell=$SHELL
+  if [[ -z $shell ]]; then
+    shell=zsh
+  fi
+
+  # ZVM
+  local git_info=$(git show -s --format="(%h, %ci)" 2>/dev/null)
+
+  #################
+  # System Report
+  #################
+  print - "- Terminal program: ${term_info}"
+  print - "- Operating system: ${os_info}"
+  print - "- ZSH framework: ${(j:, :)zsh_framworks}"
+  print - "- ZSH version: $($shell --version)"
+  print - "- ZVM version: ${ZVM_VERSION} ${git_info}"
+}
+
 # Load config by calling the config function
 if zvm_exist_command "$ZVM_CONFIG_FUNC"; then
   $ZVM_CONFIG_FUNC
