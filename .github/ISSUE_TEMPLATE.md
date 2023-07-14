@@ -4,6 +4,10 @@
 
 ## General information
 
+<!-- TIP: You can open a new terminal program, and then run the following
+command `zvm_system_report | pbcopy` to copy straight to clipboard, then
+paste here -->
+
 <!--
 Please report the following information as possible as you can:
 
