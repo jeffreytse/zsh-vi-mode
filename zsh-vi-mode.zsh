@@ -348,7 +348,8 @@ zvm_switch_keyword_history=()
 
 # Display version information
 function zvm_version() {
-  echo -e "$ZVM_NAME $ZVM_VERSION"
+  local git_info=$(git show -s --format="(%h, %ci)" 2>/dev/null)
+  echo -e "$ZVM_NAME $ZVM_VERSION $git_info"
   echo -e "\e[4m$ZVM_REPOSITORY\e[0m"
   echo -e "$ZVM_DESCRIPTION"
 }
@@ -3624,9 +3625,6 @@ function zvm_system_report() {
     shell=zsh
   fi
 
-  # ZVM
-  local git_info=$(git show -s --format="(%h, %ci)" 2>/dev/null)
-
   #################
   # System Report
   #################
@@ -3634,7 +3632,7 @@ function zvm_system_report() {
   print - "- Operating system: ${os_info}"
   print - "- ZSH framework: ${(j:, :)zsh_framworks}"
   print - "- ZSH version: $($shell --version)"
-  print - "- ZVM version: ${ZVM_VERSION} ${git_info}"
+  print - "- ZVM version: $(zvm_version | head -n 1)"
 }
 
 # Load config by calling the config function
