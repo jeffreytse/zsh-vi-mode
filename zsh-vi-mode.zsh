@@ -3134,7 +3134,7 @@ function zvm_cursor_style() {
 
   case $term in
     # For xterm and rxvt and their derivatives use the same escape
-    # sequences as the VT520 terminal. And screen, konsole, alacritty
+    # sequences as the VT520 terminal. And screen, konsole, alacritty,
     # st and foot implement a superset of VT100 and VT100, they support
     # 256 colors the same way xterm does.
     xterm*|rxvt*|screen*|tmux*|konsole*|alacritty*|st*|foot*)
