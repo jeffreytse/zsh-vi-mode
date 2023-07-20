@@ -358,9 +358,10 @@ function zvm_version() {
 function zvm_widget_wrapper() {
   local rawfunc=$1;
   local func=$2;
+  local called=$3;
   local -i retval
-  $rawfunc "${@:3}"
-  $func "${@:3}"
+  $called || { $rawfunc "${@:4}" }
+  $func "${@:4}"
   return retval
 }
 
@@ -374,7 +375,14 @@ function zvm_define_widget() {
   if [[ ${#result[@]} == 4 ]]; then
     local rawfunc=${result[4]}
     local wrapper="zvm_${widget}-wrapper"
-    eval "$wrapper() { zvm_widget_wrapper $rawfunc $func \"\$@\" }"
+
+    # To avoid double calling, we need to check if the raw function
+    # has been called already in the custom widget function
+    local rawcode=$(declare -f $func 2>/dev/null)
+    local called=false
+    [[ "$rawcode" == *"\$rawfunc"* ]] && { called=true }
+
+    eval "$wrapper() { zvm_widget_wrapper $rawfunc $func $called \"\$@\" }"
     func=$wrapper
   fi
 
