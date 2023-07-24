@@ -610,6 +610,14 @@ function zvm_bindkey() {
       key=${keys:0:2}
     else
       key=${keys:0:1}
+
+      # As any character that is not bound to one of the history control
+      # related functions, or self-insert or self-insert-unmeta, will
+      # cause the mode to be exited To prevent history search, so that
+      # we need to bind keys explicitly.
+      if [[ "$keymap" == "viins" ]]; then
+        bindkey -M isearch "${key}" self-insert
+      fi
     fi
     bindkey -M $keymap "${key}" zvm_readkeys_handler
   fi
