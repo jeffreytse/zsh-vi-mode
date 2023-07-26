@@ -168,6 +168,14 @@ Add `zsh-vi-mode` to your plugins file (e.g. `~/.zsh_plugins.txt`)
 jeffreytse/zsh-vi-mode
 ```
 
+#### Using [Zap](https://github.com/zap-zsh/zap)
+
+Load `zsh-vi-mode` as a plugin in your `.zshrc`
+
+```shell
+plug "jeffreytse/zsh-vi-mode"
+```
+  
 #### Using [Homebrew](https://brew.sh/)
 
 For Homebrew users, you can install it through the following command
