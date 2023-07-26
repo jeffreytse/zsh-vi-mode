@@ -170,7 +170,7 @@ jeffreytse/zsh-vi-mode
 
 #### Using [Zap](https://github.com/zap-zsh/zap)
 
-Load `jeffreytse/zsh-vi-mode` as a plugin in your `.zshrc`
+Load `zsh-vi-mode` as a plugin in your `.zshrc`
 
 ```shell
 plug "jeffreytse/zsh-vi-mode"
