@@ -1302,7 +1302,30 @@ function zvm_default_handler() {
         [vV]d) zvm_vi_delete false;;
         [vV]y) zvm_vi_yank false;;
         [vV]S) zvm_change_surround S;;
-        [cdyvV]*) zvm_range_handler "${keys}${extra_keys}";;
+        [cdyvV]*)
+          # We must loop util we meet a valid range action
+          while :; do
+            zvm_range_handler "${keys}${extra_keys}"
+            case $? in
+              0) break;;
+              1)
+                # Continue to ask to provide the action when we're
+                # still in visual mode
+                keys='v'; extra_keys=
+                ;;
+              2)
+                # Pushe the keys onto the input stack of ZLE, it's
+                # handled in zvm_readkeys_handler function
+                zvm_exit_visual_mode false
+                return
+                ;;
+              3)
+                zvm_exit_visual_mode false
+                break
+                ;;
+            esac
+          done
+          ;;
         *)
           for ((i=0;i<$#keys;i++)) do
             zvm_navigation_handler ${keys:$i:1}
@@ -1501,7 +1524,7 @@ function zvm_navigation_handler() {
   fi
 
   zvm_repeat_command "$cmd" $count
-  exit_code=$?
+  local exit_code=$?
 
   if [[ $exit_code == 0 ]]; then
     retval=$keys
@@ -1539,9 +1562,9 @@ function zvm_range_handler() {
     keys="${keys}${key}"
   done
 
-  # If the last character is `i` or `a`, we should, we
-  # should read one more key
-  if [[ ${keys: -1} =~ [ia] ]]; then
+  # If the 2nd character is `i` or `a`, we should read
+  # one more key
+  if [[ ${keys} =~ '^.[ia]$' ]]; then
     zvm_update_cursor
     read -k 1 key
     keys="${keys}${key}"
@@ -1693,6 +1716,7 @@ function zvm_range_handler() {
       fi
 
       # Retrieve the widget
+      cmd=
       case ${navkey: -2} in
         iw) cmd=(zle select-in-word);;
         aw) cmd=(zle select-a-word);;
@@ -1700,7 +1724,16 @@ function zvm_range_handler() {
         aW) cmd=(zle select-a-blank-word);;
       esac
 
-      zvm_repeat_command "$cmd" $count
+      if [[ -n "$cmd" ]]; then
+        zvm_repeat_command "$cmd" $count
+      elif [[ -n "$(zvm_match_surround "${keys[-1]}")" ]]; then
+        ZVM_KEYS="${keys}"
+        exit_code=2
+      elif [[ "${keys[1]}" == 'v' ]]; then
+        exit_code=1
+      else
+        exit_code=3
+      fi
       ;;
     c[eEwW])
       #######################################
@@ -1763,9 +1796,12 @@ function zvm_range_handler() {
   esac
 
   # Check if there is no range selected
+  # For the exit code:
+  # 1) Loop in visual mode
+  # 2) Loop by ZVM_KEYS
+  # 3) Exit loop
   if [[ $exit_code != 0 ]]; then
-    zvm_exit_visual_mode
-    return
+    return $exit_code
   fi
 
   # Post navigation handling
@@ -1956,6 +1992,8 @@ function zvm_match_surround() {
     ']') bchar='[';echar=']';;
     '}') bchar='{';echar='}';;
     '>') bchar='<';echar='>';;
+    \'|\"|\`| ) ;;
+    *) return;;
   esac
   echo $bchar $echar
 }
@@ -1985,8 +2023,8 @@ function zvm_search_surround() {
 # Select surround and highlight it in visual mode
 function zvm_select_surround() {
   local ret=($(zvm_parse_surround_keys))
-  local action=${ret[1]}
-  local surround=${ret[2]//$ZVM_ESCAPE_SPACE/ }
+  local action=${1:-${ret[1]}}
+  local surround=${2:-${ret[2]//$ZVM_ESCAPE_SPACE/ }}
   ret=($(zvm_search_surround ${surround}))
   if [[ ${#ret[@]} == 0 ]]; then
     zvm_exit_visual_mode
@@ -2001,8 +2039,8 @@ function zvm_select_surround() {
   fi
   MARK=$bpos; CURSOR=$epos-1
 
-  # refresh current mode for prompt redraw
-  zle reset-prompt
+  # refresh for highlight redraw
+  zle redisplay
 }
 
 # Change surround in vicmd or visual mode
@@ -2076,8 +2114,8 @@ function zvm_change_surround() {
 # Change surround text object
 function zvm_change_surround_text_object() {
   local ret=($(zvm_parse_surround_keys))
-  local action=${ret[1]}
-  local surround=${ret[2]//$ZVM_ESCAPE_SPACE/ }
+  local action=${1:-${ret[1]}}
+  local surround=${2:-${ret[2]//$ZVM_ESCAPE_SPACE/ }}
   ret=($(zvm_search_surround "${surround}"))
   if [[ ${#ret[@]} == 0 ]]; then
     zvm_select_vi_mode $ZVM_MODE_NORMAL
