@@ -3601,6 +3601,12 @@ function zvm_init() {
   # Since normally '^?' (backspace) is bound to vi-backward-delete-char
   zvm_bindkey viins '^?' backward-delete-char
 
+  # Initialize ZVM_MODE value
+  case $ZVM_LINE_INIT_MODE in
+    $ZVM_MODE_INSERT) ZVM_MODE=$ZVM_MODE_INSERT;;
+    *) ZVM_MODE=$ZVM_MODE_NORMAL;;
+  esac
+
   # Enable vi keymap
   bindkey -v
 
