@@ -3602,9 +3602,9 @@ function zvm_init() {
   zvm_bindkey viins '^?' backward-delete-char
 
   # Initialize ZVM_MODE value
-  case $ZVM_LINE_INIT_MODE in
-    $ZVM_MODE_INSERT) ZVM_MODE=$ZVM_MODE_NORMAL;;
-    *) ZVM_MODE=$ZVM_MODE_INSERT;;
+  case ${ZVM_LINE_INIT_MODE:-$ZVM_MODE_INSERT} in
+    $ZVM_MODE_INSERT) ZVM_MODE=$ZVM_MODE_INSERT;;
+    *) ZVM_MODE=$ZVM_MODE_NORMAL;;
   esac
 
   # Enable vi keymap
