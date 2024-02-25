@@ -3219,7 +3219,7 @@ function zvm_cursor_style() {
       $ZVM_MODE_OPPEND) old_style=$ZVM_OPPEND_MODE_CURSOR;;
     esac
 
-    if [[ $old_style =~ '\\e\\][0-9]+;.+\\a' ]]; then
+    if [[ $old_style =~ '\\e\][0-9]+;.+\\a' ]]; then
       style=$style'\e\e]112\a'
     fi
   fi
