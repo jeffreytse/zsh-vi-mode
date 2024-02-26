@@ -214,7 +214,7 @@ source /usr/share/zsh/plugins/zsh-vi-mode/zsh-vi-mode.plugin.zsh
 
 For users of Nix, as of [e7e3480530b34a9fe8cb52963ec2cf66e6707e15](https://github.com/NixOS/nixpkgs/commit/e7e3480530b34a9fe8cb52963ec2cf66e6707e15) you can source the plugin through the following configuration
 
-```shell
+```nix
 programs = {
   zsh = {
     interactiveShellInit = ''
@@ -226,13 +226,31 @@ programs = {
   
 Or if you prefer `home-manager`:
 
-```shell
+```nix
 home-manager.users.[your username] = { pkgs, ... }: {
   programs = {
     zsh = {
       initExtra = ''
         source ${pkgs.zsh-vi-mode}/share/zsh-vi-mode/zsh-vi-mode.plugin.zsh
       '';
+    };
+  };
+};
+```
+
+You can also use `home-manager`'s built-in "plugin" feature:
+
+```nix
+home-manager.users.[your username] = { pkgs, ... }: {
+  programs = {
+    zsh = {
+      plugins = [
+        {
+          name = "vi-mode";
+          src = pkgs.zsh-vi-mode;
+          file = "share/zsh-vi-mode/zsh-vi-mode.plugin.zsh";
+        };
+      ]
     };
   };
 };
