@@ -1040,6 +1040,7 @@ function zvm_yank() {
   if [[ ${1:-$ZVM_MODE} == $ZVM_MODE_VISUAL_LINE ]]; then
     CUTBUFFER=${CUTBUFFER}$'\n'
   fi
+  printf %s "${CUTBUFFER}" | clipcopy 2>/dev/null
   CURSOR=$bpos MARK=$epos
 }
 
@@ -1086,6 +1087,7 @@ function zvm_vi_yank() {
 # Put cutbuffer after the cursor
 function zvm_vi_put_after() {
   local head= foot=
+  CUTBUFFER="$(clippaste 2>/dev/null || echo $CUTBUFFER)"
   local content=${CUTBUFFER}
   local offset=1
 
@@ -1138,6 +1140,7 @@ function zvm_vi_put_after() {
 # Put cutbuffer before the cursor
 function zvm_vi_put_before() {
   local head= foot=
+  CUTBUFFER="$(clippaste 2>/dev/null || echo $CUTBUFFER)"
   local content=${CUTBUFFER}
 
   if [[ ${content: -1} == $'\n' ]]; then
@@ -1205,6 +1208,7 @@ function zvm_replace_selection() {
 
 # Replace characters of the visual selection
 function zvm_vi_replace_selection() {
+  CUTBUFFER="$(clippaste 2>/dev/null || echo $CUTBUFFER)"
   zvm_replace_selection $CUTBUFFER
   zvm_exit_visual_mode ${1:-true}
 }
@@ -3597,9 +3601,13 @@ function zvm_init() {
   # Moving around surrounds
   zvm_bindkey vicmd '%' zvm_move_around_surround
 
+
   # Fix BACKSPACE was stuck in zsh
   # Since normally '^?' (backspace) is bound to vi-backward-delete-char
   zvm_bindkey viins '^?' backward-delete-char
+  zvm_bindkey viins '^H' backward-delete-char
+
+
 
   # Initialize ZVM_MODE value
   case ${ZVM_LINE_INIT_MODE:-$ZVM_MODE_INSERT} in
