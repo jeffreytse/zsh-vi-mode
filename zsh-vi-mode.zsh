@@ -3224,6 +3224,11 @@ function zvm_cursor_style() {
     fi
   fi
 
+  # in GNU screen, we need to surround an escape sequence by '\eP' and '\e\\'
+  if [[ $term =~ "^screen.*" ]]; then
+    style='\eP'"$style"'\e\\'
+  fi
+
   echo $style
 }
 
