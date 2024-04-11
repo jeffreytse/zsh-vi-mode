@@ -1996,7 +1996,9 @@ function zvm_match_surround() {
     ']') bchar='[';echar=']';;
     '}') bchar='{';echar='}';;
     '>') bchar='<';echar='>';;
-    \'|\"|\`| ) ;;
+    "'") ;;
+    '"') ;;
+    '`') ;;
     *) return;;
   esac
   echo $bchar $echar
