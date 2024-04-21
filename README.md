@@ -175,6 +175,14 @@ Load `zsh-vi-mode` as a plugin in your `.zshrc`
 ```shell
 plug "jeffreytse/zsh-vi-mode"
 ```
+
+#### Using [Zim](https://github.com/zimfw/zimfw)
+
+Load `zsh-vi-mode` as a plugin in your `.zimrc`
+
+```shell
+zmodule jeffreytse/zsh-vi-mode
+```
   
 #### Using [Homebrew](https://brew.sh/)
 
