@@ -326,6 +326,7 @@ commands_array_names=(
   zvm_after_select_vi_mode_commands
   zvm_before_lazy_keybindings_commands
   zvm_after_lazy_keybindings_commands
+  zvm_after_yank
 )
 for commands_array_name in $commands_array_names; do
   # Ensure commands set to an empty array, if not already set.
@@ -1041,6 +1042,7 @@ function zvm_yank() {
     CUTBUFFER=${CUTBUFFER}$'\n'
   fi
   CURSOR=$bpos MARK=$epos
+  zvm_exec_commands 'after_yank' $CUTBUFFER
 }
 
 # Up case of the visual selection
