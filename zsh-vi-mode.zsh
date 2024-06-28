@@ -1042,7 +1042,7 @@ function zvm_yank() {
     CUTBUFFER=${CUTBUFFER}$'\n'
   fi
   CURSOR=$bpos MARK=$epos
-  zvm_exec_commands 'after_yank' $CUTBUFFER
+  zvm_exec_commands 'after_yank' '$CUTBUFFER'
 }
 
 # Up case of the visual selection
