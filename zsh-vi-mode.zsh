@@ -1256,6 +1256,7 @@ function zvm_vi_change() {
 
   zvm_exit_visual_mode false
   zvm_select_vi_mode $ZVM_MODE_INSERT ${1:-true}
+  $reset_prompt && zvm_postpone_reset_prompt false true
 }
 
 # Change characters from cursor to the end of current line
@@ -1274,6 +1275,7 @@ function zvm_vi_change_eol() {
 
   zvm_reset_repeat_commands $ZVM_MODE c 0 $#CUTBUFFER
   zvm_select_vi_mode $ZVM_MODE_INSERT
+  $reset_prompt && zvm_postpone_reset_prompt false true
 }
 
 # Default handler for unhandled key events
