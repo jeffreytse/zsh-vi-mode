@@ -1,4 +1,16 @@
+---
+name: 🐞 Bug
+about: File a bug/issue
+title: "[BUG] <title>"
+labels: Bug, Needs Triage
+assignees: ""
+---
+
 <!-- ISSUES NOT FOLLOWING THIS TEMPLATE WILL BE CLOSED AND DELETED -->
+
+<!--
+TIP: Please search to see if an issue already exists for the bug you encountered.
+-->
 
 <!-- TIP: Hit 'Preview' for a more readable version of this template -->
 
@@ -37,4 +49,3 @@ Please report the following information as possible as you can:
 3.
 
 ## Expected behavior
-
