@@ -168,6 +168,14 @@ Add `zsh-vi-mode` to your plugins file (e.g. `~/.zsh_plugins.txt`)
 jeffreytse/zsh-vi-mode
 ```
 
+#### Using [sheldon](https://github.com/rossmacarthur/sheldon)
+
+Add `zsh-vi-mode` to `~/.config/sheldon/plugins.toml` manually or with command:
+
+```shell
+sheldon add zsh-vi-mode --github jeffreytse/zsh-vi-mode
+```
+
 #### Using [Zap](https://github.com/zap-zsh/zap)
 
 Load `zsh-vi-mode` as a plugin in your `.zshrc`
@@ -183,7 +191,7 @@ Load `zsh-vi-mode` as a plugin in your `.zimrc`
 ```shell
 zmodule jeffreytse/zsh-vi-mode
 ```
-  
+
 #### Using [Homebrew](https://brew.sh/)
 
 For Homebrew users, you can install it through the following command
