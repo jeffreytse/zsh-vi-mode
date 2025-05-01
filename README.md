@@ -839,6 +839,30 @@ For example:
 ZVM_INIT_MODE=sourcing
 ```
 
+
+Custom CUTBUFFER Behavior
+--------
+
+In zsh, `CUTBUFFER` is a special variable used for storing recently cut or
+copied text. This plugin defines two functions `zvm_get_cutbuffer` and 
+`zvm_set_cutbuffer` to wrap `CUTBUFFER`. Overriding them allows you to
+customize the plugin's read and write behavior for `CUTBUFFER`
+
+For example:
+
+```zsh
+# Define your custom CUTBUFFER getter
+function zvm_get_cutbuffer() {
+  my_custom_paste_command
+}
+
+# Define your custom CUTBUFFER setter
+function zvm_set_cutbuffer() {
+  echo -n $1 | my_custom_copy_command
+}
+```
+
+
 ## 💎 Credits
 
 - [Zsh](https://www.zsh.org/) - A powerful shell that operates as both an interactive shell and as a scripting language interpreter.
