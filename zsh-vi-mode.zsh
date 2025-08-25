@@ -3180,7 +3180,7 @@ function zvm_viins_undo() {
 
 function zvm_set_cursor() {
   # Term of vim isn't supported
-  if [[ -n $VIMRUNTIME ]]; then
+  if [[ -n $VIM ]]; then
     return
   fi
 
