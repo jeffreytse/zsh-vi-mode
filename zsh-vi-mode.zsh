@@ -127,6 +127,12 @@
 # an escape character (default is 0.03 seconds), and this option is just
 # available for the NEX readkey engine
 #
+# ZVM_FAST_ESCAPE:
+# speed up modal changes to normal by short circuiting zle handling when a
+# single escape character is received and no other characters are received
+# within the escape timeout. This only works with the NEX readkey engine and
+# could conflict with alternate zvm widget keybindings.
+#
 # ZVM_LINE_INIT_MODE
 # the setting for init mode of command line (default is empty), empty will
 # keep the last command mode, for the first command line it will be insert
@@ -514,6 +520,12 @@ function zvm_readkeys() {
     fi
 
     keys="${keys}${key}"
+
+    if [[ "$key" == $'\e' && -n $ZVM_FAST_ESCAPE ]]; then
+      key=
+      widget=zvm_readkeys_handler
+      break
+    fi
 
     # Handle the pattern
     if [[ -n "$key" ]]; then
