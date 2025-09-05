@@ -3388,13 +3388,6 @@ function zvm_init() {
       ;;
   esac
 
-  # Reduce ESC delay (zle default is 0.4 seconds)
-  # Set to 0.01 second delay for taking over the key input processing
-  case $ZVM_READKEY_ENGINE in
-    $ZVM_READKEY_ENGINE_NEX) KEYTIMEOUT=1;;
-    $ZVM_READKEY_ENGINE_ZLE) KEYTIMEOUT=$(($ZVM_KEYTIMEOUT*100));;
-  esac
-
   # Create User-defined widgets
   zvm_define_widget zvm_default_handler
   zvm_define_widget zvm_readkeys_handler
