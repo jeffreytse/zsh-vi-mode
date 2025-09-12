@@ -1903,7 +1903,7 @@ function zvm_vi_edit_command_line() {
 
   # Reload the content to the BUFFER from the temporary
   # file after editing, and delete the temporary file.
-  BUFFER=$(cat $tmp_file)
+  BUFFER=$(cat "$tmp_file")
   rm "$tmp_file"
 
   # Exit the visual mode
