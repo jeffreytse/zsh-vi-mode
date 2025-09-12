@@ -318,6 +318,11 @@ fi
 # Enable the cursor style feature
 : ${ZVM_CURSOR_STYLE_ENABLED:=true}
 
+# Enable system clipboard feature
+: ${ZVM_SYSTEM_CLIPBOARD_ENABLED:=false}
+: ${ZVM_CLIPBOARD_COPY_CMD:=}
+: ${ZVM_CLIPBOARD_PASTE_CMD:=}
+
 # All the extra commands
 commands_array_names=(
   zvm_before_init_commands
@@ -690,6 +695,7 @@ function zvm_backward_kill_region() {
   CUTBUFFER=${BUFFER:$bpos:$((epos-bpos))}
   BUFFER="${BUFFER:0:$bpos}${BUFFER:$epos}"
   CURSOR=$bpos
+  zvm_clipboard_copy_buffer
 }
 
 # Remove all characters between the cursor position and the
@@ -712,6 +718,7 @@ function zvm_kill_line() {
   CUTBUFFER=${BUFFER:$bpos:$((epos-bpos))}$'\n'
   BUFFER="${BUFFER:0:$bpos}${BUFFER:$epos}"
   CURSOR=$bpos
+  zvm_clipboard_copy_buffer
 }
 
 # Remove all characters of the whole line.
@@ -727,6 +734,7 @@ function zvm_kill_whole_line() {
 
   BUFFER="${BUFFER:0:$bpos}${BUFFER:$epos}"
   CURSOR=$cpos
+  zvm_clipboard_copy_buffer
 }
 
 # Exchange the point and mark
@@ -1045,6 +1053,7 @@ function zvm_yank() {
     CUTBUFFER=${CUTBUFFER}$'\n'
   fi
   CURSOR=$bpos MARK=$epos
+  zvm_clipboard_copy_buffer
 }
 
 # Up case of the visual selection
@@ -1205,6 +1214,7 @@ function zvm_replace_selection() {
 
   BUFFER="${BUFFER:0:$bpos}${cutbuf}${BUFFER:$epos}"
   CURSOR=$cpos
+  zvm_clipboard_copy_buffer
 }
 
 # Replace characters of the visual selection
@@ -1233,6 +1243,7 @@ function zvm_vi_change() {
 
   BUFFER="${BUFFER:0:$bpos}${BUFFER:$epos}"
   CURSOR=$bpos
+  zvm_clipboard_copy_buffer
 
   # Return when it's repeating mode
   $ZVM_REPEAT_MODE && return
@@ -1276,6 +1287,7 @@ function zvm_vi_change_eol() {
   CUTBUFFER=${BUFFER:$bpos:$((epos-bpos))}
   BUFFER="${BUFFER:0:$bpos}${BUFFER:$epos}"
 
+  zvm_clipboard_copy_buffer
   zvm_reset_repeat_commands $ZVM_MODE c 0 $#CUTBUFFER
   zvm_select_vi_mode $ZVM_MODE_INSERT
 }
@@ -3354,6 +3366,91 @@ function zvm_zle-line-init() {
   esac
 }
 
+# Clipboard support
+function zvm_clipboard_detect() {
+  if [[ -n $ZVM_CLIPBOARD_COPY_CMD && -n $ZVM_CLIPBOARD_PASTE_CMD ]]; then
+    return
+  fi
+  if zvm_exist_command pbcopy && zvm_exist_command pbpaste; then
+    ZVM_CLIPBOARD_COPY_CMD='pbcopy'
+    ZVM_CLIPBOARD_PASTE_CMD='pbpaste'
+    return
+  fi
+  if zvm_exist_command wl-copy && zvm_exist_command wl-paste; then
+    ZVM_CLIPBOARD_COPY_CMD='wl-copy'
+    ZVM_CLIPBOARD_PASTE_CMD='wl-paste -n'
+    return
+  fi
+  if zvm_exist_command xclip; then
+    ZVM_CLIPBOARD_COPY_CMD='xclip -selection clipboard'
+    ZVM_CLIPBOARD_PASTE_CMD='xclip -selection clipboard -o'
+    return
+  fi
+  if zvm_exist_command xsel; then
+    ZVM_CLIPBOARD_COPY_CMD='xsel --clipboard -i'
+    ZVM_CLIPBOARD_PASTE_CMD='xsel --clipboard -o'
+    return
+  fi
+}
+
+# Check if clipboard is available
+function zvm_clipboard_available() {
+  zvm_clipboard_detect
+  if [[ -n $ZVM_CLIPBOARD_COPY_CMD && -n $ZVM_CLIPBOARD_PASTE_CMD ]]; then
+    return 0
+  fi
+  return 1
+}
+
+# Copy CUTBUFFER to system clipboard
+function zvm_clipboard_copy_buffer() {
+  $ZVM_SYSTEM_CLIPBOARD_ENABLED || return
+  zvm_clipboard_available || return
+  print -rn -- "$CUTBUFFER" | eval "$ZVM_CLIPBOARD_COPY_CMD" >/dev/null 2>&1
+}
+
+# Get content from system clipboard
+function zvm_clipboard_get() {
+  zvm_clipboard_available || return
+  eval "$ZVM_CLIPBOARD_PASTE_CMD" 2>/dev/null
+}
+
+# Paste content from system clipboard after cursor
+function zvm_paste_clipboard_after() {
+  local content=$(zvm_clipboard_get)
+  [[ -z $content ]] && return
+  local saved=$CUTBUFFER
+  CUTBUFFER=$content
+  zvm_vi_put_after
+  CUTBUFFER=$saved
+}
+
+# Paste content from system clipboard before cursor
+function zvm_paste_clipboard_before() {
+  local content=$(zvm_clipboard_get)
+  [[ -z $content ]] && return
+  local saved=$CUTBUFFER
+  CUTBUFFER=$content
+  zvm_vi_put_before
+  CUTBUFFER=$saved
+}
+
+# Paste content from system clipboard in visual mode
+function zvm_visual_paste_clipboard() {
+  local content=$(zvm_clipboard_get)
+  if [[ -z $content ]]; then
+    zvm_exit_visual_mode
+    return
+  fi
+  local ret=($(zvm_calc_selection))
+  local bpos=$ret[1] epos=$ret[2]
+  local cpos=$((bpos + $#content - 1))
+  CUTBUFFER=${BUFFER:$bpos:$((epos-bpos))}
+  BUFFER="${BUFFER:0:$bpos}${content}${BUFFER:$epos}"
+  CURSOR=$cpos
+  zvm_exit_visual_mode
+}
+
 # Restore the user default cursor style after prompt finish
 function zvm_zle-line-finish() {
   # When we start a program (e.g. vim, bash, etc.) from the
@@ -3438,6 +3535,9 @@ function zvm_init() {
   zvm_define_widget zvm_vi_edit_command_line
   zvm_define_widget zvm_repeat_change
   zvm_define_widget zvm_switch_keyword
+  zvm_define_widget zvm_paste_clipboard_after
+  zvm_define_widget zvm_paste_clipboard_before
+  zvm_define_widget zvm_visual_paste_clipboard
 
   # Override standard widgets
   zvm_define_widget zle-line-pre-redraw zvm_zle-line-pre-redraw
@@ -3507,6 +3607,11 @@ function zvm_init() {
   zvm_bindkey visual '~' zvm_vi_opp_case
   zvm_bindkey visual 'v' zvm_vi_edit_command_line
   zvm_bindkey vicmd  '.' zvm_repeat_change
+
+  zvm_bindkey vicmd  'gp' zvm_paste_clipboard_after
+  zvm_bindkey vicmd  'gP' zvm_paste_clipboard_before
+  zvm_bindkey visual 'gp' zvm_visual_paste_clipboard
+  zvm_bindkey visual 'gP' zvm_visual_paste_clipboard
 
   zvm_bindkey vicmd '^A' zvm_switch_keyword
   zvm_bindkey vicmd '^X' zvm_switch_keyword
