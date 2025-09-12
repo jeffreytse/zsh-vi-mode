@@ -359,10 +359,14 @@ function zvm_widget_wrapper() {
   local rawfunc=$1;
   local func=$2;
   local called=$3;
-  local -i retval
-  $called || { $rawfunc "${@:4}" }
+  local -i retval=0
+  if ! $called; then
+    $rawfunc "${@:4}"
+    retval=$?
+  fi
   $func "${@:4}"
-  return retval
+  [[ $retval -eq 0 ]] && retval=$?
+  return $retval
 }
 
 # Define widget function
@@ -3144,25 +3148,22 @@ function zvm_postpone_reset_prompt() {
 
 # Reset prompt
 function zvm_reset_prompt() {
-  # Return if postponing is enabled
   if (($ZVM_POSTPONE_RESET_PROMPT >= 0)); then
     ZVM_POSTPONE_RESET_PROMPT=$(($ZVM_POSTPONE_RESET_PROMPT + 1))
     return
   fi
-
-  # Return if reset prompt is disabled
   if [[ $ZVM_RESET_PROMPT_DISABLED == true ]]; then
     return
   fi
-
-  local -i retval
+  local -i retval=0
   if [[ -z "$rawfunc" ]]; then
     zle .reset-prompt -- "$@"
+    retval=$?
   else
     $rawfunc -- "$@"
+    retval=$?
   fi
-
-  return retval
+  return $retval
 }
 
 # Undo action in vi insert mode
