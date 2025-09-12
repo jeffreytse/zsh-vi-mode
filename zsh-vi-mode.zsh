@@ -3660,19 +3660,19 @@ function zvm_system_report() {
   local zsh_frameworks=()
 
   if zvm_exist_command "omz"; then
-    zsh_framworks+=("oh-my-zsh $(omz version)")
+    zsh_frameworks+=("oh-my-zsh $(omz version)")
   fi
 
   if zvm_exist_command "starship"; then
-    zsh_framworks+=("$(starship --version | head -n 1)")
+    zsh_frameworks+=("$(starship --version | head -n 1)")
   fi
 
   if zvm_exist_command "antigen"; then
-    zsh_framworks+=("$(antigen version | head -n 1)")
+    zsh_frameworks+=("$(antigen version | head -n 1)")
   fi
 
   if zvm_exist_command "zplug"; then
-    zsh_framworks+=("zplug $(zplug --version | head -n 1)")
+    zsh_frameworks+=("zplug $(zplug --version | head -n 1)")
   fi
 
   if zvm_exist_command "zinit"; then
@@ -3682,7 +3682,7 @@ function zvm_system_report() {
     local version=$(zinit version \
       | head -n 1 \
       | sed -E $'s/(\033\[[a-zA-Z0-9;]+ ?m)//g')
-    zsh_framworks+=("${version}")
+    zsh_frameworks+=("${version}")
   fi
 
   # Shell
@@ -3696,7 +3696,7 @@ function zvm_system_report() {
   #################
   print - "- Terminal program: ${term_info}"
   print - "- Operating system: ${os_info}"
-  print - "- ZSH framework: ${(j:, :)zsh_framworks}"
+  print - "- ZSH framework: ${(j:, :)zsh_frameworks}"
   print - "- ZSH version: $($shell --version)"
   print - "- ZVM version: $(zvm_version | head -n 1)"
 }
