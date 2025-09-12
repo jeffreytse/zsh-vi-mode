@@ -3171,7 +3171,7 @@ function zvm_reset_prompt() {
 #         the beginning of the line.  Previous versions of vim
 #         deleted all characters on the line.
 function zvm_viins_undo() {
-  if [[ $ZVM_VI_INS_LEGACY_UNDO ]]; then
+  if [[ $ZVM_VI_INSERT_MODE_LEGACY_UNDO ]]; then
     zvm_kill_line
   else
     zvm_backward_kill_line
