@@ -1098,6 +1098,7 @@ function zvm_vi_yank() {
 
 # Put cutbuffer after the cursor
 function zvm_vi_put_after() {
+  local count=${NUMERIC:-1}
   local head= foot=
   local content=${CUTBUFFER}
   local offset=1
@@ -1113,23 +1114,30 @@ function zvm_vi_put_after() {
       fi
     done
 
-    # Special handling if cursor at an empty line
-    if zvm_is_empty_line; then
-      head=${BUFFER:0:$pos}
-      foot=${BUFFER:$pos}
-    else
-      head=${BUFFER:0:$pos}
-      foot=${BUFFER:$pos}
+    head=${BUFFER:0:$pos}
+    foot=${BUFFER:$pos}
+
+    # If at end of buffer (no trailing newline), prepend one and drop trailing one
+    if ! zvm_is_empty_line; then
       if [[ $pos == $#BUFFER ]]; then
         content=$'\n'${content:0:-1}
         pos=$pos+1
+        head=${BUFFER:0:$pos}
+        foot=${BUFFER:$pos}
       fi
     fi
 
+    local repeated=
+    for ((i=1; i<=count; i++)); do
+      repeated+="$content"
+    done
+
     offset=0
-    BUFFER="${head}${content}${foot}"
+    BUFFER="${head}${repeated}${foot}"
     CURSOR=$pos
   else
+    local char_at_cursor=${BUFFER:$CURSOR:1}
+
     # Special handling if cursor at an empty line
     if zvm_is_empty_line; then
       head="${BUFFER:0:$((CURSOR-1))}"
@@ -1139,17 +1147,23 @@ function zvm_vi_put_after() {
       foot="${BUFFER:$((CURSOR+1))}"
     fi
 
-    BUFFER="${head}${BUFFER:$CURSOR:1}${content}${foot}"
-    CURSOR=$CURSOR+$#content
+    local repeated=
+    for ((i=1; i<=count; i++)); do
+      repeated+="$content"
+    done
+
+    BUFFER="${head}${char_at_cursor}${repeated}${foot}"
+    CURSOR=$CURSOR+$#repeated
   fi
 
   # Reresh display and highlight buffer
   zvm_highlight clear
-  zvm_highlight custom $(($#head+$offset)) $(($#head+$#content+$offset))
+  zvm_highlight custom $(($#head+$offset)) $(($#head+$#repeated+$offset))
 }
 
 # Put cutbuffer before the cursor
 function zvm_vi_put_before() {
+  local count=${NUMERIC:-1}
   local head= foot=
   local content=${CUTBUFFER}
 
@@ -1174,19 +1188,30 @@ function zvm_vi_put_before() {
       foot=${BUFFER:$pos}
     fi
 
-    BUFFER="${head}${content}${foot}"
+    local repeated=
+    for ((i=1; i<=count; i++)); do
+      repeated+="$content"
+    done
+
+    BUFFER="${head}${repeated}${foot}"
     CURSOR=$pos
   else
     head="${BUFFER:0:$CURSOR}"
     foot="${BUFFER:$((CURSOR+1))}"
-    BUFFER="${head}${content}${BUFFER:$CURSOR:1}${foot}"
-    CURSOR=$CURSOR+$#content
+
+    local repeated=
+    for ((i=1; i<=count; i++)); do
+      repeated+="$content"
+    done
+
+    BUFFER="${head}${repeated}${BUFFER:$CURSOR:1}${foot}"
+    CURSOR=$CURSOR+$#repeated
     CURSOR=$((CURSOR-1))
   fi
 
   # Reresh display and highlight buffer
   zvm_highlight clear
-  zvm_highlight custom $#head $(($#head+$#content))
+  zvm_highlight custom $#head $(($#head+$#repeated))
 }
 
 # Replace a selection
