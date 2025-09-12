@@ -3568,11 +3568,6 @@ function zvm_init() {
     surrounds+=($s)
   done
 
-  # Append for escaping visual mode
-  if $is_custom_escape_key; then
-    surrounds+=("$ZVM_VI_ESCAPE_BINDKEY")
-  fi
-
   # Surround key bindings
   for s in $surrounds; do
     for c in {a,i}${s}; do
