@@ -425,7 +425,7 @@ function zvm_find_bindkey_widget() {
   if $prefix_mode; then
     local pos=0
     local spos=3
-    local prefix_keys=
+    local prefix_keys=$keys
 
     # Get the prefix keys
     if [[ $prefix_keys ]]; then
