@@ -3219,6 +3219,8 @@ function zvm_cursor_style() {
       $ZVM_MODE_INSERT) old_style=$ZVM_INSERT_MODE_CURSOR;;
       $ZVM_MODE_NORMAL) old_style=$ZVM_NORMAL_MODE_CURSOR;;
       $ZVM_MODE_OPPEND) old_style=$ZVM_OPPEND_MODE_CURSOR;;
+      $ZVM_MODE_VISUAL) old_style=$ZVM_VISUAL_MODE_CURSOR;;
+      $ZVM_MODE_VISUAL_LINE) old_style=$ZVM_VISUAL_LINE_MODE_CURSOR;;
     esac
 
     if [[ $old_style =~ '\e\][0-9]+;.+\a' ]]; then
