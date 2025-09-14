@@ -450,6 +450,7 @@ function zvm_find_bindkey_widget() {
     local result=$(bindkey -M ${keymap} -p "$prefix_keys")$'\n'
 
     # Split string to array by newline
+    local i=
     for ((i=$spos;i<$#result;i++)); do
 
       # Save the last whitespace character of the line
@@ -485,6 +486,7 @@ function zvm_find_bindkey_widget() {
     fi
 
     # Escape spaces in key bindings (space -> $ZVM_ESCAPE_SPACE)
+    local i=
     for ((i=$#result;i>=0;i--)); do
 
       # Backward find the first whitespace character
@@ -556,6 +558,7 @@ function zvm_readkeys() {
     if [[ "${keys}" == $'\e' ]]; then
       timeout=$ZVM_ESCAPE_KEYTIMEOUT
       # Check if there is any one custom escape sequence
+      local i=
       for ((i=1; i<=${#result[@]}; i=i+2)); do
         if [[ "${result[$i]}" =~ '^\^\[\[?[A-Z0-9]*~?\^\[' ]]; then
           timeout=$ZVM_KEYTIMEOUT
@@ -645,7 +648,7 @@ function zvm_bindkey() {
 
 # Convert string to hexadecimal
 function zvm_string_to_hex() {
-  local str=
+  local str= i=
   for ((i=1;i<=$#1;i++)); do
     str+=$(printf '%x' "'${1[$i]}")
   done
@@ -654,7 +657,7 @@ function zvm_string_to_hex() {
 
 # Escape non-printed characters
 function zvm_escape_non_printed_characters() {
-  local str=
+  local str= i=
   for ((i=0;i<$#1;i++)); do
     local c=${1:$i:1}
     if [[ "$c" < ' ' ]]; then
@@ -1079,6 +1082,7 @@ function zvm_vi_opp_case() {
   local ret=($(zvm_selection))
   local bpos=${ret[1]} epos=${ret[2]}
   local content=${BUFFER:$bpos:$((epos-bpos))}
+  local i=
   for ((i=1; i<=$#content; i++)); do
     if [[ ${content[i]} =~ [A-Z] ]]; then
       content[i]=${(L)content[i]}
@@ -1127,7 +1131,7 @@ function zvm_vi_put_after() {
       fi
     fi
 
-    local repeated=
+    local repeated= i=
     for ((i=1; i<=count; i++)); do
       repeated+="$content"
     done
@@ -1147,7 +1151,7 @@ function zvm_vi_put_after() {
       foot="${BUFFER:$((CURSOR+1))}"
     fi
 
-    local repeated=
+    local repeated= i=
     for ((i=1; i<=count; i++)); do
       repeated+="$content"
     done
@@ -1188,7 +1192,7 @@ function zvm_vi_put_before() {
       foot=${BUFFER:$pos}
     fi
 
-    local repeated=
+    local repeated= i=
     for ((i=1; i<=count; i++)); do
       repeated+="$content"
     done
@@ -1199,7 +1203,7 @@ function zvm_vi_put_before() {
     head="${BUFFER:0:$CURSOR}"
     foot="${BUFFER:$((CURSOR+1))}"
 
-    local repeated=
+    local repeated= i=
     for ((i=1; i<=count; i++)); do
       repeated+="$content"
     done
@@ -1372,6 +1376,7 @@ function zvm_default_handler() {
           done
           ;;
         *)
+          local i=
           for ((i=0;i<$#keys;i++)) do
             zvm_navigation_handler ${keys:$i:1}
             zvm_highlight
@@ -1720,12 +1725,14 @@ function zvm_range_handler() {
   elif [[ $keys =~ '^[cdy]([1-9][0-9]*)?j$' ]]; then
     # Exit if there is no line below
     count=${match[1]:-1}
+    local i=
     for ((i=$((CURSOR+1)); i<=$#BUFFER; i++)); do
       [[ ${BUFFER[$i]} == $'\n' ]] && navkey='j'
     done
   elif [[ $keys =~ '^[cdy]([1-9][0-9]*)?k$' ]]; then
     # Exit if there is no line above
     count=${match[1]:-1}
+    local i=
     for ((i=$((CURSOR+1)); i>0; i--)); do
       [[ ${BUFFER[$i]} == $'\n' ]] && navkey='k'
     done
@@ -1901,7 +1908,7 @@ function zvm_repeat_command {
   # `i`, and it will cause an infinite loop.
   local init_cursor=$CURSOR
   local last_cursor=$CURSOR
-  local exit_code=0
+  local exit_code=0 c=
   for ((c=0; c<count; c++)); do
     eval $cmd
 
@@ -1995,6 +2002,7 @@ function zvm_move_around_surround() {
   local slen=
   local bpos=-1
   local epos=-1
+  local i= s=
   for ((i=$CURSOR;i>=0;i--)); do
     # Check if it's one of the surrounds
     for s in {\',\",\`,\(,\[,\{,\<}; do
@@ -2274,6 +2282,7 @@ function zvm_repeat_vi_change() {
   local ncount=${cmds[1]}
   local ccount=${cmds[2]}
   local pos=$CURSOR epos=$CURSOR
+  local i=
 
   # Forward expand the characters to the Nth newline character
   for ((i=0; i<$ncount; i++)); do
@@ -2315,6 +2324,7 @@ function zvm_repeat_replace() {
   local cmds=(${ZVM_REPEAT_COMMANDS[3,-1]})
   local cmd=
   local cursor=$CURSOR
+  local i=
 
   for ((i=1; i<=${#cmds[@]}; i++)); do
     cmd="${cmds[$i]}"
@@ -2354,6 +2364,7 @@ function zvm_repeat_replace_chars() {
   fi
 
   local cursor=$((CURSOR+1))
+  local i=
 
   for ((i=1; i<=${#cmds[@]}; i++)); do
     cmd="${cmds[$i]}"
@@ -2947,6 +2958,7 @@ function zvm_highlight() {
 
     # Remove old region highlight
     local rawhighlight=()
+    local i= j=
     for ((i=1; i<=${#region_highlight[@]}; i++)); do
       local raw=true
       local spl=(${(@s/ /)region_highlight[i]})
