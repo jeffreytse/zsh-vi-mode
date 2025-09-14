@@ -3681,11 +3681,13 @@ function zvm_init() {
   zvm_bindkey visual 'v' zvm_vi_edit_command_line
   zvm_bindkey vicmd  '.' zvm_repeat_change
 
+  # Clipboard support
   zvm_bindkey vicmd  'gp' zvm_paste_clipboard_after
   zvm_bindkey vicmd  'gP' zvm_paste_clipboard_before
   zvm_bindkey visual 'gp' zvm_visual_paste_clipboard
   zvm_bindkey visual 'gP' zvm_visual_paste_clipboard
 
+  # Switch keyword
   zvm_bindkey vicmd '^A' zvm_switch_keyword
   zvm_bindkey vicmd '^X' zvm_switch_keyword
 
