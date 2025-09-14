@@ -1553,6 +1553,14 @@ function zvm_navigation_handler() {
 
     cmd=(zvm_find_and_move_cursor $key $count $forward $skip)
     count=1
+  # Handle G command
+  elif [[ $keys =~ '^([1-9][0-9]*)?G$' ]]; then
+    count=${match[1]:-1}
+    cmd=(CURSOR=$#BUFFER)
+  # Handle gg command
+  elif [[ $keys =~ '^([1-9][0-9]*)?gg$' ]]; then
+    count=${match[1]:-1}
+    cmd=(CURSOR=0)
   else
     count=${keys:0:-1}
     case ${keys: -1} in
@@ -1625,6 +1633,12 @@ function zvm_range_handler() {
   # If the 2nd character is `i` or `a`, we should read
   # one more key
   if [[ ${keys} =~ '^.[ia]$' ]]; then
+    zvm_update_cursor
+    read -k 1 key
+    keys="${keys}${key}"
+  elif [[ ${keys} =~ '^.g$' ]]; then
+    # If the 2nd character is `g`, we should also read
+    # one more key for `gg`
     zvm_update_cursor
     read -k 1 key
     keys="${keys}${key}"
@@ -1761,6 +1775,13 @@ function zvm_range_handler() {
     count=${match[1]:-1}
     count=$((count-1))
     navkey=${count}l
+  elif [[ $keys =~ '^[cdy]([1-9][0-9]*)?G$' ]]; then
+    count=${match[1]:-1}
+    navkey=G
+  elif [[ $keys =~ '^[cdy]([1-9][0-9]*)?gg$' ]]; then
+    MARK=$((MARK-1))
+    count=${match[1]:-1}
+    navkey=gg
   elif [[ $keys =~ '^.([1-9][0-9]*)?([^0-9]+)$' ]]; then
     count=${match[1]:-1}
     navkey=${match[2]}
