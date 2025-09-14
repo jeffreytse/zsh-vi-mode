@@ -257,6 +257,13 @@ ZVM_REPEAT_MODE=false
 ZVM_REPEAT_RESET=false
 ZVM_REPEAT_COMMANDS=($ZVM_MODE_NORMAL i)
 
+# Macro recording
+ZVM_MACRO_RECORDING=false
+ZVM_MACRO_REGISTER=
+ZVM_MACRO_CONTENT=()
+ZVM_LAST_MACRO_REGISTER=
+typeset -gA ZVM_MACROS # Associative array
+
 ##########################################
 # Initial all default settings
 
@@ -896,6 +903,11 @@ function zvm_vi_replace_chars() {
 
   zvm_exit_oppend_mode
 
+  # Capture the character for macro recording
+  if $ZVM_MACRO_RECORDING; then
+    ZVM_MACRO_CONTENT+=("$key")
+  fi
+
   # Escape key will break the replacing process
   case $(zvm_escape_non_printed_characters $key) in
     $ZVM_VI_OPPEND_ESCAPE_BINDKEY)
@@ -1527,6 +1539,11 @@ function zvm_navigation_handler() {
       esac
 
       zvm_exit_oppend_mode
+
+      # Capture the additional character for macro recording
+      if $ZVM_MACRO_RECORDING; then
+        ZVM_MACRO_CONTENT+=("$cmd")
+      fi
     fi
 
     local forward=true
@@ -1602,6 +1619,11 @@ function zvm_range_handler() {
     zvm_update_cursor
     read -k 1 key
     keys="${keys}${key}"
+
+    # Capture the character for macro recording
+    if $ZVM_MACRO_RECORDING; then
+      ZVM_MACRO_CONTENT+=("$key")
+    fi
   done
 
   # If the keys ends in numbers, we should read more
@@ -1610,6 +1632,11 @@ function zvm_range_handler() {
     zvm_update_cursor
     read -k 1 key
     keys="${keys}${key}"
+
+    # Capture the character for macro recording
+    if $ZVM_MACRO_RECORDING; then
+      ZVM_MACRO_CONTENT+=("$key")
+    fi
   done
 
   # If the 2nd character is `i` or `a`, we should read
@@ -1618,6 +1645,11 @@ function zvm_range_handler() {
     zvm_update_cursor
     read -k 1 key
     keys="${keys}${key}"
+
+    # Capture the character for macro recording
+    if $ZVM_MACRO_RECORDING; then
+      ZVM_MACRO_CONTENT+=("$key")
+    fi
   fi
 
   # Exit operator pending mode
@@ -2126,6 +2158,11 @@ function zvm_change_surround() {
       zvm_enter_oppend_mode
       read -k 1 key
       zvm_exit_oppend_mode
+
+      # Capture the character for macro recording
+      if $ZVM_MACRO_RECORDING; then
+        ZVM_MACRO_CONTENT+=("$key")
+      fi
       ;;
     S|y|a)
       if [[ -z $surround ]]; then
@@ -3377,6 +3414,65 @@ function zvm_update_repeat_commands() {
   fi
 }
 
+# Start macro recording
+function zvm_start_macro() {
+  if $ZVM_MACRO_RECORDING; then
+    ZVM_MACRO_CONTENT=("${ZVM_MACRO_CONTENT[@]:1}")
+    echo $ZVM_MACRO_CONTENT >> ttt.md
+    zvm_stop_macro
+    return
+  fi
+
+  zvm_enter_oppend_mode
+  read -k 1 key
+  zvm_exit_oppend_mode
+
+  if [[ $key =~ [a-z0-9] ]]; then
+    ZVM_MACRO_REGISTER=$key
+    ZVM_MACRO_CONTENT=()
+    ZVM_MACRO_RECORDING=true
+  fi
+}
+
+# Stop macro recording
+function zvm_stop_macro() {
+  if $ZVM_MACRO_RECORDING; then
+    # Save the macro content to the register, if the content
+    # is empty, we just remove the register.
+    if (( ${#ZVM_MACRO_CONTENT[@]} == 0 )); then
+      unset ZVM_MACROS[$ZVM_MACRO_REGISTER]
+      ZVM_LAST_MACRO_REGISTER=
+    else
+      ZVM_MACROS[$ZVM_MACRO_REGISTER]="${(j::)ZVM_MACRO_CONTENT}"
+    fi
+    ZVM_MACRO_RECORDING=false
+    ZVM_MACRO_REGISTER=
+    ZVM_MACRO_CONTENT=()
+  fi
+}
+
+# Play macro
+function zvm_play_macro() {
+  zvm_enter_oppend_mode
+  read -k 1 key
+  zvm_exit_oppend_mode
+
+  if [[ $key == '@' ]]; then
+    if [[ -n $ZVM_LAST_MACRO_REGISTER ]]; then
+      key=$ZVM_LAST_MACRO_REGISTER
+    else
+      return
+    fi
+  fi
+
+  if [[ $key =~ [a-z] ]] && [[ -n ${ZVM_MACROS[$key]} ]]; then
+    local content="${ZVM_MACROS[$key]}"
+    ZVM_LAST_MACRO_REGISTER=$key
+    zle -U $content
+  fi
+}
+
+
 # Updates editor information when line pre redraw
 function zvm_zle-line-pre-redraw() {
   # Fix cursor style is not updated in tmux environment, when
@@ -3390,6 +3486,11 @@ function zvm_zle-line-pre-redraw() {
   fi
   zvm_update_highlight
   zvm_update_repeat_commands
+
+  # Capture keys for macro recording
+  if $ZVM_MACRO_RECORDING && [[ -n $KEYS ]]; then
+    ZVM_MACRO_CONTENT+=("$KEYS")
+  fi
 }
 
 # Start every prompt in the correct vi mode
@@ -3580,6 +3681,8 @@ function zvm_init() {
   zvm_define_widget zvm_paste_clipboard_after
   zvm_define_widget zvm_paste_clipboard_before
   zvm_define_widget zvm_visual_paste_clipboard
+  zvm_define_widget zvm_start_macro
+  zvm_define_widget zvm_play_macro
 
   # Override standard widgets
   zvm_define_widget zle-line-pre-redraw zvm_zle-line-pre-redraw
@@ -3657,6 +3760,10 @@ function zvm_init() {
 
   zvm_bindkey vicmd '^A' zvm_switch_keyword
   zvm_bindkey vicmd '^X' zvm_switch_keyword
+
+  # Macro recording and playback
+  zvm_bindkey vicmd 'q' zvm_start_macro
+  zvm_bindkey vicmd '@' zvm_play_macro
 
   # Keybindings for escape key and some specials
   local exit_oppend_mode_widget=
