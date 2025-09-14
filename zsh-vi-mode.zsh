@@ -257,6 +257,12 @@ ZVM_REPEAT_MODE=false
 ZVM_REPEAT_RESET=false
 ZVM_REPEAT_COMMANDS=($ZVM_MODE_NORMAL i)
 
+# Range handling return values
+ZVM_RANGE_HANDLER_RET_OK=0
+ZVM_RANGE_HANDLER_RET_CONTINUE=1
+ZVM_RANGE_HANDLER_RET_PUSHBACK=2
+ZVM_RANGE_HANDLER_RET_CANCEL=3
+
 ##########################################
 # Initial all default settings
 
@@ -1354,20 +1360,24 @@ function zvm_default_handler() {
           while :; do
             zvm_range_handler "${keys}${extra_keys}"
             case $? in
-              0) break;;
-              1)
+              $ZVM_RANGE_HANDLER_RET_OK)
+                # The range action is handled successfully and exit
+                break
+                ;;
+              $ZVM_RANGE_HANDLER_RET_CONTINUE)
                 # Continue to ask to provide the action when we're
                 # still in visual mode
                 keys='v'; extra_keys=
                 ;;
-              2)
-                # Pushe the keys onto the input stack of ZLE, it's
+              $ZVM_RANGE_HANDLER_RET_PUSHBACK)
+                # Push the keys onto the input stack of ZLE, it's
                 # handled in zvm_readkeys_handler function
                 zvm_exit_visual_mode false
                 zvm_reset_prompt
                 return
                 ;;
-              3)
+              $ZVM_RANGE_HANDLER_RET_CANCEL)
+                # Exit visual mode and cancel the range action
                 zvm_exit_visual_mode false
                 zvm_reset_prompt
                 break
@@ -1591,7 +1601,7 @@ function zvm_range_handler() {
   local mode=
   local cmds=($ZVM_MODE)
   local count=1
-  local exit_code=0
+  local exit_code=$ZVM_RANGE_HANDLER_RET_OK
 
   # Enter operator pending mode
   zvm_enter_oppend_mode false
@@ -1627,7 +1637,7 @@ function zvm_range_handler() {
   # escape non-printed characters (e.g. ^[)
   if [[ $(zvm_escape_non_printed_characters "$keys") =~
     ${ZVM_VI_OPPEND_ESCAPE_BINDKEY/\^\[/\\^\\[} ]]; then
-    return 1
+    return $ZVM_RANGE_HANDLER_RET_CANCEL
   fi
 
   # Enter visual mode or visual line mode
@@ -1760,7 +1770,7 @@ function zvm_range_handler() {
 
   # Handle navigation
   case $navkey in
-    '') exit_code=1;;
+    '') exit_code=$ZVM_RANGE_HANDLER_RET_CONTINUE;;
     *[ia]?)
       # At least 1 time
       if [[ -z $count ]]; then
@@ -1780,11 +1790,11 @@ function zvm_range_handler() {
         zvm_repeat_command "$cmd" $count
       elif [[ -n "$(zvm_match_surround "${keys[-1]}")" ]]; then
         ZVM_KEYS="${keys}"
-        exit_code=2
+        exit_code=$ZVM_RANGE_HANDLER_RET_PUSHBACK
       elif [[ "${keys[1]}" == 'v' ]]; then
-        exit_code=1
+        exit_code=$ZVM_RANGE_HANDLER_RET_CONTINUE
       else
-        exit_code=3
+        exit_code=$ZVM_RANGE_HANDLER_RET_CANCEL
       fi
       ;;
     c[eEwW])
@@ -1840,7 +1850,7 @@ function zvm_range_handler() {
       if zvm_navigation_handler "${count}${navkey}"; then
         keys="${keys[1]}${retval}"
       else
-        exit_code=1
+        exit_code=$ZVM_RANGE_HANDLER_RET_CONTINUE
       fi
 
       BUFFER[-1]=''
