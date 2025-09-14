@@ -2251,7 +2251,7 @@ function zvm_repeat_insert() {
 
     # The length of character should be 1
     if (($#cmd == 1)); then
-      LBUFFER+=$cmd
+      zvm_self_insert "$cmd"
     fi
   done
 }
