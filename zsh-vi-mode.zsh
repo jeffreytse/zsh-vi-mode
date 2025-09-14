@@ -182,6 +182,16 @@
 # ZVM_CURSOR_STYLE_ENABLED
 # enable the cursor style feature (default is true)
 #
+# ZVM_OPEN_CMD
+# the command for opening URL or file path (e.g. `xdg-open`, `open`, `start`
+# and so on)
+#
+# ZVM_OPEN_URL_CMD
+# the command for opening URL (default is $ZVM_OPEN_CMD)
+#
+# ZVM_OPEN_FILE_CMD
+# the command for opening file path (default is $ZVM_OPEN_CMD)
+#
 
 # Avoid sourcing plugin multiple times
 command -v 'zvm_version' >/dev/null && return
@@ -263,6 +273,12 @@ ZVM_RANGE_HANDLER_RET_CONTINUE=1
 ZVM_RANGE_HANDLER_RET_PUSHBACK=2
 ZVM_RANGE_HANDLER_RET_CANCEL=3
 
+# URL regex pattern
+ZVM_URL_SCHEME='^(http(s)?:\/\/.)?(ftp(s)?:\/\/.)?(file:\/\/.)?(www\.)?'
+ZVM_URL_HOST='[-a-zA-Z0-9@:%._\+~#=]{0,255}\.[a-z]{2,6}'
+ZVM_URL_PATH='([-a-zA-Z0-9@:%_\+.~#?&\/=]*)$'
+ZVM_URL_REGEX="${ZVM_URL_SCHEME}${ZVM_URL_HOST}${ZVM_URL_PATH}"
+
 ##########################################
 # Initial all default settings
 
@@ -328,6 +344,11 @@ fi
 : ${ZVM_SYSTEM_CLIPBOARD_ENABLED:=false}
 : ${ZVM_CLIPBOARD_COPY_CMD:=}
 : ${ZVM_CLIPBOARD_PASTE_CMD:=}
+
+# Open URL or file path feature
+: ${ZVM_OPEN_CMD:=}
+: ${ZVM_OPEN_URL_CMD:=${ZVM_OPEN_CMD:-}}
+: ${ZVM_OPEN_FILE_CMD:=${ZVM_OPEN_CMD:-}}
 
 # All the extra commands
 commands_array_names=(
@@ -1993,6 +2014,106 @@ function zvm_vi_edit_command_line() {
   esac
 }
 
+# Check if content is valid in URL
+function zvm_is_url() {
+  local content="$1"
+
+  # Check if it starts with a valid scheme
+  if [[ "$content" =~ $ZVM_URL_REGEX ]]; then
+    return 0
+  fi
+
+  return 1
+}
+
+# Check if content is a valid path
+function zvm_is_path() {
+  local content="$1"
+
+  # Expand ~ if present
+  if [[ "$content" =~ '^~' ]]; then
+    content="${HOME}${content:1}"
+  fi
+
+  # Check if path exists
+  if [[ -e "$content" ]]; then
+    return 0
+  fi
+
+  return 1
+}
+
+# Select a URL or path under the cursor
+function zvm_select_url_or_path() {
+  local cursor=${1:-$CURSOR}
+  local buffer=${2:-$BUFFER}
+  local bpos= epos=
+  local _bpos=0 _epos=$#buffer
+  local content=
+
+  # Find the beginning the current line
+  for ((bpos=$cursor; $bpos>=0; bpos--)); do
+    if [[ "${buffer:$bpos:1}" == $'\n' ]]; then
+      _bpos=$((bpos+1))
+      break
+    fi
+  done
+
+  # Find the end of current line
+  for ((epos=$cursor; $epos<$#buffer; epos++)); do
+    if [[ "${buffer:$epos:1}" == $'\n' ]]; then
+      _epos=$epos
+      break
+    fi
+  done
+
+  # Search for the URL or path
+  for ((bpos=$_bpos; $bpos<=$cursor; bpos++)); do
+    for ((epos=$((_epos-1)); $epos>=$cursor; epos--)); do
+      content=${buffer:$bpos:$((epos-bpos+1))}
+      if zvm_is_url "$content" || zvm_is_path "$content"; then
+        echo $bpos $epos
+        return
+      fi
+    done
+  done
+
+  echo $cursor $cursor
+}
+
+# Open URL or folder under cursor (gx command)
+function zvm_open_under_cursor() {
+  # Get the word under the cursor
+  local ret=($(zvm_select_url_or_path $CURSOR $BUFFER))
+  local bpos=${ret[1]} epos=${ret[2]}
+  local content=${BUFFER:$bpos:$((epos-bpos+1))}
+
+  # Check if it's a valid URL
+  if zvm_is_url "$content"; then
+    # Open URL with default browser
+    if [[ -n $ZVM_OPEN_URL_CMD ]]; then
+      local -a cmd
+      cmd=("${(z)ZVM_OPEN_URL_CMD}")
+      "$cmd[@]" "$content"
+    elif zvm_exist_command "open"; then
+      open "$content"
+    elif zvm_exist_command "xdg-open"; then
+      xdg-open "$content"
+    fi
+  # Check if it's a valid path
+  elif zvm_is_path "$content"; then
+    if [[ -n $ZVM_OPEN_FILE_CMD ]]; then
+      local -a cmd
+      cmd=("${(z)ZVM_OPEN_FILE_CMD}")
+      "$cmd[@]" "$content"
+    elif zvm_exist_command "open"; then
+      open "$content"
+    elif zvm_exist_command "xdg-open"; then
+      xdg-open "$content"
+    fi
+  fi
+}
+
 # Get the substr position in a string
 function zvm_substr_pos() {
   local pos=-1
@@ -3612,6 +3733,9 @@ function zvm_init() {
   zvm_define_widget zvm_paste_clipboard_before
   zvm_define_widget zvm_visual_paste_clipboard
 
+  # Open URL under cursor
+  zvm_define_widget zvm_open_under_cursor
+
   # Override standard widgets
   zvm_define_widget zle-line-pre-redraw zvm_zle-line-pre-redraw
 
@@ -3680,6 +3804,9 @@ function zvm_init() {
   zvm_bindkey visual '~' zvm_vi_opp_case
   zvm_bindkey visual 'v' zvm_vi_edit_command_line
   zvm_bindkey vicmd  '.' zvm_repeat_change
+
+  # Open URL under cursor
+  zvm_bindkey vicmd 'gx' zvm_open_under_cursor
 
   # Clipboard support
   zvm_bindkey vicmd  'gp' zvm_paste_clipboard_after
