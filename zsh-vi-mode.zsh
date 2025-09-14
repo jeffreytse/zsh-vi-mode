@@ -3377,37 +3377,6 @@ function zvm_update_repeat_commands() {
   fi
 }
 
-# Updates editor information when line pre redraw
-function zvm_zle-line-pre-redraw() {
-  # Fix cursor style is not updated in tmux environment, when
-  # there are one more panel in the same window, the program
-  # in other panel could change the cursor shape, we need to
-  # update cursor style when line is redrawing.
-  if [[ -n $TMUX ]]; then
-    zvm_update_cursor
-    # Fix display is not updated in the terminal of IntelliJ IDE.
-    [[ "$TERMINAL_EMULATOR" == "JetBrains-JediTerm" ]] && zle redisplay
-  fi
-  zvm_update_highlight
-  zvm_update_repeat_commands
-}
-
-# Start every prompt in the correct vi mode
-function zvm_zle-line-init() {
-  # Save last mode
-  local mode=${ZVM_MODE:-$ZVM_MODE_INSERT}
-
-  # It's neccessary to set to insert mode when line init
-  # and we don't need to reset prompt.
-  zvm_select_vi_mode $ZVM_MODE_INSERT false
-
-  # Select line init mode and reset prompt
-  case ${ZVM_LINE_INIT_MODE:-$mode} in
-    $ZVM_MODE_INSERT) zvm_select_vi_mode $ZVM_MODE_INSERT;;
-    *) zvm_select_vi_mode $ZVM_MODE_NORMAL;;
-  esac
-}
-
 # Clipboard support
 function zvm_clipboard_detect() {
   if [[ -n $ZVM_CLIPBOARD_COPY_CMD && -n $ZVM_CLIPBOARD_PASTE_CMD ]]; then
@@ -3491,6 +3460,37 @@ function zvm_visual_paste_clipboard() {
   BUFFER="${BUFFER:0:$bpos}${content}${BUFFER:$epos}"
   CURSOR=$cpos
   zvm_exit_visual_mode
+}
+
+# Updates editor information when line pre redraw
+function zvm_zle-line-pre-redraw() {
+  # Fix cursor style is not updated in tmux environment, when
+  # there are one more panel in the same window, the program
+  # in other panel could change the cursor shape, we need to
+  # update cursor style when line is redrawing.
+  if [[ -n $TMUX ]]; then
+    zvm_update_cursor
+    # Fix display is not updated in the terminal of IntelliJ IDE.
+    [[ "$TERMINAL_EMULATOR" == "JetBrains-JediTerm" ]] && zle redisplay
+  fi
+  zvm_update_highlight
+  zvm_update_repeat_commands
+}
+
+# Start every prompt in the correct vi mode
+function zvm_zle-line-init() {
+  # Save last mode
+  local mode=${ZVM_MODE:-$ZVM_MODE_INSERT}
+
+  # It's neccessary to set to insert mode when line init
+  # and we don't need to reset prompt.
+  zvm_select_vi_mode $ZVM_MODE_INSERT false
+
+  # Select line init mode and reset prompt
+  case ${ZVM_LINE_INIT_MODE:-$mode} in
+    $ZVM_MODE_INSERT) zvm_select_vi_mode $ZVM_MODE_INSERT;;
+    *) zvm_select_vi_mode $ZVM_MODE_NORMAL;;
+  esac
 }
 
 # Restore the user default cursor style after prompt finish
