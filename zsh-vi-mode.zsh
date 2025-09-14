@@ -2191,20 +2191,24 @@ function zvm_change_surround_text_object() {
 
 # Repeat last change
 function zvm_repeat_change() {
+  local times=${NUMERIC:-1}
   ZVM_REPEAT_MODE=true
   ZVM_RESET_PROMPT_DISABLED=true
 
   local cmd=${ZVM_REPEAT_COMMANDS[2]}
 
-  # Handle repeat command
-  case $cmd in
-    [aioAIO]) zvm_repeat_insert;;
-    c) zvm_repeat_vi_change;;
-    [cd]*) zvm_repeat_range_change;;
-    R) zvm_repeat_replace;;
-    r) zvm_repeat_replace_chars;;
-    *) zle vi-repeat-change;;
-  esac
+  # Handle repeat command for the specified number of times
+  local i=
+  for ((i=0; i<$times; i++)); do
+    case $cmd in
+      [aioAIO]) zvm_repeat_insert;;
+      c) zvm_repeat_vi_change;;
+      [cd]*) zvm_repeat_range_change;;
+      R) zvm_repeat_replace;;
+      r) zvm_repeat_replace_chars;;
+      *) zle vi-repeat-change;;
+    esac
+  done
 
   zle redisplay
 
@@ -2238,10 +2242,11 @@ function zvm_repeat_insert() {
   esac
 
   # Insert characters
+  local i=
   for ((i=1; i<=${#cmds[@]}; i++)); do
     cmd="${cmds[$i]}"
 
-    # Hanlde the backspace command
+    # Handle the backspace command
     if [[ $cmd == '' ]]; then
       if (($#LBUFFER > 0)); then
         LBUFFER=${LBUFFER:0:-1}
