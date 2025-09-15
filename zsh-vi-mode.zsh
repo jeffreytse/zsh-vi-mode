@@ -182,6 +182,26 @@
 # ZVM_CURSOR_STYLE_ENABLED
 # enable the cursor style feature (default is true)
 #
+# ZVM_SYSTEM_CLIPBOARD_ENABLED
+# enable the system clipboard feature (default is false), if you want to enable
+# it, you should also set the copy and paste commands below:
+#
+# ZVM_CLIPBOARD_COPY_CMD
+# the command for copying text to system clipboard
+#
+# ZVM_CLIPBOARD_PASTE_CMD
+# the command for pasting text from system clipboard
+#
+# For example:
+# - For macOS, you can set it to `pbcopy` and `pbpaste`
+# - For Linux, you can set it to `xclip -selection clipboard` and
+#   `xclip -selection clipboard -o`)
+# - For Wayland, you can also use `wl-copy` and `wl-paste`
+# - For WSL, you can also use `clip.exe`
+#
+# If you don't set these two commands, the plugin will try to detect them
+# automatically for you.
+#
 # ZVM_OPEN_CMD
 # the command for opening URL or file path (e.g. `xdg-open`, `open`, `start`
 # and so on)
