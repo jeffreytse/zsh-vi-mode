@@ -3449,7 +3449,7 @@ function zvm_cursor_style() {
       $ZVM_MODE_VISUAL_LINE) old_style=$ZVM_VISUAL_LINE_MODE_CURSOR;;
     esac
 
-    if [[ $old_style =~ '\e\][0-9]+;.+\a' ]]; then
+    if [[ $old_style =~ "\\\e\][0-9]+;.+\\\a" ]]; then
       style=$style'\e\e]112\a'
     fi
   fi
