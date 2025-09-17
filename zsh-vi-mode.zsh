@@ -3940,7 +3940,7 @@ function zvm_init() {
 
 # Check if a command is existed
 function zvm_exist_command() {
-  command -v "$1" >/dev/null
+  (($+commands[$1] + $+functions[$1]))
 }
 
 # Execute commands
