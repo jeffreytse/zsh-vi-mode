@@ -3250,7 +3250,6 @@ function zvm_insert_bol() {
 function zvm_append_eol() {
   ZVM_INSERT_MODE='A'
   zle vi-end-of-line
-  CURSOR=$((CURSOR+1))
   zvm_select_vi_mode $ZVM_MODE_INSERT
   zvm_reset_repeat_commands $ZVM_MODE_NORMAL $ZVM_INSERT_MODE
 }
