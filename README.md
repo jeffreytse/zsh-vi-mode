@@ -151,7 +151,7 @@ Clone `zsh-vi-mode` into your custom plugins repo
 
 ```shell
 git clone https://github.com/jeffreytse/zsh-vi-mode \
-  $ZSH_CUSTOM/plugins/zsh-vi-mode
+  ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/zsh-vi-mode
 ```
 Then load as a plugin in your `.zshrc`
 
