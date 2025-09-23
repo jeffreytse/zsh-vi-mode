@@ -3242,6 +3242,7 @@ function zvm_exit_oppend_mode() {
 function zvm_insert_bol() {
   ZVM_INSERT_MODE='I'
   zle vi-first-non-blank
+  zvm_exit_visual_mode false
   zvm_select_vi_mode $ZVM_MODE_INSERT
   zvm_reset_repeat_commands $ZVM_MODE_NORMAL $ZVM_INSERT_MODE
 }
@@ -3250,6 +3251,7 @@ function zvm_insert_bol() {
 function zvm_append_eol() {
   ZVM_INSERT_MODE='A'
   zle vi-end-of-line
+  zvm_exit_visual_mode false
   zvm_select_vi_mode $ZVM_MODE_INSERT
   zvm_reset_repeat_commands $ZVM_MODE_NORMAL $ZVM_INSERT_MODE
 }
