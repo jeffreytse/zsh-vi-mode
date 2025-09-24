@@ -997,7 +997,7 @@ ZVM_INIT_MODE=sourcing
 
 - [Zsh](https://www.zsh.org/) - A powerful shell that operates as both an interactive shell and as a scripting language interpreter.
 - [Oh-My-Zsh](https://github.com/ohmyzsh/ohmyzsh) - A delightful, open source, community-driven framework for managing your ZSH configuration.
-- [vim-surround](https://github.com/tpope/vim-surround) - A vim plugin that all about "surroundings": parentheses, brackets, quotes, XML tags, and more.
+- [vim-surround](https://github.com/tpope/vim-surround) - A vim plugin all about "surroundings": parentheses, brackets, quotes, XML tags, and more.
 - [vim-sandwich](https://github.com/machakann/vim-sandwich) - A set of operator and textobject plugins to add/delete/replace surroundings of a sandwiched textobject.
 
 ## 🔫 Contributing
