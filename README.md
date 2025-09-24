@@ -490,9 +490,9 @@ ZVM_SYSTEM_CLIPBOARD_ENABLED=true
 
 Auto-detection:
 
-- macOS: pbcopy/pbpaste
-- Wayland: wl-copy / wl-paste -n
-- X11: xclip or xsel
+- macOS: `pbcopy` and `pbpaste`
+- Wayland: `wl-copy` and `wl-paste -n`
+- X11: `xclip` or `xsel`
 
 Override commands:
 
