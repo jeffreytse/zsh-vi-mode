@@ -653,7 +653,7 @@ ZVM_VI_INSERT_ESCAPE_BINDKEY=jk
 Readkey Engine
 --------
 
-This plugin has supported to choose the readkey engine for reading and
+This plugin has chosen to support the readkey engine for reading and
 processing the key events. It easy to do by the `ZVM_READKEY_ENGINE`option,
 currently the below engines are supported:
 
