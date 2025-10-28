@@ -3782,12 +3782,24 @@ function zvm_init() {
   zvm_bindkey viins '^_' undo
 
   # Mode agnostic editing
-  zvm_bindkey viins '^[[H'  beginning-of-line
-  zvm_bindkey vicmd '^[[H'  beginning-of-line
-  zvm_bindkey viins '^[[F'  end-of-line
-  zvm_bindkey vicmd '^[[F'  end-of-line
-  zvm_bindkey viins '^[[3~' delete-char
-  zvm_bindkey vicmd '^[[3~' delete-char
+  typeset -A key
+  key[Home]=${terminfo[khome]}
+  key[End]=${terminfo[kend]}
+  key[Insert]=${terminfo[kich1]}
+  key[Delete]=${terminfo[kdch1]}
+  key[Up]=${terminfo[kcuu1]}
+  key[Down]=${terminfo[kcud1]}
+  key[Left]=${terminfo[kcub1]}
+  key[Right]=${terminfo[kcuf1]}
+  key[PageUp]=${terminfo[kpp]}
+  key[PageDown]=${terminfo[knp]}
+# setup key accordingly
+  zvm_bindkey viins "${key[Home]}"  beginning-of-line
+  zvm_bindkey vicmd "${key[Home]}"  beginning-of-line
+  zvm_bindkey viins "${key[End]}"  end-of-line
+  zvm_bindkey vicmd "${key[End]}"  end-of-line
+  zvm_bindkey viins "${key[Delete]}" delete-char
+  zvm_bindkey vicmd "${key[Delete]}" delete-char
 
   # History search
   zvm_bindkey viins '^R' history-incremental-search-backward
