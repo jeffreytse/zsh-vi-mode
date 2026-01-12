@@ -130,7 +130,7 @@
 # ZVM_LINE_INIT_MODE
 # the setting for init mode of command line (default is empty), empty will
 # keep the last command mode, for the first command line it will be insert
-# mode, you can also set it to a specific vi mode to alway keep the mode
+# mode, you can also set it to a specific vi mode to always keep the mode
 # for each command line
 #
 # For example:
@@ -253,7 +253,7 @@ ZVM_MODE=''
 # The keys typed to invoke this widget, as a literal string
 ZVM_KEYS=''
 
-# The region hilight information
+# The region highlight information
 ZVM_REGION_HIGHLIGHT=()
 
 # Default zvm readkey engines
@@ -324,7 +324,7 @@ if $ZVM_LAZY_KEYBINDINGS; then
   ZVM_LAZY_KEYBINDINGS_LIST=()
 fi
 
-# Set the cursor style in defferent vi modes, the value you could use
+# Set the cursor style in different vi modes, the value you could use
 # the predefined value, such as $ZVM_CURSOR_BLOCK, $ZVM_CURSOR_BEAM,
 # $ZVM_CURSOR_BLINKING_BLOCK and so on.
 : ${ZVM_INSERT_MODE_CURSOR:=$ZVM_CURSOR_BEAM}
@@ -662,7 +662,7 @@ function zvm_bindkey() {
     return
   fi
 
-  # Hanle the keybinding of NEX readkey engine
+  # Handle the keybinding of NEX readkey engine
   if [[ $ZVM_READKEY_ENGINE == $ZVM_READKEY_ENGINE_NEX ]]; then
     # Get the first key (especially check if ctrl characters)
     if [[ $#keys -gt 1 && "${keys:0:1}" == '^' ]]; then
@@ -799,7 +799,7 @@ function zvm_open_line_below() {
   local i=$CURSOR
 
   # If there is a completion suffix, we should break at the
-  # postion of suffix begin, otherwise, it should break when
+  # position of suffix begin, otherwise, it should break when
   # forward finding out the first newline character.
   for ((; i<$#BUFFER; i++)); do
     if ((SUFFIX_ACTIVE == 1)) && ((i >= SUFFIX_BEGIN)); then
@@ -858,7 +858,7 @@ function zvm_vi_replace() {
       read -k 1 key
 
       # Escape key will break the replacing process, and enter key
-      # will repace with a newline character.
+      # will replace with a newline character.
       case $(zvm_escape_non_printed_characters $key) in
         '^['|$ZVM_VI_OPPEND_ESCAPE_BINDKEY) break;;
         '^M') key=$'\n';;
@@ -1077,7 +1077,7 @@ function zvm_calc_selection() {
       rpos=$hpos
     fi
 
-    # Calculate the cursor postion, the indent must be
+    # Calculate the cursor position, the indent must be
     # less than the line characters.
     for ((cpos=$hpos; $cpos<$#BUFFER; cpos++)); do
       if [[ "${BUFFER:$cpos:1}" == $'\n' ]]; then
@@ -1207,7 +1207,7 @@ function zvm_vi_put_after() {
     CURSOR=$CURSOR+$#repeated
   fi
 
-  # Reresh display and highlight buffer
+  # Refresh display and highlight buffer
   zvm_highlight clear
   zvm_highlight custom $(($#head+$offset)) $(($#head+$#repeated+$offset))
 }
@@ -1260,7 +1260,7 @@ function zvm_vi_put_before() {
     CURSOR=$((CURSOR-1))
   fi
 
-  # Reresh display and highlight buffer
+  # Refresh display and highlight buffer
   zvm_highlight clear
   zvm_highlight custom $#head $(($#head+$#repeated))
 }
@@ -2194,7 +2194,7 @@ function zvm_move_around_surround() {
     fi
     bpos=${ret[1]}
     epos=${ret[2]}
-    # Move between the openning and close surrounds
+    # Move between the opening and close surrounds
     if (( $CURSOR > $((bpos-1)) )) && (( $CURSOR < $((bpos+slen)) )); then
       CURSOR=$epos
     else
@@ -2528,7 +2528,7 @@ function zvm_repeat_replace_chars() {
   local cmds=(${ZVM_REPEAT_COMMANDS[3,-1]})
   local cmd=
 
-  # Replacment of visual mode should move backward cursor to the
+  # Replacement of visual mode should move backward cursor to the
   # begin of current line, and replacing to the end of last line.
   if [[ $mode == $ZVM_MODE_VISUAL_LINE ]]; then
     zle vi-digit-or-beginning-of-line
@@ -3094,7 +3094,7 @@ function zvm_highlight() {
   local region=()
   local redraw=false
 
-  # Hanlde region by the option
+  # Handle region by the option
   case "$opt" in
     mode)
       case "$ZVM_MODE" in
@@ -3177,7 +3177,7 @@ function zvm_enter_visual_mode() {
     *) mode=$last_mode;;
   esac
 
-  # We should just exit the visual mdoe if current mode
+  # We should just exit the visual mode if current mode
   # is the same with last visual mode
   if [[ $last_mode == $mode ]]; then
     return
@@ -3510,7 +3510,7 @@ function zvm_update_repeat_commands() {
   $ZVM_REPEAT_MODE && return
 
   # We don't need to update the repeat commands if it is
-  # reseting the repeat commands.
+  # resetting the repeat commands.
   if $ZVM_REPEAT_RESET; then
     ZVM_REPEAT_RESET=false
     return
@@ -3537,7 +3537,7 @@ function zvm_update_repeat_commands() {
   fi
 
   # If current key is backspace key, we should remove last
-  # one, until it has only the mode and inital command
+  # one, until it has only the mode and initial command
   if [[ "$KEYS" == '' ]]; then
     if ((${#ZVM_REPEAT_COMMANDS[@]} > 2)) &&
       [[ ${ZVM_REPEAT_COMMANDS[-1]} != '' ]]; then
@@ -3655,7 +3655,7 @@ function zvm_zle-line-init() {
   # Save last mode
   local mode=${ZVM_MODE:-$ZVM_MODE_INSERT}
 
-  # It's neccessary to set to insert mode when line init
+  # It's necessary to set to insert mode when line init
   # and we don't need to reset prompt.
   zvm_select_vi_mode $ZVM_MODE_INSERT false
 
@@ -3682,7 +3682,7 @@ function zvm_zle-line-finish() {
 
 # Initialize vi-mode for widgets, keybindings, etc.
 function zvm_init() {
-  # Check if it has been initalized
+  # Check if it has been initialized
   if $ZVM_INIT_DONE; then
     return;
   fi
