@@ -265,14 +265,6 @@ home-manager.users.[your username] = { pkgs, ... }: {
 };
 ```
 
-#### Using [Fig](https://fig.io)
-
-Fig adds apps, shortcuts, and autocomplete to your existing terminal.
-
-Install `zsh-vi-mode` in just one click.
-
-<a href="https://fig.io/plugins/other/zsh-vi-mode" target="_blank"><img src="https://fig.io/badges/install-with-fig.svg" /></a>
-
 #### Gentoo Linux
 
 Available in [dm9pZCAq overlay](https://github.com/gentoo-mirror/dm9pZCAq)
