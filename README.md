@@ -1001,3 +1001,4 @@ You can start by [opening an issue](https://github.com/jeffreytse/zsh-vi-mode/is
 ## 🌈 License
 
 This theme is licensed under the [MIT license](https://opensource.org/licenses/mit-license.php) © Jeffrey Tse.
+- [AI Tools Hub](https://cloud1-d4g787x2022795b0b-1435432994.tcloudbaseapp.com/hub.html) - 21 free AI tools, one-time crypto payment, no subscriptions.
