@@ -1583,6 +1583,12 @@ function zvm_navigation_handler() {
   local count=
   local cmd=
 
+  if [[ $keys =~ '^([1-9][0-9]*)?j$' ]]; then
+    keys="${match[1]}${ZVM_VI_J_KEYMAP:-j}"
+  elif [[ $keys =~ '^([1-9][0-9]*)?k$' ]]; then
+    keys="${match[1]}${ZVM_VI_K_KEYMAP:-k}"
+  fi
+
   # Retrieve the calling command
   if [[ $keys =~ '^([1-9][0-9]*)?([fFtT].?)$' ]]; then
     count=${match[1]:-1}
@@ -1623,6 +1629,14 @@ function zvm_navigation_handler() {
   elif [[ $keys =~ '^([1-9][0-9]*)?gg$' ]]; then
     count=${match[1]:-1}
     cmd=(CURSOR=0)
+  # Handle gk/gj commands
+  elif [[ $keys =~ '^([1-9][0-9]*)?g[kj]$' ]]; then
+    local rows=${match[1]:-1}
+    count=1
+    case ${keys: -1} in
+      k) cmd=(NUMERIC=$rows zvm_vi_visible_up);;
+      j) cmd=(NUMERIC=$rows zvm_vi_visible_down);;
+    esac
   else
     count=${keys:0:-1}
     case ${keys: -1} in
@@ -1661,6 +1675,40 @@ function zvm_navigation_handler() {
   fi
 
   return $exit_code
+}
+
+# Check if the cursor is on the first terminal row of the current buffer.
+function zvm_is_on_first_visible_line() {
+  (( ${#${(%)PROMPT}} + CURSOR < COLUMNS ))
+}
+
+# Check if the cursor is on the last terminal row of the current buffer.
+function zvm_is_on_last_visible_line() {
+  local prompt_width=${#${(%)PROMPT}}
+  (( (prompt_width + CURSOR) / COLUMNS == (prompt_width + ${#BUFFER}) / COLUMNS ))
+}
+
+# Move up by one terminal row, like Vim's gk on wrapped lines.
+function zvm_vi_visible_up() {
+  (( CURSOR -= ${NUMERIC:-1} * COLUMNS ))
+  (( CURSOR < 0 )) && CURSOR=0
+  return 0
+}
+
+# Move down by one terminal row, like Vim's gj on wrapped lines.
+function zvm_vi_visible_down() {
+  zvm_is_on_last_visible_line && return
+  (( CURSOR += ${NUMERIC:-1} * COLUMNS ))
+  (( CURSOR > ${#BUFFER} )) && CURSOR=${#BUFFER}
+  return 0
+}
+
+function zvm_vi_j_keymap() {
+  zvm_readkeys_handler "$KEYMAP" "$ZVM_VI_J_KEYMAP"
+}
+
+function zvm_vi_k_keymap() {
+  zvm_readkeys_handler "$KEYMAP" "$ZVM_VI_K_KEYMAP"
 }
 
 # Handle a range of characters
@@ -1714,6 +1762,12 @@ function zvm_range_handler() {
   if [[ $(zvm_escape_non_printed_characters "$keys") =~
     ${ZVM_VI_OPPEND_ESCAPE_BINDKEY/\^\[/\\^\\[} ]]; then
     return $ZVM_RANGE_HANDLER_RET_CANCEL
+  fi
+
+  if [[ $keys =~ '^([cdy])([1-9][0-9]*)?j$' ]]; then
+    keys="${match[1]}${match[2]}${ZVM_VI_J_KEYMAP:-j}"
+  elif [[ $keys =~ '^([cdy])([1-9][0-9]*)?k$' ]]; then
+    keys="${match[1]}${match[2]}${ZVM_VI_K_KEYMAP:-k}"
   fi
 
   # Enter visual mode or visual line mode
@@ -3791,6 +3845,10 @@ function zvm_init() {
   zvm_define_widget zvm_vi_opp_case
   zvm_define_widget zvm_vi_edit_command_line
   zvm_define_widget zvm_repeat_change
+  zvm_define_widget zvm_vi_visible_up
+  zvm_define_widget zvm_vi_visible_down
+  zvm_define_widget zvm_vi_j_keymap
+  zvm_define_widget zvm_vi_k_keymap
   zvm_define_widget zvm_switch_keyword
   zvm_define_widget zvm_paste_clipboard_after
   zvm_define_widget zvm_paste_clipboard_before
@@ -3847,6 +3905,14 @@ function zvm_init() {
   zvm_bindkey vicmd  'v' zvm_enter_visual_mode
   zvm_bindkey vicmd  'V' zvm_enter_visual_mode
   zvm_bindkey visual 'o' zvm_exchange_point_and_mark
+  zvm_bindkey vicmd  'gk' zvm_vi_visible_up
+  zvm_bindkey vicmd  'gj' zvm_vi_visible_down
+  zvm_bindkey visual 'gk' zvm_vi_visible_up
+  zvm_bindkey visual 'gj' zvm_vi_visible_down
+  [[ -n $ZVM_VI_J_KEYMAP && $ZVM_VI_J_KEYMAP != j ]] && zvm_bindkey vicmd 'j' zvm_vi_j_keymap
+  [[ -n $ZVM_VI_J_KEYMAP && $ZVM_VI_J_KEYMAP != j ]] && zvm_bindkey visual 'j' zvm_vi_j_keymap
+  [[ -n $ZVM_VI_K_KEYMAP && $ZVM_VI_K_KEYMAP != k ]] && zvm_bindkey vicmd 'k' zvm_vi_k_keymap
+  [[ -n $ZVM_VI_K_KEYMAP && $ZVM_VI_K_KEYMAP != k ]] && zvm_bindkey visual 'k' zvm_vi_k_keymap
   zvm_bindkey vicmd  'o' zvm_open_line_below
   zvm_bindkey vicmd  'O' zvm_open_line_above
   zvm_bindkey vicmd  'r' zvm_vi_replace_chars
@@ -4078,4 +4144,3 @@ case $ZVM_INIT_MODE in
   sourcing) zvm_init;;
   *) precmd_functions+=(zvm_init);;
 esac
-
