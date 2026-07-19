@@ -1173,7 +1173,6 @@ function zvm_vi_put_after() {
   local count=${NUMERIC:-1}
   local head= foot=
   local content=${CUTBUFFER}
-  local offset=1
 
   if [[ ${content: -1} == $'\n' ]]; then
     local pos=${CURSOR}
@@ -1204,7 +1203,6 @@ function zvm_vi_put_after() {
       repeated+="$content"
     done
 
-    offset=0
     BUFFER="${head}${repeated}${foot}"
     CURSOR=$pos
   else
@@ -1228,9 +1226,8 @@ function zvm_vi_put_after() {
     CURSOR=$CURSOR+$#repeated
   fi
 
-  # Refresh display and highlight buffer
+  # Refresh display
   zvm_highlight clear
-  zvm_highlight custom $(($#head+$offset)) $(($#head+$#repeated+$offset))
 }
 
 # Put cutbuffer before the cursor
@@ -1281,9 +1278,8 @@ function zvm_vi_put_before() {
     CURSOR=$((CURSOR-1))
   fi
 
-  # Refresh display and highlight buffer
+  # Refresh display
   zvm_highlight clear
-  zvm_highlight custom $#head $(($#head+$#repeated))
 }
 
 # Replace a selection
