@@ -826,8 +826,7 @@ function zvm_open_line_below() {
     if ((SUFFIX_ACTIVE == 1)) && ((i >= SUFFIX_BEGIN)); then
       break
     fi
-    if [[ "${BUFFER[$i]}" == $'\n' ]]; then
-      i=$((i-1))
+    if [[ "${BUFFER[$((i+1))]}" == $'\n' ]]; then
       break
     fi
   done
