@@ -196,7 +196,7 @@
 # - For macOS, you can set it to `pbcopy` and `pbpaste`
 # - For Linux, you can set it to `xclip -selection clipboard` and
 #   `xclip -selection clipboard -o`)
-# - For Wayland, you can also use `wl-copy` and `wl-paste`
+# - For Wayland, you can also use `wl-copy` and `wl-paste`, or `waycopy` and `waypaste`
 # - For WSL, you can also use `clip.exe`
 #
 # If you don't set these two commands, the plugin will try to detect them
@@ -3584,6 +3584,11 @@ function zvm_clipboard_detect() {
   if zvm_exist_command wl-copy && zvm_exist_command wl-paste; then
     ZVM_CLIPBOARD_COPY_CMD='wl-copy'
     ZVM_CLIPBOARD_PASTE_CMD='wl-paste -n'
+    return
+  fi
+  if zvm_exist_command waycopy && zvm_exist_command waypaste; then
+    ZVM_CLIPBOARD_COPY_CMD='waycopy'
+    ZVM_CLIPBOARD_PASTE_CMD='waypaste'
     return
   fi
   if zvm_exist_command xclip; then
