@@ -375,7 +375,6 @@ option.
 1. `classic` mode (verb->s->surround)
 
 - `S"`    : Add `"` for visual selection
-- `ys"`   : Add `"` for visual selection
 - `cs"'`  : Change `"` to `'`
 - `ds"`   : Delete `"`
 
