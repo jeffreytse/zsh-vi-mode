@@ -1692,9 +1692,9 @@ function zvm_range_handler() {
     keys="${keys}${key}"
   done
 
-  # If the 2nd character is `i` or `a`, we should read
-  # one more key
-  if [[ ${keys} =~ '^.[ia]$' ]]; then
+  # If the 2nd character is `i` or `a`, optionally preceded by a
+  # count, we should read one more key (e.g. ciw, c2iw)
+  if [[ ${keys} =~ '^.([1-9][0-9]*)?[ia]$' ]]; then
     zvm_update_cursor
     read -k 1 key
     keys="${keys}${key}"
