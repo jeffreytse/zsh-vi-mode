@@ -314,10 +314,11 @@ if you want to custom the escape key, you can learn more from [here](#custom-esc
 History
 -------
 
-- `ctrl-p` : Previous command in history
-- `ctrl-n` : Next command in history
-- `/`      : Search backward in history
-- `n`      : Repeat the last `/`
+- `ctrl-p`   : Previous command in history
+- `ctrl-n`   : Next command in history
+- `ctrl-x .` : Insert the last word of history commands
+- `/`        : Search backward in history
+- `n`        : Repeat the last `/`
 
 
 Mode indicators
