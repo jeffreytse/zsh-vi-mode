@@ -1672,6 +1672,14 @@ function zvm_range_handler() {
   local cmds=($ZVM_MODE)
   local count=1
   local exit_code=$ZVM_RANGE_HANDLER_RET_OK
+  # A count typed before the operator (the 2 in "2cw") arrives as zle's
+  # $NUMERIC, not as part of the keys. Fold it into the count below (vim
+  # semantics: leading and trailing counts multiply) and clear it, so the
+  # inner zle widget calls don't apply the numeric argument a second time.
+  local -i leading=${NUMERIC:-1}
+  if (( ${+NUMERIC} )); then
+    unset NUMERIC
+  fi
 
   # Enter operator pending mode
   zvm_enter_oppend_mode false
@@ -1692,9 +1700,9 @@ function zvm_range_handler() {
     keys="${keys}${key}"
   done
 
-  # If the 2nd character is `i` or `a`, we should read
-  # one more key
-  if [[ ${keys} =~ '^.[ia]$' ]]; then
+  # If the 2nd character is `i` or `a`, optionally preceded by a
+  # count, we should read one more key (e.g. ciw, c2iw)
+  if [[ ${keys} =~ '^.([1-9][0-9]*)?[ia]$' ]]; then
     zvm_update_cursor
     read -k 1 key
     keys="${keys}${key}"
@@ -1849,6 +1857,11 @@ function zvm_range_handler() {
     navkey=${match[2]}
   else
     navkey=
+  fi
+
+  # Fold the leading count in (2c2w acts like c4w, like vim)
+  if (( leading > 1 )); then
+    (( count = leading * count ))
   fi
 
   # Handle navigation
