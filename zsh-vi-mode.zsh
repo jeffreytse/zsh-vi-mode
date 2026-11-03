@@ -2377,6 +2377,7 @@ function zvm_change_surround_text_object() {
     ((epos++))
   fi
   CUTBUFFER=${BUFFER:$bpos:$(($epos-$bpos))}
+  zvm_clipboard_copy_buffer
   case ${action:0:1} in
     c)
       BUFFER="${BUFFER:0:$bpos}${BUFFER:$epos}"
